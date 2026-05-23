@@ -1,0 +1,70 @@
+≡ƒî▒ Connecting to MongoDB...
+node : (node:37928) 
+[MONGOOSE] Warning: 
+Duplicate schema index on 
+{"shareCode":1} found. 
+This is often due to 
+declaring an index using 
+both "index: true" and 
+"schema.index()". Please 
+remove the duplicate 
+index definition.
+At line:1 char:1
++ node seed.js > 
+seed_out.txt 2>&1; 
+Get-Content seed_out.txt
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: ((  
+  node:37928) [M...dex    
+ definition.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+(Use `node 
+--trace-warnings ...` to 
+show where the warning 
+was created)
+Γ£à Connected
+
+≡ƒº╣ Cleaning up old seed data...
+Γ£à Cleaned
+
+≡ƒÅó Creating organization...
+   Γ£à Org: TechHire Solutions (org@demo.com)
+
+≡ƒôï Creating interview template...
+   Γ£à Template: SDE Hiring Round 1 ΓÇö Batch 2025
+   ≡ƒöù Join URL: http://localhost:3001/interview/join/DEMO1234
+
+≡ƒæÑ Creating candidates, interviews and reports...
+   Γ£à [1/5] Arjun Sharma ΓÇö Score: 9.2 | ≡ƒÅà Top Performer
+   Γ£à [2/5] Priya Mehta ΓÇö Score: 8.1 | ≡ƒÅà Strong Communicator
+   Γ£à [3/5] Rohan Desai ΓÇö Score: 7.4 
+   Γ£à [4/5] Sneha Patel ΓÇö Score: 6.2 
+   Γ£à [5/5] Karan Malhotra ΓÇö Score: 8.7 | ≡ƒÅà Fast Solver
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+≡ƒÄë Seed complete!
+
+≡ƒôî ORG LOGIN
+   URL:      http://localhost:3001/org/login
+   Email:    org@demo.com
+   Password: demo1234
+
+≡ƒôî LEADERBOARD (after login)
+   /org/interview/69ce3a9e706f31407d001fb2/leaderboard
+
+≡ƒôî PUBLIC JOIN LINK
+   http://localhost:3001/interview/join/DEMO1234
+
+≡ƒôî CANDIDATE LOGINS (password: candidate123)
+   arjun@iit.ac.in
+   priya.mehta@gmail.com
+   rohan.desai@techcorp.com
+   sneha.patel@college.edu
+   karan.m@startup.io
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

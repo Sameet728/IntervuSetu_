@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #1e293b; background: white; margin: 0; padding: 0; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Poppins', sans-serif; }
+    .page-break { page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+    
+    /* Cover Page Background */
+    .cover {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      position: relative;
+    }
+    .cover-content { padding: 80px 60px; flex: 1; }
+    .brand { color: #38bdf8; font-weight: 700; letter-spacing: 2px; font-size: 14px; text-transform: uppercase; }
+    
+    /* Sub Pages */
+    .page { padding: 40px 60px; }
+    .header-rule { border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; padding-bottom: 12px; }
+    
+    .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; background: white; }
+    
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th { text-align: left; background: #f8fafc; padding: 12px 16px; font-weight: 600; border-bottom: 2px solid #cbd5e1; font-size: 13px; color: #475569; text-transform: uppercase; }
+    td { padding: 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: top; }
+  </style>
+</head>
+<body>
+
+  <!-- ===============================
+       PAGE 1: COVER
+  =============================== -->
+  <div class="cover page-break">
+    <div class="cover-content">
+      <div class="flex justify-between items-start mb-24">
+        <div>
+          <% if (locals.orgLogo) { %>
+            <img src="<%= orgLogo %>" alt="Org Logo" style="height: 48px; object-fit: contain; margin-bottom: 16px;" />
+          <% } else { %>
+            <div class="brand flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #38bdf8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              InterviewAI
+            </div>
+          <% } %>
+        </div>
+        <div class="text-right">
+          <div class="text-slate-400 text-sm"><%= date %></div>
+          <div class="text-slate-500 text-xs mt-1">ID: <%= report._id %></div>
+        </div>
+      </div>
+
+      <div class="mt-16">
+        <h1 class="text-5xl font-bold mb-4 leading-tight"><%= report.role || "Performance Report" %></h1>
+        <div class="flex items-center gap-4 text-slate-300 text-lg">
+          <% if (isAptitude) { %>
+            <span class="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-semibold border border-indigo-500/30 uppercase tracking-widest"><%= report.testMode || "Standard" %></span>
+          <% } else { %>
+            <span class="px-3 py-1 bg-sky-500/20 text-sky-300 rounded-full text-sm font-semibold border border-sky-500/30 uppercase tracking-widest"><%= report.experienceLevel || "Professional" %></span>
+            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-sm font-semibold border border-emerald-500/30 uppercase tracking-widest"><%= String(report.interviewType).replace(/_/g, " ") || "Technical" %></span>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="mt-24 grid grid-cols-2 gap-12 bg-slate-800/50 p-8 rounded-2xl border border-slate-700/50 backdrop-blur-sm relative overflow-hidden">
+        <div class="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-slate-900/40 to-transparent"></div>
+        <div>
+          <h3 class="text-sm font-semibold text-slate-400 tracking-widest uppercase mb-4">Candidate Profile</h3>
+          <p class="text-2xl font-bold text-white mb-1"><%= user.name || "Candidate" %></p>
+          <p class="text-slate-400 mb-6"><%= user.email %></p>
+          
+          <div class="space-y-3 text-sm">
+            <% if (user.userType === 'student') { %>
+              <div class="flex"><span class="w-24 text-slate-500">Institution:</span> <span class="text-slate-300"><%= user.college || "N/A" %></span></div>
+              <div class="flex"><span class="w-24 text-slate-500">Major:</span> <span class="text-slate-300"><%= user.branch || "N/A" %></span></div>
+            <% } else { %>
+              <div class="flex"><span class="w-24 text-slate-500">Company:</span> <span class="text-slate-300"><%= user.company || "N/A" %></span></div>
+              <div class="flex"><span class="w-24 text-slate-500">Experience:</span> <span class="text-slate-300"><%= user.yearsOfExperience || 0 %> Years</span></div>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center border-l border-slate-700/50 pl-12 relative z-10">
+          <div class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-4">Overall Score</div>
+          <div class="text-[5rem] font-bold leading-none <%= scoreColorClass %> mb-2"><%= overallScore %></div>
+          <% if (!isAptitude) { %>
+            <div class="text-slate-500 font-medium">/ 10</div>
+          <% } else { %>
+            <div class="text-slate-500 font-medium">% Accuracy</div>
+          <% } %>
+
+          <% if (isAptitude) { %>
+            <div class="mt-6 px-4 py-1.5 rounded-full border <%= scoreColorClass.replace('text-', 'bg-').replace('500', '500/10') %> <%= scoreColorClass.replace('text-', 'border-').replace('500', '500/30') %> text-sm font-bold uppercase tracking-wider <%= scoreColorClass %>">
+              <%= performanceBand %>
+            </div>
+          <% } else { %>
+            <div class="mt-6 px-4 py-1.5 rounded-full border <%= scoreColorClass.replace('text-', 'bg-').replace('500', '500/10') %> <%= scoreColorClass.replace('text-', 'border-').replace('500', '500/30') %> text-sm font-bold uppercase tracking-wider <%= scoreColorClass %>">
+              <%= String(report.recommendation).replace(/_/g, " ") || "Status Unknown" %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===============================
+       PAGE 2: SUMMARY & VISUALS
+  =============================== -->
+  <div class="page page-break bg-slate-50/50 min-h-screen">
+    <div class="header-rule flex justify-between items-end">
+      <h2 class="text-2xl font-bold text-slate-900">Executive Summary</h2>
+      <span class="text-sm font-medium text-slate-500">Page 2</span>
+    </div>
+
+    <div class="grid grid-cols-5 gap-6 mb-8">
+      <div class="col-span-2 space-y-6">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="card p-5">
+            <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Time Taken</span>
+            <span class="text-xl font-bold text-slate-800"><%= formattedTime %></span>
+          </div>
+          <div class="card p-5">
+            <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider block mb-1">Total Questions</span>
+            <span class="text-xl font-bold text-slate-800"><%= totalQuestions %></span>
+          </div>
+        </div>
+
+        <% if (!isAptitude && report.overallFeedback) { %>
+        <div class="card h-48 no-break">
+          <h3 class="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">AI Evaluation</h3>
+          <p class="text-sm text-slate-600 leading-relaxed"><%= report.overallFeedback %></p>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Radar Chart Visual -->
+      <div class="col-span-3 card flex items-center justify-center p-2 h-[300px]">
+        <img src="<%= radarChartUrl %>" alt="Skills Radar" style="max-height: 100%; width: auto;" />
+      </div>
+    </div>
+
+    <!-- Category / Section Scores -->
+    <h3 class="text-lg font-bold text-slate-800 mb-4 mt-8">Section Performance</h3>
+    <div class="card mb-8 no-break">
+      <img src="<%= barChartUrl %>" alt="Bar Chart" style="max-height: 300px; width: auto; margin: 0 auto; display: block;" />
+    </div>
+
+    <!-- Strengths / Weaknesses -->
+    <% if (!isAptitude && report.strengths && report.weaknesses) { %>
+    <div class="grid grid-cols-2 gap-6 no-break">
+      <div class="card border-green-200 bg-green-50/30">
+        <h3 class="text-sm font-bold text-green-700 mb-3 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Key Strengths</h3>
+        <ul class="space-y-2">
+          <% report.strengths.forEach(s => { %>
+            <li class="text-sm text-slate-700 flex items-start gap-2"><span class="text-green-500 mt-0.5">•</span> <%= s %></li>
+          <% }) %>
+        </ul>
+      </div>
+      <div class="card border-red-200 bg-red-50/30">
+        <h3 class="text-sm font-bold text-red-700 mb-3 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Areas to Improve</h3>
+        <ul class="space-y-2">
+          <% report.weaknesses.forEach(w => { %>
+            <li class="text-sm text-slate-700 flex items-start gap-2"><span class="text-red-500 mt-0.5">•</span> <%= w %></li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- ===============================
+       PAGE 3: PROCTORING & TABLES
+  =============================== -->
+  <% if (report.violationCount > 0 || (report.violations && report.violations.length > 0)) { %>
+  <div class="page page-break">
+    <div class="header-rule">
+      <h2 class="text-2xl font-bold text-slate-900">Proctoring Report</h2>
+    </div>
+    
+    <div class="card border-amber-200 bg-amber-50 mb-8 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+        <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+      </div>
+      <div>
+        <h4 class="font-bold text-amber-800"><%= report.violationCount || report.violations.length %> Violations Detected</h4>
+        <p class="text-sm text-amber-700">The candidate's test environment was compromised during the session.</p>
+      </div>
+    </div>
+
+    <% if (report.violations && report.violations.length > 0) { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Time elapsed</th>
+          <th>Type</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% report.violations.forEach(v => { %>
+          <tr>
+            <td class="font-mono text-slate-500"><%= v.timestamp ? new Date(v.timestamp).toLocaleTimeString() : 'N/A' %></td>
+            <td><span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-bold uppercase"><%= v.type %></span></td>
+            <td><%= v.details || '-' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+  <% } %>
+
+
+  <!-- ===============================
+       PAGE 4+: QUESTION ANALYSIS
+  =============================== -->
+  <div class="page">
+    <div class="header-rule">
+      <h2 class="text-2xl font-bold text-slate-900">Detailed Question Ledger</h2>
+    </div>
+
+    <div class="space-y-6">
+      <% 
+        const questions = isAptitude ? report.answers : report.questionBreakdown;
+        questions.forEach((q, i) => { 
+          const isCorrect = isAptitude ? q.isCorrect : (q.score >= 5);
+          const scoreStr = isAptitude ? (q.isCorrect ? "Correct" : "Incorrect") : `${q.score}/10`;
+          const scoreClass = isAptitude 
+              ? (q.isCorrect ? "text-green-600 bg-green-50 border-green-200" : "text-red-600 bg-red-50 border-red-200")
+              : (q.score >= 8 ? "text-green-600 bg-green-50 border-green-200" : q.score >= 5 ? "text-amber-600 bg-amber-50 border-amber-200" : "text-red-600 bg-red-50 border-red-200");
+      %>
+      <div class="card no-break">
+        <div class="flex justify-between items-start mb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded">Q <%= i + 1 %></span>
+            <% if (isAptitude && q.questionId) { %>
+              <span class="text-xs font-semibold text-slate-500 uppercase"><%= q.questionId.category %> Reasoning</span>
+            <% } else if (!isAptitude) { %>
+              <span class="text-xs font-semibold text-slate-500 uppercase"><%= String(q.questionType).replace('_',' ') %></span>
+            <% } %>
+          </div>
+          <div class="px-3 py-1 rounded-md border <%= scoreClass %> font-bold text-sm">
+            <%= scoreStr %>
+          </div>
+        </div>
+
+        <p class="font-semibold text-slate-800 text-sm mb-4 leading-relaxed">
+          <%= isAptitude ? (q.questionId ? q.questionId.question : "N/A") : q.question %>
+        </p>
+
+        <% if (isAptitude && q.questionId) { %>
+          <!-- Aptitude Question Meta -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-semibold uppercase tracking-wider"><%= q.questionId.category %> Reasoning</span>
+            <span class="px-2 py-1 rounded text-xs font-bold uppercase tracking-wider <%= q.questionId.difficulty === 'hard' ? 'bg-red-100 text-red-700' : q.questionId.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700' %>"><%= q.questionId.difficulty || 'medium' %></span>
+            <span class="px-2 py-1 bg-slate-100 text-slate-500 rounded text-xs font-mono"><%= q.timeTaken || 0 %>s</span>
+            <% if (q.questionId.companies && q.questionId.companies.length > 0) { %>
+              <% q.questionId.companies.forEach(c => { %>
+                <span class="px-2 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-xs font-semibold">💼 <%= c %></span>
+              <% }) %>
+            <% } %>
+            <% if (q.questionId.tags && q.questionId.tags.length > 0) { %>
+              <% q.questionId.tags.forEach(tag => { %>
+                <span class="px-2 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded text-xs">#<%= tag %></span>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <!-- All Answer Options -->
+          <div class="space-y-2 mb-4">
+            <div class="text-xs uppercase font-bold text-slate-400 mb-2 tracking-widest">Answer Options</div>
+            <% q.questionId.options.forEach(opt => { 
+                const selected = opt._id.toString() === (q.selectedOptionId ? q.selectedOptionId.toString() : '');
+                const correct = opt.isCorrect;
+                let bgClass = 'bg-white border-slate-200';
+                let textClass = 'text-slate-700';
+                let icon = '○';
+                let iconClass = 'text-slate-300';
+                if (correct && selected) { bgClass = 'bg-green-50 border-green-300'; textClass = 'text-green-800 font-semibold'; icon = '✓'; iconClass = 'text-green-600'; }
+                else if (correct) { bgClass = 'bg-green-50 border-green-200'; textClass = 'text-green-700 font-semibold'; icon = '✓'; iconClass = 'text-green-500'; }
+                else if (selected) { bgClass = 'bg-red-50 border-red-300'; textClass = 'text-red-800'; icon = '✗'; iconClass = 'text-red-500'; }
+            %>
+              <div class="flex items-center gap-3 p-2.5 rounded-lg border <%= bgClass %>">
+                <span class="font-bold text-sm w-5 text-center flex-shrink-0 <%= iconClass %>"><%= icon %></span>
+                <span class="text-sm flex-1 <%= textClass %>"><%= opt.text %></span>
+                <% if (correct && selected) { %><span class="text-xs text-green-600 font-bold whitespace-nowrap">Your Answer ✓</span><% } %>
+                <% if (correct && !selected) { %><span class="text-xs text-green-600 font-bold whitespace-nowrap">Correct Answer</span><% } %>
+                <% if (!correct && selected) { %><span class="text-xs text-red-600 font-bold whitespace-nowrap">Your Answer ✗</span><% } %>
+              </div>
+            <% }) %>
+          </div>
+
+          <!-- Detailed Solution -->
+          <% if (q.questionId.detailedSolution) { %>
+          <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="text-xs font-bold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M12 21v-1" /></svg>
+              Step-by-Step Solution
+            </div>
+            <p class="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap"><%= q.questionId.detailedSolution %></p>
+          </div>
+          <% } %>
+
+        <% } else if (!isAptitude) { %>
+          <!-- Interview Answers -->
+          <div class="space-y-3 mb-4">
+            <div>
+              <div class="text-xs font-bold text-sky-600 uppercase tracking-widest mb-1">Candidate Answer</div>
+              <div class="bg-sky-50 border border-sky-100 rounded-lg p-3 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap"><%= q.userAnswer || "No answer provided" %></div>
+            </div>
+            <% if (q.userCode) { %>
+            <div>
+              <div class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">Code Submission</div>
+              <div class="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto"><%= q.userCode %></div>
+            </div>
+            <% } %>
+          </div>
+          
+          <% if (q.feedback) { %>
+          <div class="bg-slate-50 border border-slate-200 border-l-4 border-l-slate-400 p-4 rounded-r-lg">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">AI Evaluator Notes</h4>
+            <p class="text-sm text-slate-600 leading-relaxed"><%= q.feedback %></p>
+          </div>
+          <% } %>
+        <% } %>
+
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+</body>
+</html>
