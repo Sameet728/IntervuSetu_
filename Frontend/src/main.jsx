@@ -1,0 +1,39 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
+import App from './App'
+import { AuthProvider } from './context/AuthContext'
+import { OrgAuthProvider } from './context/OrgAuthContext'
+import { ThemeProvider } from './context/ThemeContext'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <OrgAuthProvider>
+            <App />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'var(--color-card)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '14px',
+                },
+                success: { iconTheme: { primary: '#10b981', secondary: 'transparent' } },
+                error:   { iconTheme: { primary: '#f43f5e', secondary: 'transparent' } },
+              }}
+            />
+          </OrgAuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+)
+
