@@ -16,6 +16,7 @@ const orgAptitudeRoutes = require("./routes/orgAptitudeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const aptitudeRoutes = require("./routes/aptitudeRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const contactRoutes = require("./routes/contactRoutes");
 const { errorHandler, notFound } = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -52,7 +53,8 @@ const limiter = rateLimit({
   max: 200,
   message: { success: false, message: "Too many requests. Try again later." },
 });
-app.use("/api", limiter);
+app.use("/api/auth", limiter);
+app.use("/api/org/auth", limiter);
 
 // ─── Body Parsing ───────────────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
@@ -78,7 +80,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/aptitude", aptitudeRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use("/api/contact", contactRoutes);
 
 // Org routes
 app.use("/api/org/auth", orgAuthRoutes);

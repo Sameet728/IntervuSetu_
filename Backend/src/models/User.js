@@ -99,6 +99,19 @@ const userSchema = new mongoose.Schema(
         ref: "Interview",
       },
     ],
+    
+    // Transactions
+    transactions: [
+      {
+        orderId: String,
+        paymentId: String,
+        amount: Number,
+        currency: String,
+        status: String,
+        date: { type: Date, default: Date.now },
+      }
+    ],
+
     isActive: {
       type: Boolean,
       default: true,

@@ -53,10 +53,22 @@ const verifyPayment = async (req, res, next) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
-      // Upgrade user to PRO
+      // Upgrade user to PRO and record transaction
+      const transaction = {
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        amount: 499, // Fixed for now based on createOrder
+        currency: "INR",
+        status: "success",
+        date: new Date()
+      };
+
       const user = await User.findByIdAndUpdate(
         req.user.id,
-        { plan: "pro" },
+        { 
+          $set: { plan: "pro" },
+          $push: { transactions: transaction }
+        },
         { new: true }
       );
 

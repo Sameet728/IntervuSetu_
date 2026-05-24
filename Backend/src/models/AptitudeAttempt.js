@@ -52,4 +52,8 @@ const aptitudeAttemptSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for dashboard queries and leaderboards
+aptitudeAttemptSchema.index({ testId: 1, status: 1, accuracy: -1 });
+aptitudeAttemptSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model("AptitudeAttempt", aptitudeAttemptSchema);

@@ -37,10 +37,22 @@ const processAnswer = async (interview, questionData, userAnswer, code = null) =
       interview.longTermSummary
     );
 
+    // Determine the actual question the user is answering
+    let actualQuestionText = questionData.question;
+    const isFollowup = questionData.followupCount > 0;
+    
+    if (isFollowup && questionData.answers && questionData.answers.length > 0) {
+      const lastAnswer = questionData.answers[questionData.answers.length - 1];
+      if (lastAnswer && lastAnswer.followupQuestion) {
+        actualQuestionText = lastAnswer.followupQuestion;
+      }
+    }
+
     // Call Gemini to evaluate
-    console.log(`🤖 Calling Gemini API for evaluation...`);
+    console.log(`🤖 Calling Gemini API for evaluation... (isFollowup: ${isFollowup})`);
     const evaluation = await evaluateAnswer({
-      question: questionData.question,
+      question: actualQuestionText,
+      originalMainQuestion: isFollowup ? questionData.question : null,
       questionType: questionData.questionType,
       expectedAnswer: questionData.expectedAnswer,
       userAnswer,

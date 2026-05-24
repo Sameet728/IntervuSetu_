@@ -330,8 +330,7 @@ const downloadAptitudePDF = async (req, res, next) => {
     const pdfBuffer = await generatePDFBuffer(report, user, true);
 
     const safeName = report.testMode?.replace(/\s+/g, "_") || "Assessment";
-    const candidateName = (user?.name || "Candidate").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
-    const filename = `InterviewAI_Aptitude_${candidateName}_${safeName}_${Date.now()}.pdf`;
+    const filename = `IntervuSetu_Aptitude_${safeName}_${Date.now()}.pdf`;
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

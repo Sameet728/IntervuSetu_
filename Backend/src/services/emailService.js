@@ -318,4 +318,33 @@ const sendWelcomeEmail = async ({ to, name }) => {
   }
 };
 
-module.exports = { sendInviteEmail, sendBulkInvites, sendReportEmail, sendOtpEmail, sendSignupOtpEmail, sendWelcomeEmail };
+/**
+ * Send contact form submission
+ */
+const sendContactEmail = async (email, message) => {
+  try {
+    const { data, error } = await getResend().emails.send({
+      from: FROM_EMAIL,
+      to: FROM_EMAIL,
+      reply_to: email,
+      subject: `New Contact Form Submission from ${email}`,
+      html: `
+        <h2>New Message from IntervuSetu</h2>
+        <p><strong>From:</strong> ${email}</p>
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap;">${message}</p>
+      `,
+    });
+
+    if (error) {
+      console.error("Resend API Error (Contact):", error.message);
+      throw new Error(error.message);
+    }
+    return data;
+  } catch (error) {
+    console.error("Failed to send contact email:", error);
+    throw error;
+  }
+};
+
+module.exports = { sendInviteEmail, sendBulkInvites, sendReportEmail, sendOtpEmail, sendSignupOtpEmail, sendWelcomeEmail, sendContactEmail };

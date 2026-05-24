@@ -16,7 +16,7 @@ const aptitudeQuestionSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["numerical", "verbal", "logical", "situational"],
+      enum: ["numerical", "verbal", "logical", "situational", "analytical", "quantitative"],
     },
     difficulty: {
       type: String,

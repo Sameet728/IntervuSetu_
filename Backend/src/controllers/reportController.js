@@ -84,7 +84,7 @@ const downloadReportPDF = async (req, res, next) => {
 
     const safeName = (report.role || "Interview").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
     const candidateName = (user?.name || "Candidate").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
-    const filename = `InterviewAI_Report_${candidateName}_${safeName}_${Date.now()}.pdf`;
+    const filename = `IntervuSetu_Report_${candidateName}_${safeName}_${Date.now()}.pdf`;
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

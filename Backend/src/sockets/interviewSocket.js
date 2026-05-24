@@ -11,6 +11,7 @@ const {
   skipQuestion,
   repeatQuestion,
 } = require("../services/interviewService");
+const Interview = require("../models/Interview");
 
 // Track active connections: interviewId → WebSocket
 const activeSessions = new Map();
@@ -69,16 +70,36 @@ const initializeSocket = (server) => {
       return;
     }
 
-    // Register session
-    ws.userId = user.id;
-    ws.interviewId = interviewId;
-    activeSessions.set(interviewId, ws);
+    // Async wrapper for DB validation
+    (async () => {
+      try {
+        const interviewRecord = await Interview.findById(interviewId).select("userId").lean();
+        if (!interviewRecord || interviewRecord.userId.toString() !== user.id) {
+          send(ws, "error", { message: "Forbidden: You do not own this interview" });
+          ws.close(4003, "Forbidden");
+          return;
+        }
 
-    console.log(`✅ WS connected: user=${user.id} interview=${interviewId}`);
-    send(ws, "connected", { message: "Connected to interview session", interviewId });
+        // Register session
+        ws.userId = user.id;
+        ws.interviewId = interviewId;
+        ws.isAuthenticated = true; // flag to allow messages
+        activeSessions.set(interviewId, ws);
+
+        console.log(`✅ WS connected: user=${user.id} interview=${interviewId}`);
+        send(ws, "connected", { message: "Connected to interview session", interviewId });
+      } catch (err) {
+        console.error("WS validation error:", err);
+        ws.close(1011, "Internal Error");
+      }
+    })();
 
     // ── Message Dispatcher ───────────────────────────────────────────
     ws.on("message", async (raw) => {
+      if (!ws.isAuthenticated) {
+        send(ws, "error", { message: "Connection not fully authenticated yet" });
+        return;
+      }
       let msg;
       try {
         msg = JSON.parse(raw);

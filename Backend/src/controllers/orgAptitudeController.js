@@ -154,8 +154,8 @@ const getLeaderboard = async (req, res, next) => {
         a.userId?.email?.toLowerCase().includes(search.toLowerCase())
       );
     }
-    if (scoreMin !== undefined) attempts = attempts.filter((a) => a.accuracy >= Number(scoreMin));
-    if (scoreMax !== undefined) attempts = attempts.filter((a) => a.accuracy <= Number(scoreMax));
+    if (scoreMin !== undefined && scoreMin !== "") attempts = attempts.filter((a) => a.accuracy >= Number(scoreMin));
+    if (scoreMax !== undefined && scoreMax !== "") attempts = attempts.filter((a) => a.accuracy <= Number(scoreMax));
     if (status && status !== "all") attempts = attempts.filter((a) => a.candidateStatus === status);
 
     const ranked = attempts.map((a, idx) => ({

@@ -100,6 +100,7 @@ Return ONLY a valid JSON array (no markdown, no explanation):
  */
 const evaluateAnswer = async ({
   question,
+  originalMainQuestion = null,
   questionType,
   expectedAnswer,
   userAnswer,
@@ -160,7 +161,7 @@ ${contextSummary || "No prior context"}
 ${recentContext || "This is the first question"}
 
 === CURRENT EVALUATION ===
-Question: ${question}
+${originalMainQuestion ? `Original Main Question Context: ${originalMainQuestion}\n` : ""}Question: ${question}
 Question Type: ${questionType}
 Expected Answer Outline: ${expectedAnswer}
 

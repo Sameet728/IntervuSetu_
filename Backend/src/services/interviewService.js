@@ -12,7 +12,33 @@ const MAX_VIOLATIONS = parseInt(process.env.MAX_VIOLATIONS) || 3;
 const startInterview = async (interviewId, candidateName) => {
   const interview = await Interview.findById(interviewId);
   if (!interview) throw new Error("Interview not found");
-  if (interview.status !== "created") throw new Error("Interview already started");
+  if (interview.status === "completed" || interview.status === "auto_submitted") {
+    throw new Error("Interview already completed");
+  }
+
+  if (interview.status === "active") {
+    const idx = interview.currentQuestionIndex || 0;
+    const currentQ = interview.questions[idx];
+
+    let activeQuestionText = currentQ.question;
+    if (currentQ.answers && currentQ.answers.length > 0) {
+      const lastAnswer = currentQ.answers[currentQ.answers.length - 1];
+      if (lastAnswer.followupQuestion) {
+        activeQuestionText = lastAnswer.followupQuestion;
+      }
+    }
+    
+    const virtualFirstQ = { ...(currentQ.toObject ? currentQ.toObject() : currentQ), question: activeQuestionText };
+
+    return {
+      greeting: `Welcome back, ${candidateName}. Let's continue where we left off.`,
+      firstQuestion: virtualFirstQ,
+      totalQuestions: interview.questions.length,
+      interviewType: interview.interviewType,
+      difficulty: interview.difficulty,
+      questionIndex: idx
+    };
+  }
 
   interview.status = "active";
   interview.startedAt = new Date();
@@ -39,6 +65,7 @@ const startInterview = async (interviewId, candidateName) => {
     totalQuestions: interview.questions.length,
     interviewType: interview.interviewType,
     difficulty: interview.difficulty,
+    questionIndex: 0,
   };
 };
 
