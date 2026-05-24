@@ -117,9 +117,16 @@ export default function DashboardPage() {
         {/* ── Header ───────────────────────────────────────────── */}
         <div className="flex items-center justify-between py-6 border-b border-zinc-200 dark:border-zinc-900 mb-6">
           <div>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Welcome back, {user?.name?.split(' ')[0] || 'there'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Welcome back, {user?.name?.split(' ')[0] || 'there'}
+              </h1>
+              {user?.plan === 'pro' ? (
+                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-800">PRO</span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-700">FREE</span>
+              )}
+            </div>
             <p className="text-sm text-zinc-500 mt-0.5">Track your interview performance</p>
           </div>
           <div className="flex gap-2">
@@ -241,7 +248,7 @@ export default function DashboardPage() {
                 const cfg = STATUS_CONFIG[iv.status] || STATUS_CONFIG.created
                 const rd = iv.reportData
                 const canView   = ['completed', 'auto_submitted'].includes(iv.status)
-                const canResume = iv.status === 'created'
+                const canResume = ['created', 'active', 'paused'].includes(iv.status)
                 const rec = RECOM[rd?.recommendation]
 
                 return (

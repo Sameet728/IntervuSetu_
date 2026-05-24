@@ -1,97 +1,155 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Building2, Mail, Lock, Eye, EyeOff, Mic } from 'lucide-react'
 import { useOrgAuth } from '../../context/OrgAuthContext'
 import { orgLogin as orgLoginAPI } from '../../api/orgAPI'
+import { Input, Button } from '../../components/ui/index'
+import { Mic, Mail, Lock, ArrowRight, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function OrgLoginPage() {
-  const navigate = useNavigate()
-  const { orgLogin } = useOrgAuth()
-  const [loading, setLoading] = useState(false)
-  const [showPass, setShowPass] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const { orgLogin } = useOrgAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/org/dashboard'
 
-  const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
+  const validate = () => {
+    const e = {}
+    if (!form.email) e.email = 'Email is required'
+    if (!form.password) e.password = 'Password is required'
+    return e
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const e2 = validate()
+    if (Object.keys(e2).length) { setErrors(e2); return }
     setLoading(true)
     try {
       const res = await orgLoginAPI(form)
       orgLogin(res.data.token, res.data.data)
       toast.success(`Welcome back, ${res.data.data.name}!`)
-      navigate('/org/dashboard')
+      navigate(from, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
+  }
+
+  const set = (k) => (ev) => {
+    setForm(p => ({ ...p, [k]: ev.target.value }))
+    setErrors(p => ({ ...p, [k]: '' }))
   }
 
   return (
-    <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-violet/10 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex" style={{ fontFamily: 'Inter, system-ui' }}>
+      {/* ── Left brand panel (desktop only) ──────────────────────── */}
+      <div className="hidden lg:flex flex-col justify-between w-96 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 p-10">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+            <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
+          </div>
+          <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
+          <span className="text-[10px] font-mono bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full ml-1">For Organizations</span>
+        </Link>
+
+        <div>
+          <h2 className="text-2xl font-bold text-zinc-50 mb-3 leading-snug" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Hire smarter,<br />interview better.
+          </h2>
+          <p className="text-sm text-zinc-500 leading-relaxed">
+            Automate your hiring pipeline with AI-driven technical and behavioral interviews.
+          </p>
+        </div>
+
+        <div className="flex gap-4">
+          {[['100+', 'Companies hiring'], ['50k+', 'Interviews conducted'], ['24/7', 'Proctoring']].map(([val, label]) => (
+            <div key={label}>
+              <p className="text-lg font-bold text-blue-400" style={{ fontFamily: 'Poppins, sans-serif' }}>{val}</p>
+              <p className="text-xs text-zinc-600">{label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <Link to="/" className="flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 bg-gradient-to-tr from-violet to-cyan rounded-lg flex items-center justify-center">
-          <Mic className="w-4 h-4 text-void" strokeWidth={3} />
-        </div>
-        <span className="font-display font-bold text-zinc-900 dark:text-white">InterviewAI</span>
-        <span className="text-xs font-mono bg-violet/20 text-violet px-2 py-0.5 rounded-full border border-violet/30">Organizations</span>
-      </Link>
+      {/* ── Right form panel ─────────────────────────────────────── */}
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-sm"
+        >
+          {/* Mobile logo */}
+          <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
+            <span className="text-[10px] font-mono bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full ml-1">Organizations</span>
+          </Link>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm bg-card border border-border rounded-2xl p-8"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-violet/20 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-violet" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-xl text-zinc-900 dark:text-white">Organization Login</h1>
-            <p className="text-xs text-slate-500 font-body">Access your hiring dashboard</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-            <input value={form.email} onChange={set('email')} type="email" placeholder="Organization email"
-              className="w-full bg-surface border border-border rounded-xl pl-10 pr-4 py-3 text-sm text-slate-200 outline-none focus:border-violet/40 placeholder-slate-600 font-body" required />
-          </div>
-
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-            <input value={form.password} onChange={set('password')} type={showPass ? 'text' : 'password'} placeholder="Password"
-              className="w-full bg-surface border border-border rounded-xl pl-10 pr-10 py-3 text-sm text-slate-200 outline-none focus:border-violet/40 placeholder-slate-600 font-body" required />
-            <button type="button" onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400">
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          <div className="text-right mt-1">
-            <Link to="/org/forgot-password" className="text-xs text-slate-400 hover:text-violet transition-colors font-body">
-              Forgot password?
+          <h1 className="text-xl font-bold text-zinc-50 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Sign in to your organization
+          </h1>
+          <p className="text-sm text-zinc-500 mb-8">
+            New organization?{' '}
+            <Link to="/org/register" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+              Register here
             </Link>
-          </div>
+          </p>
 
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-violet to-cyan text-void font-display font-bold rounded-xl hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50">
-            {loading ? 'Signing in...' : 'Sign In →'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Organization email"
+              type="email"
+              placeholder="hr@company.com"
+              value={form.email}
+              onChange={set('email')}
+              error={errors.email}
+              icon={<Mail className="w-3.5 h-3.5" />}
+              autoComplete="email"
+            />
 
-        <p className="text-center text-sm text-slate-500 mt-4 font-body">
-          New organization?{' '}
-          <Link to="/org/register" className="text-violet hover:text-violet/80">Register here</Link>
-        </p>
-      </motion.div>
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={set('password')}
+                error={errors.password}
+                icon={<Lock className="w-3.5 h-3.5" />}
+                autoComplete="current-password"
+              />
+              <div className="mt-1.5 flex justify-end">
+                <Link to="/org/forgot-password" className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              loading={loading}
+              variant="primary"
+              size="lg"
+              className="w-full mt-1"
+            >
+              Sign in <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </form>
+
+          <p className="mt-8 text-center text-xs text-zinc-600">
+            Are you a candidate?{' '}
+            <Link to="/login" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 transition-colors">
+              Sign in here →
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   )
 }

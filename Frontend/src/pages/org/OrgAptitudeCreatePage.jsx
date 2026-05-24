@@ -3,18 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useOrgAuth } from '../../context/OrgAuthContext'
 import { createOrgAptitudeTest } from '../../api/orgAPI'
+import OrgNavbar from '../../components/layout/OrgNavbar'
 import {
   ArrowLeft, Brain, Clock, Hash, Shield, Calendar,
   Loader2, Copy, CheckCircle2, AlertTriangle, ChevronRight,
+  Users
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Input, Button } from '../../components/ui/index'
 
 const CATS = ['numerical', 'verbal', 'logical', 'situational']
 
 function FieldLabel({ children, required }) {
   return (
-    <label className="block text-xs font-mono text-slate-400 mb-1.5">
-      {children}{required && <span className="text-rose ml-0.5">*</span>}
+    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 uppercase tracking-wider">
+      {children}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
   )
 }
@@ -79,49 +82,49 @@ export default function OrgAptitudeCreatePage() {
 
   if (created) {
     return (
-      <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4" style={{ fontFamily: 'Inter, system-ui' }}>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-lg bg-card border border-border rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 bg-emerald/10 border border-emerald/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald" />
+          className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center shadow-lg">
+          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
           </div>
-          <h2 className="font-display font-bold text-2xl text-zinc-900 dark:text-white mb-2">Test Created!</h2>
-          <p className="text-slate-400 font-body text-sm mb-6">
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Test Created!</h2>
+          <p className="text-zinc-500 text-sm mb-6">
             Share the link with students. They'll need an account to take the test.
           </p>
 
-          <div className="bg-surface border border-border rounded-xl p-4 mb-4 text-left">
-            <p className="text-[10px] font-mono text-slate-500 mb-2">JOIN LINK</p>
+          <div className="bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-4 text-left">
+            <p className="text-[10px] font-semibold text-zinc-500 mb-2 uppercase tracking-wider">JOIN LINK</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs text-cyan font-mono break-all">{created.joinUrl}</code>
+              <code className="flex-1 text-xs text-indigo-600 dark:text-indigo-400 font-mono break-all bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1.5 rounded">{created.joinUrl}</code>
               <button onClick={copyLink}
-                className={`flex-shrink-0 p-2 rounded-lg border transition-all ${copied ? 'border-emerald/30 bg-emerald/10 text-emerald' : 'border-border text-slate-500 hover:border-cyan/30 hover:text-cyan'}`}>
+                className={`flex-shrink-0 p-2 rounded-lg border transition-all ${copied ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-indigo-200 hover:text-indigo-600 dark:hover:border-indigo-500/30 dark:hover:text-indigo-400'}`}>
                 {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="bg-surface border border-border rounded-xl p-4 mb-6 text-left">
-            <p className="text-[10px] font-mono text-slate-500 mb-3">TEST CONFIG</p>
-            <div className="grid grid-cols-2 gap-2 text-xs font-body">
-              <div className="flex items-center gap-1 text-slate-400"><Hash className="w-3 h-3" />{created.questionCount} Questions</div>
-              <div className="flex items-center gap-1 text-slate-400"><Clock className="w-3 h-3" />{created.duration} Minutes</div>
-              {created.deadline && <div className="flex items-center gap-1 text-slate-400 col-span-2"><Calendar className="w-3 h-3" />Deadline: {new Date(created.deadline).toLocaleDateString()}</div>}
+          <div className="bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-6 text-left">
+            <p className="text-[10px] font-semibold text-zinc-500 mb-3 uppercase tracking-wider">TEST CONFIG</p>
+            <div className="grid grid-cols-2 gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+              <div className="flex items-center gap-1.5"><Hash className="w-3.5 h-3.5 text-zinc-400" />{created.questionCount} Questions</div>
+              <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-zinc-400" />{created.duration} Minutes</div>
+              {created.deadline && <div className="flex items-center gap-1.5 col-span-2"><Calendar className="w-3.5 h-3.5 text-zinc-400" />Deadline: {new Date(created.deadline).toLocaleDateString()}</div>}
             </div>
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="flex flex-wrap gap-1 mt-3">
               {created.categories?.map(c => (
-                <span key={c} className="text-[10px] font-mono px-2 py-0.5 bg-violet/10 text-violet border border-violet/20 rounded-full capitalize">{c}</span>
+                <span key={c} className="text-[10px] font-mono px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 rounded-md capitalize shadow-sm">{c}</span>
               ))}
             </div>
           </div>
 
           <div className="flex gap-3">
             <button onClick={() => navigate('/org/dashboard')}
-              className="flex-1 py-2.5 border border-border rounded-xl text-sm text-slate-400 hover:border-slate-600 transition-all font-body">
+              className="flex-1 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
               ← Dashboard
             </button>
             <button onClick={() => navigate(`/org/aptitude/${created._id}/results`)}
-              className="flex-1 py-2.5 bg-gradient-to-r from-violet to-cyan text-void font-display font-bold text-sm rounded-xl hover:shadow-lg transition-all">
+              className="flex-1 py-2.5 bg-indigo-600 text-white font-semibold text-sm rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
               View Results
             </button>
           </div>
@@ -131,186 +134,198 @@ export default function OrgAptitudeCreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-void">
-      <nav className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate('/org/dashboard')} className="text-slate-500 hover:text-zinc-900 dark:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div className="w-0.5 h-4 bg-border" />
-          <Brain className="w-4 h-4 text-indigo-400" />
-          <span className="font-display font-semibold text-zinc-900 dark:text-white text-sm">Create Aptitude Test</span>
-          <div className="ml-auto text-[10px] font-mono text-slate-500 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-amber" />
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col" style={{ fontFamily: 'Inter, system-ui' }}>
+      <OrgNavbar />
+
+      <div className="max-w-4xl mx-auto px-4 py-8 pt-24 w-full flex-1">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/org/dashboard')} className="p-2 -ml-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                 <Brain className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Create Aptitude Test
+              </h1>
+              <p className="text-sm text-zinc-500">Assess cognitive skills and reasoning</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-400">
+            <Clock className="w-3.5 h-3.5" />
             Auto-duration: ~{duration} min
           </div>
         </div>
-      </nav>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-6">
+        <form onSubmit={handleSubmit}>
+          <div className="grid lg:grid-cols-3 gap-6">
 
-          {/* Left — main fields */}
-          <div className="lg:col-span-2 space-y-5">
-            {/* Basic Info */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="font-display font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-2">
-                <span className="w-5 h-5 bg-indigo-500/20 text-indigo-400 rounded-md flex items-center justify-center text-[10px] font-bold">1</span>
-                Basic Info
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <FieldLabel required>Test Title</FieldLabel>
-                  <input value={form.title} onChange={e => set('title', e.target.value)}
-                    placeholder="e.g., Campus Recruitment — Aptitude Round 2025"
-                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-indigo-500/40 placeholder-slate-600 font-body"
-                    required />
-                </div>
-                <div>
-                  <FieldLabel>Description</FieldLabel>
-                  <input value={form.description} onChange={e => set('description', e.target.value)}
-                    placeholder="Brief description shown to students on the join page"
-                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-indigo-500/40 placeholder-slate-600 font-body" />
-                </div>
-                <div>
-                  <FieldLabel>Instructions for Students</FieldLabel>
-                  <textarea value={form.instructions} onChange={e => set('instructions', e.target.value)}
-                    placeholder="e.g., Read each question carefully. Do not use a calculator. Switching tabs will be recorded..."
-                    rows={3}
-                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-slate-200 outline-none focus:border-indigo-500/40 placeholder-slate-600 font-body resize-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="font-display font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-2">
-                <span className="w-5 h-5 bg-indigo-500/20 text-indigo-400 rounded-md flex items-center justify-center text-[10px] font-bold">2</span>
-                Categories
-              </h2>
-              <div className="grid grid-cols-2 gap-2">
-                {CATS.map(cat => {
-                  const active = form.categories.includes(cat)
-                  const icons = { numerical: '🔢', verbal: '📖', logical: '🧩', situational: '🎯' }
-                  return (
-                    <button key={cat} type="button" onClick={() => toggleCat(cat)}
-                      className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${active ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-border text-slate-500 hover:border-indigo-500/30'}`}>
-                      <span className="text-xl">{icons[cat]}</span>
-                      <div>
-                        <p className={`text-sm font-body font-semibold capitalize ${active ? 'text-indigo-300' : 'text-slate-400'}`}>{cat}</p>
-                        <p className="text-[10px] text-slate-600">Reasoning</p>
-                      </div>
-                      {active && <CheckCircle2 className="w-4 h-4 text-indigo-400 ml-auto" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Difficulty Mix */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="font-display font-semibold text-zinc-900 dark:text-white mb-5 flex items-center gap-2">
-                <span className="w-5 h-5 bg-indigo-500/20 text-indigo-400 rounded-md flex items-center justify-center text-[10px] font-bold">3</span>
-                Difficulty Mix
-              </h2>
-              <div className="space-y-4">
-                {[
-                  { key: 'easy', label: 'Easy', color: 'text-emerald', bar: 'bg-emerald' },
-                  { key: 'medium', label: 'Medium', color: 'text-amber', bar: 'bg-amber' },
-                  { key: 'hard', label: 'Hard', color: 'text-rose', bar: 'bg-rose' },
-                ].map(({ key, label, color, bar }) => (
-                  <div key={key}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className={`text-xs font-mono ${color}`}>{label}</span>
-                      <span className="text-xs font-mono text-slate-400">{form.difficultyMix[key]}%</span>
-                    </div>
-                    <input type="range" min={0} max={100} value={form.difficultyMix[key]}
-                      onChange={e => {
-                        const val = parseInt(e.target.value)
-                        const others = { easy: form.difficultyMix.easy, medium: form.difficultyMix.medium, hard: form.difficultyMix.hard }
-                        others[key] = val
-                        const total = others.easy + others.medium + others.hard
-                        if (total !== 100) {
-                          // Auto-balance remaining
-                          const otherKeys = Object.keys(others).filter(k => k !== key)
-                          const rem = 100 - val
-                          const half = Math.floor(rem / 2)
-                          others[otherKeys[0]] = half
-                          others[otherKeys[1]] = 100 - val - half
-                          Object.keys(others).forEach(k => { if (others[k] < 0) others[k] = 0 })
-                        }
-                        set('difficultyMix', others)
-                      }}
-                      className="w-full accent-indigo-400" />
-                    <div className="h-1 bg-surface rounded-full mt-1">
-                      <div className={`h-1 rounded-full ${bar}`} style={{ width: `${form.difficultyMix[key]}%` }} />
-                    </div>
+            {/* Left — main fields */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Basic Info */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-5 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span className="w-6 h-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md flex items-center justify-center text-[11px] font-bold">1</span>
+                  Basic Info
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <FieldLabel required>Test Title</FieldLabel>
+                    <input value={form.title} onChange={e => set('title', e.target.value)}
+                      placeholder="e.g., Campus Recruitment — Aptitude Round 2025"
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all"
+                      required />
                   </div>
-                ))}
-                <p className="text-[10px] text-slate-600">Total: {form.difficultyMix.easy + form.difficultyMix.medium + form.difficultyMix.hard}% (should be 100%)</p>
+                  <div>
+                    <FieldLabel>Description</FieldLabel>
+                    <input value={form.description} onChange={e => set('description', e.target.value)}
+                      placeholder="Brief description shown to students on the join page"
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all" />
+                  </div>
+                  <div>
+                    <FieldLabel>Instructions for Students</FieldLabel>
+                    <textarea value={form.instructions} onChange={e => set('instructions', e.target.value)}
+                      placeholder="e.g., Read each question carefully. Do not use a calculator. Switching tabs will be recorded..."
+                      rows={3}
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all resize-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-5 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span className="w-6 h-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md flex items-center justify-center text-[11px] font-bold">2</span>
+                  Categories
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {CATS.map(cat => {
+                    const active = form.categories.includes(cat)
+                    const icons = { numerical: '🔢', verbal: '📖', logical: '🧩', situational: '🎯' }
+                    return (
+                      <button key={cat} type="button" onClick={() => toggleCat(cat)}
+                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${active ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-500/50 dark:bg-indigo-500/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-500/30 bg-zinc-50 dark:bg-zinc-950/50 hover:bg-white dark:hover:bg-zinc-900'}`}>
+                        <span className="text-xl">{icons[cat]}</span>
+                        <div>
+                          <p className={`text-sm font-semibold capitalize ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-600 dark:text-zinc-400'}`}>{cat}</p>
+                          <p className="text-[10px] text-zinc-500">Reasoning</p>
+                        </div>
+                        {active && <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 ml-auto" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Difficulty Mix */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-5 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span className="w-6 h-6 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md flex items-center justify-center text-[11px] font-bold">3</span>
+                  Difficulty Mix
+                </h2>
+                <div className="space-y-4">
+                  {[
+                    { key: 'easy', label: 'Easy', color: 'text-emerald-600 dark:text-emerald-500', bar: 'bg-emerald-500' },
+                    { key: 'medium', label: 'Medium', color: 'text-amber-600 dark:text-amber-500', bar: 'bg-amber-500' },
+                    { key: 'hard', label: 'Hard', color: 'text-rose-600 dark:text-rose-500', bar: 'bg-rose-500' },
+                  ].map(({ key, label, color, bar }) => (
+                    <div key={key}>
+                      <div className="flex justify-between mb-1.5">
+                        <span className={`text-xs font-mono font-medium ${color}`}>{label}</span>
+                        <span className="text-xs font-mono text-zinc-500">{form.difficultyMix[key]}%</span>
+                      </div>
+                      <input type="range" min={0} max={100} value={form.difficultyMix[key]}
+                        onChange={e => {
+                          const val = parseInt(e.target.value)
+                          const others = { easy: form.difficultyMix.easy, medium: form.difficultyMix.medium, hard: form.difficultyMix.hard }
+                          others[key] = val
+                          const total = others.easy + others.medium + others.hard
+                          if (total !== 100) {
+                            // Auto-balance remaining
+                            const otherKeys = Object.keys(others).filter(k => k !== key)
+                            const rem = 100 - val
+                            const half = Math.floor(rem / 2)
+                            others[otherKeys[0]] = half
+                            others[otherKeys[1]] = 100 - val - half
+                            Object.keys(others).forEach(k => { if (others[k] < 0) others[k] = 0 })
+                          }
+                          set('difficultyMix', others)
+                        }}
+                        className="w-full accent-indigo-600 dark:accent-indigo-400" />
+                      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full mt-1.5 overflow-hidden">
+                        <div className={`h-1.5 rounded-full ${bar}`} style={{ width: `${form.difficultyMix[key]}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-zinc-500 mt-2">Total: {form.difficultyMix.easy + form.difficultyMix.medium + form.difficultyMix.hard}% (should be 100%)</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right — config */}
+            <div className="space-y-4">
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5 sticky top-24">
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span className="w-6 h-6 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-md flex items-center justify-center text-[11px] font-bold">4</span>
+                  Configuration
+                </h2>
+
+                <div>
+                  <FieldLabel>Number of Questions</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <input type="number" value={form.questionCount} onChange={e => set('questionCount', parseInt(e.target.value))}
+                      min={5} max={60}
+                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 font-mono transition-all" />
+                    <span className="text-xs text-zinc-500 w-8">5–60</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-1.5">Auto duration: ~{duration} min</p>
+                </div>
+
+                <div>
+                  <FieldLabel>Max Attempts per Student</FieldLabel>
+                  <div className="flex items-center gap-2">
+                     <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                     <input type="number" value={form.maxAttempts} onChange={e => set('maxAttempts', parseInt(e.target.value))}
+                       min={1} max={5}
+                       className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 font-mono transition-all" />
+                     <span className="text-xs text-zinc-500 w-8">x</span>
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>Deadline (optional)</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <input type="datetime-local" value={form.deadline} onChange={e => set('deadline', e.target.value)}
+                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 font-mono transition-all" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-t border-zinc-100 dark:border-zinc-800 mt-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Proctoring</span>
+                  </div>
+                  <button type="button" onClick={() => set('proctoringEnabled', !form.proctoringEnabled)}
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${form.proctoringEnabled ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.proctoringEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                <Button type="submit" disabled={loading} variant="primary"
+                  className="w-full py-2.5 !bg-indigo-600 hover:!bg-indigo-700 text-white font-semibold rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all mt-4">
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Creating test...</>
+                  ) : (
+                    <><Brain className="w-4 h-4" />Create Aptitude Test</>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
-
-          {/* Right — config */}
-          <div className="space-y-4">
-            <div className="bg-card border border-border rounded-2xl p-5 space-y-4 sticky top-20">
-              <h2 className="font-display font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 bg-cyan/20 text-cyan rounded-md flex items-center justify-center text-[10px] font-bold">4</span>
-                Configuration
-              </h2>
-
-              <div>
-                <FieldLabel>Number of Questions</FieldLabel>
-                <div className="flex items-center gap-2">
-                  <Hash className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                  <input type="number" value={form.questionCount} onChange={e => set('questionCount', parseInt(e.target.value))}
-                    min={5} max={60}
-                    className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-cyan/40 font-mono" />
-                  <span className="text-xs text-slate-500">5–60</span>
-                </div>
-                <p className="text-[10px] text-slate-600 mt-1">Auto duration: ~{duration} min</p>
-              </div>
-
-              <div>
-                <FieldLabel>Max Attempts per Student</FieldLabel>
-                <input type="number" value={form.maxAttempts} onChange={e => set('maxAttempts', parseInt(e.target.value))}
-                  min={1} max={5}
-                  className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-cyan/40 font-mono" />
-              </div>
-
-              <div>
-                <FieldLabel>Deadline (optional)</FieldLabel>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-600 flex-shrink-0" />
-                  <input type="datetime-local" value={form.deadline} onChange={e => set('deadline', e.target.value)}
-                    className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan/40 font-mono" />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-2 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-body text-slate-400">Proctoring</span>
-                </div>
-                <button type="button" onClick={() => set('proctoringEnabled', !form.proctoringEnabled)}
-                  className={`relative w-10 h-5 rounded-full transition-all ${form.proctoringEnabled ? 'bg-emerald' : 'bg-slate-700'}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${form.proctoringEnabled ? 'left-5' : 'left-0.5'}`} />
-                </button>
-              </div>
-
-              <button type="submit" disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet text-white font-display font-bold rounded-xl hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                {loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />Creating test...</>
-                ) : (
-                  <><Brain className="w-4 h-4" />Create Aptitude Test</>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

@@ -161,7 +161,7 @@ export default function ReportPage() {
 
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
                 {report.techStack?.map(t => (
-                  <span key={t} className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-zinc-800 border border-zinc-700 rounded-full px-2.5 py-0.5">{t}</span>
+                  <span key={t} className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-2.5 py-0.5">{t}</span>
                 ))}
               </div>
 
@@ -212,7 +212,7 @@ export default function ReportPage() {
                     <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{s.label}</span>
                     <span className="text-xs font-bold" style={{ color: getScoreColor(s.value) }}>{s.value}/10</span>
                   </div>
-                  <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(s.value / 10) * 100}%` }}
@@ -336,7 +336,7 @@ export default function ReportPage() {
                   {/* Header */}
                   <button
                     onClick={() => toggle(q.questionId || i)}
-                    className="w-full flex items-center gap-4 p-4 hover:bg-zinc-800/50 transition-colors text-left"
+                    className="w-full flex items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left"
                   >
                     <div className="flex-shrink-0">
                       <div className="w-10 h-10 rounded border flex items-center justify-center"
@@ -370,7 +370,7 @@ export default function ReportPage() {
                         exit={{ height: 0, opacity: 0 }}
                         className="border-t border-zinc-200 dark:border-zinc-800"
                       >
-                        <div className="p-5 space-y-5 bg-zinc-900/50">
+                        <div className="p-5 space-y-5 bg-zinc-50 dark:bg-zinc-900/50">
                           {/* Feedback */}
                           {q.feedback && (
                             <div>
@@ -391,8 +391,8 @@ export default function ReportPage() {
 
                           {/* Code */}
                           {q.userCode && (
-                            <div className="bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                              <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-900/50 text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                              <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
                                 <Code2 className="w-3 h-3" /> Your Code
                               </div>
                               <pre className="text-xs font-mono text-zinc-700 dark:text-zinc-300 p-3 overflow-auto max-h-60">{q.userCode}</pre>

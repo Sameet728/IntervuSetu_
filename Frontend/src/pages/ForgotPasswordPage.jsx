@@ -67,7 +67,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
   }
 
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet/20 rounded-full blur-[120px]" />
@@ -77,9 +77,9 @@ export default function ForgotPasswordPage({ isOrg = false }) {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-surface/50 backdrop-blur-xl border border-border rounded-3xl p-8 z-10 relative shadow-2xl"
+        className="w-full max-w-md bg-surface backdrop-blur-xl border border-border rounded-3xl p-8 z-10 relative shadow-2xl"
       >
-        <Link to={loginPath} className="inline-flex items-center text-slate-400 hover:text-zinc-900 dark:text-white transition-colors mb-6 text-sm font-body">
+        <Link to={loginPath} className="inline-flex items-center text-fg-subtle hover:text-fg transition-colors mb-6 text-sm font-body">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
         </Link>
         
@@ -87,10 +87,10 @@ export default function ForgotPasswordPage({ isOrg = false }) {
           <div className="w-12 h-12 bg-gradient-to-tr from-violet to-cyan rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-violet/20">
             <Lock className="w-6 h-6 text-void" strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-display font-bold text-zinc-900 dark:text-white mb-2">
+          <h1 className="text-2xl font-display font-bold text-fg mb-2">
             Reset Password
           </h1>
-          <p className="text-slate-400 text-sm font-body">
+          <p className="text-fg-muted text-sm font-body">
             {step === 1 && "Enter your email address and we'll send you a 6-digit verification code."}
             {step === 2 && "Enter the 6-digit verification code sent to your email."}
             {step === 3 && "Create a new, secure password for your account."}
@@ -108,15 +108,15 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               className="space-y-5"
             >
               <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-slate-300">Email Address</label>
+                <label className="text-sm font-body font-medium text-fg-muted">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full bg-void/50 border border-border rounded-xl pl-10 pr-4 py-3 text-slate-200 outline-none focus:border-violet/50 focus:ring-1 focus:ring-violet/50 transition-all font-body text-sm"
+                    className="input pl-10"
                     required
                   />
                 </div>
@@ -124,7 +124,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-violet to-cyan text-void font-display font-bold py-3 rounded-xl hover:shadow-lg hover:shadow-violet/25 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ArrowRight className="w-5 h-5" /> Send Code</>}
               </button>
@@ -141,16 +141,16 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               className="space-y-5"
             >
               <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-slate-300">6-Digit Code</label>
+                <label className="text-sm font-body font-medium text-fg-muted">6-Digit Code</label>
                 <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                   <input
                     type="text"
                     maxLength={6}
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\\D/g, ''))}
                     placeholder="000000"
-                    className="w-full bg-void/50 border border-border rounded-xl pl-10 pr-4 py-3 text-slate-200 outline-none focus:border-violet/50 focus:ring-1 focus:ring-violet/50 transition-all font-mono text-center tracking-widest text-lg"
+                    className="input pl-10 font-mono tracking-widest text-center text-lg"
                     required
                   />
                 </div>
@@ -158,7 +158,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="w-full bg-gradient-to-r from-violet to-cyan text-void font-display font-bold py-3 rounded-xl hover:shadow-lg hover:shadow-violet/25 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-5 h-5" /> Verify Code</>}
               </button>
@@ -175,16 +175,16 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               className="space-y-5"
             >
               <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-slate-300">New Password</label>
+                <label className="text-sm font-body font-medium text-fg-muted">New Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password"
                     minLength={6}
-                    className="w-full bg-void/50 border border-border rounded-xl pl-10 pr-4 py-3 text-slate-200 outline-none focus:border-violet/50 focus:ring-1 focus:ring-violet/50 transition-all font-body text-sm"
+                    className="input pl-10"
                     required
                   />
                 </div>
@@ -192,7 +192,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
               <button
                 type="submit"
                 disabled={loading || newPassword.length < 6}
-                className="w-full bg-gradient-to-r from-violet to-cyan text-void font-display font-bold py-3 rounded-xl hover:shadow-lg hover:shadow-violet/25 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                className="btn-primary w-full py-3"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Update Password</>}
               </button>

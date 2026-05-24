@@ -27,6 +27,7 @@ export default function PreInterviewCheck({ onComplete }) {
   const analyserRef   = useRef(null)
   const rafRef        = useRef(null)
   const micReadyRef   = useRef(false)        // avoid stale closure in rAF
+  const willStart     = useRef(false)
 
   const setMicReady = (v) => { micReadyRef.current = v; setMicReadyState(v) }
 
@@ -101,7 +102,9 @@ export default function PreInterviewCheck({ onComplete }) {
     startMedia()
     return () => {
       cancelAnimationFrame(rafRef.current)
-      streamRef.current?.getTracks().forEach(t => t.stop())
+      if (!willStart.current) {
+        streamRef.current?.getTracks().forEach(t => t.stop())
+      }
       audioCtxRef.current?.close()
       analyserRef.current = null
     }
@@ -133,6 +136,7 @@ export default function PreInterviewCheck({ onComplete }) {
 
   // ── Start interview ───────────────────────────────────────────────
   const handleStart = () => {
+    willStart.current = true
     // Hand off the already-open stream to the proctoring hook via window global
     // so startCamera() can re-attach without re-requesting permission
     window.__interviewStream = streamRef.current
@@ -151,7 +155,7 @@ export default function PreInterviewCheck({ onComplete }) {
   const allReady = micReady && camStatus === 'ready' && speakerReady
 
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center p-4">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -220,7 +224,7 @@ export default function PreInterviewCheck({ onComplete }) {
 
               {/* Connected badge */}
               {camStatus === 'ready' && (
-                <div className="absolute bottom-2 left-2 bg-void/80 backdrop-blur text-xs px-2 py-1 rounded-full text-emerald border border-emerald/20 flex items-center gap-1">
+                <div className="absolute bottom-2 left-2 bg-bg/80 backdrop-blur text-xs px-2 py-1 rounded-full text-emerald border border-emerald/20 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Live
                 </div>
               )}
@@ -263,7 +267,7 @@ export default function PreInterviewCheck({ onComplete }) {
               statusText={micReady ? 'Microphone detected' : 'Make some noise to test'}
             >
               <div className="mt-3">
-                <div className="h-2 w-full bg-void rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-bg rounded-full overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-violet to-cyan"
                     animate={{ width: `${micLevel}%` }}

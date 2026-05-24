@@ -72,22 +72,25 @@ export function useWebSocket(interviewId, handlers = {}) {
     socket.onopen = () => {
       if (ws.current !== socket) return
 
-      console.log('✅ WebSocket connected')
+      console.log('✅ WebSocket opened, waiting for auth...')
       reconnectAttempts.current = 0
-      setConnected(true)
       clearPing()
       pingInterval.current = setInterval(() => send('PING', {}), 25000)
-      
-      // Notify handler
-      if (handlersRef.current.connected) {
-        handlersRef.current.connected()
-      }
     }
 
     socket.onmessage = (event) => {
       try {
         const { type, payload } = JSON.parse(event.data)
         console.log(`📥 Received WS message: ${type}`, payload)
+        
+        if (type === 'connected') {
+          console.log('✅ WebSocket fully authenticated')
+          setConnected(true)
+          if (handlersRef.current.connected) {
+            handlersRef.current.connected()
+          }
+        }
+
         const handler = handlersRef.current[type]
         if (handler) handler(payload)
         else if (handlersRef.current.onAny) handlersRef.current.onAny(type, payload)

@@ -22,7 +22,7 @@ export default function UpgradeModal({ isOpen, onClose }) {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_dummykey',
         amount: orderData.data.amount,
         currency: orderData.data.currency,
-        name: 'InterviewAI Pro',
+        name: 'IntervuSetu Pro',
         description: 'Upgrade to premium features',
         order_id: orderData.data.id,
         handler: async function (response) {

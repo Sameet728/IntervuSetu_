@@ -1,9 +1,8 @@
 import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { API_BASE_URL } from './axios'
 
 const api = axios.create({
-  baseURL: `${API_URL}/payment`,
+  baseURL: `${API_BASE_URL}/payment`,
 })
 
 api.interceptors.request.use((config) => {

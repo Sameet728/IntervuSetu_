@@ -8,7 +8,7 @@ import { updateProfile } from '../api/authAPI'
 import toast from 'react-hot-toast'
 import {
   User, Briefcase, GraduationCap, Code2, Target, Upload,
-  Plus, X, Save, ArrowLeft, FileText, CheckCircle2
+  Plus, X, Save, ArrowLeft, FileText, CheckCircle2, CreditCard
 } from 'lucide-react'
 
 const SKILL_SUGGESTIONS = [
@@ -113,7 +113,14 @@ export default function ProfilePage() {
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-zinc-50" style={{ fontFamily: 'Poppins, sans-serif' }}>My Profile</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50" style={{ fontFamily: 'Poppins, sans-serif' }}>My Profile</h1>
+                  {user?.plan === 'pro' ? (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-800">PRO</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-700">FREE</span>
+                  )}
+                </div>
                 <p className="text-zinc-500 text-sm mt-0.5">{user?.email}</p>
               </div>
             </div>
@@ -240,10 +247,10 @@ export default function ProfilePage() {
                       key={s}
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-md px-2.5 py-1 text-xs"
+                      className="inline-flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-md px-2.5 py-1 text-xs"
                     >
                       {s}
-                      <button type="button" onClick={() => removeSkill(s)} className="hover:text-red-400 mt-0.5">
+                      <button type="button" onClick={() => removeSkill(s)} className="hover:text-red-500 dark:hover:text-red-400 mt-0.5 transition-colors">
                         <X className="w-3 h-3" />
                       </button>
                     </motion.span>
@@ -305,6 +312,41 @@ export default function ProfilePage() {
                 )}
               </div>
               <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
+            </Card>
+
+            {/* ── Transaction History ────────────────────────────────────── */}
+            <Card className="p-5 sm:p-6">
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-500" />Transaction History
+              </h2>
+              {(!user?.transactions || user.transactions.length === 0) ? (
+                <div className="text-sm text-zinc-500 text-center py-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                  No past transactions.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {user.transactions.map((t, i) => (
+                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-0.5">
+                          Order: <span className="font-mono text-xs">{t.orderId}</span>
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {new Date(t.date).toLocaleDateString()} at {new Date(t.date).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <div className="mt-2 sm:mt-0 text-right">
+                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                          {t.currency === 'INR' ? '₹' : t.currency} {t.amount}
+                        </p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${t.status === 'success' ? 'text-green-500' : 'text-amber-500'}`}>
+                          {t.status}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             {/* ── Save ───────────────────────────────────────────────────── */}

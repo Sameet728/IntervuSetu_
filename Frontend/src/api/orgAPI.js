@@ -30,7 +30,7 @@ export const updateCandidateStatus = (templateId, interviewId, status) =>
   orgApi.patch(`/org/candidates/${templateId}/${interviewId}/status`, { status })
 export const exportLeaderboardCSV = (templateId) => {
   const token = localStorage.getItem('orgToken')
-  const url = `${import.meta.env.VITE_API_URL || '/api'}/org/candidates/${templateId}/export`
+  const url = `${orgApi.defaults.baseURL}/org/candidates/${templateId}/export`
   window.open(`${url}?token=${token}`, '_blank')
 }
 

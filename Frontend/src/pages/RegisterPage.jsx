@@ -90,7 +90,7 @@ export default function RegisterPage() {
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
             <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>InterviewAI</span>
+          <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
         </Link>
 
         <div>
@@ -126,7 +126,7 @@ export default function RegisterPage() {
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
               <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>InterviewAI</span>
+            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
           </Link>
 
           {step === 1 ? (

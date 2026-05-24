@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import UpgradeModal from '../components/ui/UpgradeModal'
+import toast from 'react-hot-toast'
+import api from '../api/axios'
 
 const fadeUp = { 
   initial: { opacity: 0, y: 16 }, 
@@ -46,7 +49,7 @@ function FeatureCard({ icon: Icon, title, description, accent = false }) {
   )
 }
 
-function PriceCard({ name, price, features, primary, cta }) {
+function PriceCard({ name, price, features, primary, cta, to, onCtaClick }) {
   return (
     <motion.div variants={fadeUp} className={`relative rounded-xl border p-8 flex flex-col gap-6 shadow-sm ${
       primary
@@ -73,16 +76,29 @@ function PriceCard({ name, price, features, primary, cta }) {
           </li>
         ))}
       </ul>
-      <Link
-        to="/register"
-        className={`w-full py-3 rounded-lg text-sm font-medium text-center transition-colors ${
-          primary
-            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20'
-            : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
-        }`}
-      >
-        {cta}
-      </Link>
+      {to ? (
+        <Link
+          to={to}
+          className={`w-full py-3 rounded-lg text-sm font-medium text-center transition-colors ${
+            primary
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20'
+              : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+          }`}
+        >
+          {cta}
+        </Link>
+      ) : (
+        <button
+          onClick={onCtaClick}
+          className={`w-full py-3 rounded-lg text-sm font-medium text-center transition-colors ${
+            primary
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20'
+              : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+          }`}
+        >
+          {cta}
+        </button>
+      )}
     </motion.div>
   )
 }
@@ -92,6 +108,11 @@ export default function LandingPage() {
   const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactMessage, setContactMessage] = useState('')
+  const [sendingContact, setSendingContact] = useState(false)
+  
   const { scrollY } = useScroll()
   const heroY = useTransform(scrollY, [0, 500], [0, 150])
 
@@ -100,6 +121,23 @@ export default function LandingPage() {
     window.addEventListener('scroll', fn, { passive: true })
     return () => window.removeEventListener('scroll', fn)
   }, [])
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault()
+    if (!contactEmail || !contactMessage) return toast.error('Please fill all fields')
+    
+    setSendingContact(true)
+    try {
+      await api.post('/api/contact', { email: contactEmail, message: contactMessage })
+      toast.success('Message sent successfully! We will get back to you soon.')
+      setContactEmail('')
+      setContactMessage('')
+    } catch (err) {
+      toast.error('Failed to send message. Please try again.')
+    } finally {
+      setSendingContact(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors" style={{ fontFamily: 'Inter, system-ui' }}>
@@ -114,7 +152,7 @@ export default function LandingPage() {
               <Mic className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              InterviewAI
+              IntervuSetu
             </span>
           </Link>
 
@@ -288,21 +326,92 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Testimonial Banner ───────────────────────────────────── */}
-      <section className="px-4 py-8 border-y border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950/50 mb-16">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6 text-center md:text-left">
-          <div className="flex -space-x-3">
-            {[1,2,3,4].map(i => (
-              <div key={i} className={`w-10 h-10 rounded-full border-2 border-white dark:border-zinc-950 bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center pb-0.5 text-xs font-bold ${
-                i===1?'bg-emerald-100 text-emerald-700':i===2?'bg-blue-100 text-blue-700':i===3?'bg-rose-100 text-rose-700':'bg-amber-100 text-amber-700'
-              }`}>
-                {['JD','AK','SM','RT'][i-1]}
-              </div>
-            ))}
+      {/* ── Actual Interview UI Presentation ─────────────────────── */}
+      <section className="px-4 pb-20 max-w-6xl mx-auto relative z-10 -mt-10">
+        <motion.div variants={fadeUp} initial="initial" whileInView="whileInView" viewport={{ once: true }} className="relative rounded-2xl md:rounded-[2rem] border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 p-2 sm:p-4 shadow-2xl backdrop-blur-sm">
+          <div className="rounded-xl md:rounded-[1.5rem] overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 relative">
+            {/* Browser Dots */}
+            <div className="absolute top-0 left-0 right-0 h-10 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center px-4 gap-2 z-20">
+              <div className="w-3 h-3 rounded-full bg-rose-400" />
+              <div className="w-3 h-3 rounded-full bg-amber-400" />
+              <div className="w-3 h-3 rounded-full bg-emerald-400" />
+            </div>
+            {/* Replace /interview-ui.png with the actual filename if needed */}
+            <img 
+              src="/interview-ui.png" 
+              alt="Actual Interview Room Interface" 
+              className="w-full h-auto object-cover mt-10"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "https://via.placeholder.com/1200x800.png?text=Please+Save+Your+Screenshot+as+frontend/public/interview-ui.png";
+              }}
+            />
           </div>
-          <div>
-            <p className="text-zinc-900 dark:text-zinc-100 font-medium font-body mb-0.5">Trusted by 500+ developers</p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">"This platform felt exactly like my actual Google interview. The feedback was spot on."</p>
+        </motion.div>
+      </section>
+
+      {/* ── Reviews Section ──────────────────────────────────────── */}
+      <section id="reviews" className="px-4 py-16 border-y border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950/50 mb-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold text-blue-600 dark:text-blue-500 uppercase tracking-wider mb-3">Testimonials</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Trusted by mentors, evaluators, and students
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            
+            {/* Mentor Review */}
+            <motion.div variants={fadeUp} initial="initial" whileInView="whileInView" viewport={{ once: true, delay: 0.1 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex text-amber-400 gap-1">
+                {[1,2,3,4,5].map(i => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+              </div>
+              <p className="text-zinc-700 dark:text-zinc-300 italic flex-1">"A revolutionary tool for academic institutions. It bridges the gap between theoretical knowledge and practical interview readiness. My students are far more confident facing corporate technical rounds."</p>
+              <div className="flex items-center gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-lg">
+                  SG
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Dr. Satish Gajbhiv</h4>
+                  <p className="text-sm text-zinc-500">Mentor Guide • Pune</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* External Evaluator Review */}
+            <motion.div variants={fadeUp} initial="initial" whileInView="whileInView" viewport={{ once: true, delay: 0.2 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex text-amber-400 gap-1">
+                {[1,2,3,4,5].map(i => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+              </div>
+              <p className="text-zinc-700 dark:text-zinc-300 italic flex-1">"The analytical depth of the AI evaluations is exactly what we look for when hiring. It identifies the same behavioral patterns and coding edge cases an expert human interviewer would."</p>
+              <div className="flex items-center gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-lg">
+                  EE
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">External Evaluator</h4>
+                  <p className="text-sm text-zinc-500">Industry Expert</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Student Review */}
+            <motion.div variants={fadeUp} initial="initial" whileInView="whileInView" viewport={{ once: true, delay: 0.3 }} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 flex flex-col gap-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex text-amber-400 gap-1">
+                {[1,2,3,4,5].map(i => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+              </div>
+              <p className="text-zinc-700 dark:text-zinc-300 italic flex-1">"Practicing with IntervuSetu completely cured my interview anxiety. The real-time voice interaction and instant feedback report helped me identify exactly what I was doing wrong before my actual tech rounds."</p>
+              <div className="flex items-center gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center text-rose-700 dark:text-rose-400 font-bold text-lg">
+                  ST
+                </div>
+                <div>
+                  <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Students</h4>
+                  <p className="text-sm text-zinc-500">Placed Candidates</p>
+                </div>
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
@@ -466,6 +575,7 @@ export default function LandingPage() {
             name="Starter"
             price="Free"
             cta="Start for free"
+            to={user ? "/dashboard" : "/register"}
             features={['3 mock interviews included', 'Basic feedback report', 'Standard question bank', 'Voice interview basics']}
           />
           <PriceCard
@@ -473,21 +583,44 @@ export default function LandingPage() {
             price="₹499"
             cta="Upgrade to Pro"
             primary
+            to={user ? undefined : "/register"}
+            onCtaClick={user ? () => setShowUpgradeModal(true) : undefined}
             features={['Unlimited mock interviews', '9-page Deep Analytics PDF', 'Resume-aware AI questions', 'Live code editor & system design integration']}
           />
         </motion.div>
       </section>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
 
       {/* ── Contact Us ───────────────────────────────────────────── */}
       <section className="px-4 py-16 bg-zinc-50 dark:bg-zinc-900/30 border-t border-zinc-100 dark:border-zinc-900">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>Have questions? Let's talk.</h2>
           <p className="text-zinc-600 dark:text-zinc-400 mb-8">Whether you are an individual preparing for a transition, or a company looking to streamline screening, we're here to help.</p>
-          <form className="max-w-md mx-auto flex flex-col gap-3">
-            <input type="text" placeholder="Your email address" className="w-full px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-zinc-100" />
-            <textarea placeholder="How can we help?" rows={3} className="w-full px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-zinc-100" />
-            <button type="button" className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-white transition-colors">
-              <Send className="w-4 h-4" /> Send Message
+          <form onSubmit={handleContactSubmit} className="max-w-md mx-auto flex flex-col gap-3">
+            <input 
+              type="email" 
+              placeholder="Your email address" 
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-zinc-100" 
+            />
+            <textarea 
+              placeholder="How can we help?" 
+              rows={3} 
+              value={contactMessage}
+              onChange={(e) => setContactMessage(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-zinc-100" 
+            />
+            <button 
+              type="submit" 
+              disabled={sendingContact}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-white transition-colors disabled:opacity-70"
+            >
+              <Send className="w-4 h-4" /> {sendingContact ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         </div>
@@ -500,7 +633,7 @@ export default function LandingPage() {
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
               <Mic className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>InterviewAI</span>
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
           </div>
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-zinc-500 dark:text-zinc-400">
             {[['Privacy', '#'], ['Terms', '#'], ['For Organizations', '/org/login'], ['Changelog', '#']].map(([label, href]) => (

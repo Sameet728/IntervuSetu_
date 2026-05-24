@@ -30,7 +30,7 @@ import AptitudeJoinPage     from './pages/AptitudeJoinPage'
 function OrgProtectedRoute() {
   const { org, orgLoading } = useOrgAuth()
   if (orgLoading) return (
-    <div className="min-h-screen bg-void flex items-center justify-center">
+    <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
     </div>
   )
@@ -41,7 +41,7 @@ export default function App() {
   const { user, loading } = useAuth()
 
   if (loading) return (
-    <div className="min-h-screen bg-void flex items-center justify-center">
+    <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
     </div>
   )

@@ -72,14 +72,14 @@ export default function JoinInterviewPage() {
 
   // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen bg-void flex items-center justify-center">
+    <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="w-6 h-6 border-2 border-violet/30 border-t-violet rounded-full animate-spin" />
     </div>
   )
 
   // ── Error / Expired ─────────────────────────────────────────────────────
   if (error) return (
-    <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="max-w-sm w-full bg-card border border-rose/20 rounded-2xl p-8 text-center">
         <div className="w-14 h-14 bg-rose/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -100,7 +100,7 @@ export default function JoinInterviewPage() {
   const isExpiring = deadlineDate && (deadlineDate - new Date()) < 24 * 60 * 60 * 1000 // less than 24h
 
   return (
-    <div className="min-h-screen bg-void flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-violet/8 rounded-full blur-[120px]" />
@@ -114,7 +114,7 @@ export default function JoinInterviewPage() {
             <div className="w-7 h-7 bg-gradient-to-tr from-violet to-cyan rounded-lg flex items-center justify-center">
               <Mic className="w-3.5 h-3.5 text-void" strokeWidth={3} />
             </div>
-            <span className="font-display font-bold text-zinc-900 dark:text-white text-sm">InterviewAI</span>
+            <span className="font-display font-bold text-zinc-900 dark:text-white text-sm">IntervuSetu</span>
           </Link>
           {user ? (
             <span className="text-xs font-mono text-slate-500">Signed in as <span className="text-slate-300">{user.name}</span></span>

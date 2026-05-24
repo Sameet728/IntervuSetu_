@@ -7,12 +7,14 @@ import {
   updateOrgCandidateStatus, sendOrgAptitudeInvite, exportOrgAptitudeCSV,
   closeOrgAptitudeTest,
 } from '../../api/orgAPI'
+import OrgNavbar from '../../components/layout/OrgNavbar'
 import {
   ArrowLeft, Trophy, Search, Download, Mail, Copy,
   Clock, TrendingUp, Users, BarChart3, CheckCircle2, Shield,
   Send, X, Loader2, Brain, XCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Input, Button, Badge } from '../../components/ui/index'
 
 const fmtTime = (s) => {
   if (!s) return '—'
@@ -21,30 +23,30 @@ const fmtTime = (s) => {
 }
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'
 
-const CAT_COLORS = { numerical: 'text-blue-400', verbal: 'text-emerald', logical: 'text-violet', situational: 'text-amber' }
+const CAT_COLORS = { numerical: 'text-blue-500', verbal: 'text-emerald-500', logical: 'text-violet-500', situational: 'text-amber-500' }
 
 function StatusSelect({ current, onChange, disabled }) {
   const opts = [
-    { val: 'pending', label: 'Pending', color: 'text-slate-400' },
-    { val: 'shortlisted', label: 'Shortlisted', color: 'text-amber' },
-    { val: 'selected', label: 'Selected', color: 'text-emerald' },
-    { val: 'rejected', label: 'Rejected', color: 'text-rose' },
+    { val: 'pending', label: 'Pending', color: 'text-zinc-500 dark:text-zinc-400' },
+    { val: 'shortlisted', label: 'Shortlisted', color: 'text-amber-600 dark:text-amber-500' },
+    { val: 'selected', label: 'Selected', color: 'text-emerald-600 dark:text-emerald-500' },
+    { val: 'rejected', label: 'Rejected', color: 'text-rose-600 dark:text-rose-500' },
   ]
   const cur = opts.find(o => o.val === current) || opts[0]
   return (
     <select value={current} onChange={e => onChange(e.target.value)} disabled={disabled}
       onClick={e => e.stopPropagation()}
-      className={`bg-transparent border border-border rounded-lg text-[11px] font-mono px-2 py-1 outline-none cursor-pointer ${cur.color} disabled:opacity-50`}>
-      {opts.map(o => <option key={o.val} value={o.val} className="bg-[#0d1117] text-slate-300">{o.label}</option>)}
+      className={`bg-transparent border border-zinc-200 dark:border-zinc-700 rounded-lg text-[11px] font-mono px-2 py-1 outline-none cursor-pointer ${cur.color} disabled:opacity-50 transition-colors`}>
+      {opts.map(o => <option key={o.val} value={o.val} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-300">{o.label}</option>)}
     </select>
   )
 }
 
 function ScoreBar({ val, max = 100 }) {
-  const color = val >= 75 ? 'bg-emerald' : val >= 50 ? 'bg-amber' : 'bg-rose'
+  const color = val >= 75 ? 'bg-emerald-500' : val >= 50 ? 'bg-amber-500' : 'bg-rose-500'
   return (
-    <div className="w-full bg-surface rounded-full h-1">
-      <div className={`${color} h-1 rounded-full`} style={{ width: `${Math.min(val, 100)}%` }} />
+    <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+      <div className={`${color} h-full rounded-full transition-all`} style={{ width: `${Math.min(val, 100)}%` }} />
     </div>
   )
 }
@@ -64,21 +66,21 @@ function InviteModal({ testId, onClose }) {
     finally { setSending(false) }
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm">
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="w-full max-w-md bg-card border border-border rounded-2xl p-6">
+        className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-xl" style={{ fontFamily: 'Inter, system-ui' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-bold text-zinc-900 dark:text-white flex items-center gap-2"><Mail className="w-4 h-4 text-indigo-400" />Send Invites</h3>
-          <button onClick={onClose} className="text-slate-600 hover:text-zinc-900 dark:text-white"><X className="w-4 h-4" /></button>
+          <h3 className="font-semibold text-zinc-900 dark:text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}><Mail className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />Send Invites</h3>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <textarea value={emails} onChange={e => setEmails(e.target.value)}
           placeholder={"Enter emails separated by comma, semicolon, or newline\ne.g.\nalice@college.edu\nbob@company.com"}
           rows={5}
-          className="w-full bg-surface border border-border rounded-xl p-3 text-sm text-slate-200 outline-none focus:border-indigo-500/40 placeholder-slate-600 font-mono resize-none mb-4" />
+          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 font-mono resize-none mb-4 transition-all" />
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2 border border-border rounded-xl text-sm text-slate-400 hover:border-slate-600 transition-all">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">Cancel</button>
           <button onClick={handleSend} disabled={sending}
-            className="flex-1 py-2 bg-gradient-to-r from-indigo-600 to-violet text-white font-bold rounded-xl text-sm hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            className="flex-1 py-2 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm">
             {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             {sending ? 'Sending...' : 'Send Invites'}
           </button>
@@ -141,52 +143,53 @@ export default function OrgAptitudeResultsPage() {
 
   const getMedal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
   const getRankBg = (rank) => {
-    if (rank === 1) return 'bg-amber/5 border-amber/20'
-    if (rank === 2) return 'bg-slate-500/5 border-slate-500/20'
-    if (rank === 3) return 'bg-orange-800/5 border-orange-800/20'
-    return 'bg-card border-border'
+    if (rank === 1) return 'bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/30'
+    if (rank === 2) return 'bg-slate-50 border-slate-200 dark:bg-slate-800/30 dark:border-slate-700'
+    if (rank === 3) return 'bg-orange-50/50 border-orange-200 dark:bg-orange-900/10 dark:border-orange-800/30'
+    return 'bg-white border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'
   }
 
   return (
-    <div className="min-h-screen bg-void">
-      {/* Nav */}
-      <nav className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate('/org/dashboard')} className="text-slate-500 hover:text-zinc-900 dark:text-white transition-colors">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col" style={{ fontFamily: 'Inter, system-ui' }}>
+      <OrgNavbar />
+
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md sticky top-14 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={() => navigate('/org/dashboard')} className="p-1.5 -ml-1.5 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="w-0.5 h-4 bg-border" />
+          <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
           <div className="flex-1 min-w-0">
-            <p className="font-display font-semibold text-zinc-900 dark:text-white text-sm truncate">{test?.title || 'Aptitude Results'}</p>
-            <p className="text-[10px] font-mono text-slate-500">
+            <p className="font-semibold text-zinc-900 dark:text-white text-sm truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{test?.title || 'Aptitude Results'}</p>
+            <p className="text-[10px] font-mono text-zinc-500">
               {test?.questionCount}Q • {test?.duration}min •{' '}
               {test?.categories?.join(', ')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={copyJoinLink}
-              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-body transition-all ${copied ? 'border-emerald/30 text-emerald' : 'border-border text-slate-400 hover:border-cyan/30 hover:text-cyan'}`}>
-              <Copy className="w-3 h-3" />{copied ? 'Copied!' : 'Copy Link'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-all ${copied ? 'border-emerald-200 text-emerald-700 bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-400 dark:bg-emerald-500/10' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}>
+              <Copy className="w-3.5 h-3.5" />{copied ? 'Copied!' : 'Copy Link'}
             </button>
             <button onClick={() => setShowInvite(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 rounded-lg text-xs font-body hover:bg-indigo-500/20 transition-all">
-              <Mail className="w-3 h-3" />Invite
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm">
+              <Mail className="w-3.5 h-3.5" />Invite
             </button>
             <button onClick={() => exportOrgAptitudeCSV(testId)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-slate-400 rounded-lg text-xs font-body hover:border-emerald/30 hover:text-emerald transition-all">
-              <Download className="w-3 h-3" />CSV
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+              <Download className="w-3.5 h-3.5" />CSV
             </button>
           </div>
         </div>
-      </nav>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5">
-          {[{ id: 'board', label: 'Leaderboard', icon: <Trophy className="w-3.5 h-3.5" /> },
-            { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> }].map(t => (
+        <div className="flex items-center gap-1 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+          {[{ id: 'board', label: 'Leaderboard', icon: <Trophy className="w-4 h-4" /> },
+            { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> }].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-body font-medium transition-all ${tab === t.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.id ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'}`}>
                 {t.icon}{t.label}
               </button>
             ))}
@@ -197,41 +200,41 @@ export default function OrgAptitudeResultsPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: 'Total Attempts', val: analytics.totalAttempts, icon: <Users className="w-4 h-4 text-violet" /> },
-                { label: 'Completed', val: analytics.completedAttempts, icon: <CheckCircle2 className="w-4 h-4 text-emerald" /> },
-                { label: 'Avg Accuracy', val: analytics.avgAccuracy ? `${analytics.avgAccuracy}%` : '—', icon: <TrendingUp className="w-4 h-4 text-cyan" /> },
-                { label: 'Completion Rate', val: `${analytics.completionRate}%`, icon: <BarChart3 className="w-4 h-4 text-amber" /> },
+                { label: 'Total Attempts', val: analytics.totalAttempts, icon: <Users className="w-4 h-4 text-indigo-500" /> },
+                { label: 'Completed', val: analytics.completedAttempts, icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
+                { label: 'Avg Accuracy', val: analytics.avgAccuracy ? `${analytics.avgAccuracy}%` : '—', icon: <TrendingUp className="w-4 h-4 text-cyan-500" /> },
+                { label: 'Completion Rate', val: `${analytics.completionRate}%`, icon: <BarChart3 className="w-4 h-4 text-amber-500" /> },
               ].map((s, i) => (
-                <div key={i} className="bg-card border border-border rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">{s.icon}<span className="text-[10px] font-mono text-slate-500">{s.label}</span></div>
-                  <p className="font-display font-bold text-2xl text-zinc-900 dark:text-white">{s.val}</p>
+                <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">{s.icon}<span className="text-[11px] font-mono text-zinc-500">{s.label}</span></div>
+                  <p className="text-2xl font-semibold text-zinc-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{s.val}</p>
                 </div>
               ))}
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4">
               {/* Score Distribution */}
-              <div className="bg-card border border-border rounded-xl p-5">
-                <p className="text-xs font-mono text-slate-400 mb-4">SCORE DISTRIBUTION</p>
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">SCORE DISTRIBUTION</p>
                 {Object.entries(analytics.scoreDist || {}).map(([range, count]) => (
                   <div key={range} className="flex items-center gap-3 mb-3">
-                    <span className="text-xs font-mono text-slate-500 w-14">{range}%</span>
-                    <div className="flex-1 bg-surface rounded-full h-2">
-                      <div className="bg-indigo-500 h-2 rounded-full" style={{ width: analytics.completedAttempts > 0 ? `${(count / analytics.completedAttempts) * 100}%` : '0%' }} />
+                    <span className="text-sm font-mono text-zinc-600 dark:text-zinc-400 w-14">{range}%</span>
+                    <div className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                      <div className="bg-indigo-500 h-full rounded-full" style={{ width: analytics.completedAttempts > 0 ? `${(count / analytics.completedAttempts) * 100}%` : '0%' }} />
                     </div>
-                    <span className="text-xs font-mono text-slate-500 w-4">{count}</span>
+                    <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 w-4 text-right">{count}</span>
                   </div>
                 ))}
               </div>
 
               {/* Category Heatmap */}
-              <div className="bg-card border border-border rounded-xl p-5">
-                <p className="text-xs font-mono text-slate-400 mb-4">CATEGORY ACCURACY (AVG)</p>
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">CATEGORY ACCURACY (AVG)</p>
                 {Object.entries(analytics.categoryHeatmap || {}).map(([cat, pct]) => (
-                  <div key={cat} className="mb-3">
-                    <div className="flex justify-between mb-1">
-                      <span className={`text-xs font-body capitalize ${CAT_COLORS[cat] || 'text-slate-400'}`}>{cat}</span>
-                      <span className="text-xs font-mono text-slate-300">{pct}%</span>
+                  <div key={cat} className="mb-4">
+                    <div className="flex justify-between mb-1.5">
+                      <span className={`text-sm font-medium capitalize ${CAT_COLORS[cat] || 'text-zinc-600 dark:text-zinc-400'}`}>{cat}</span>
+                      <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300">{pct}%</span>
                     </div>
                     <ScoreBar val={pct} />
                   </div>
@@ -239,18 +242,18 @@ export default function OrgAptitudeResultsPage() {
               </div>
 
               {/* Status distribution */}
-              <div className="bg-card border border-border rounded-xl p-5">
-                <p className="text-xs font-mono text-slate-400 mb-4">CANDIDATE STATUS</p>
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">CANDIDATE STATUS</p>
                 {Object.entries(analytics.statusDist || {}).map(([k, v]) => {
-                  const colors = { pending: 'text-slate-400', shortlisted: 'text-amber', selected: 'text-emerald', rejected: 'text-rose' }
+                  const colors = { pending: 'text-zinc-500', shortlisted: 'text-amber-500', selected: 'text-emerald-500', rejected: 'text-rose-500' }
                   return (
                     <div key={k} className="flex items-center justify-between mb-3">
-                      <span className={`text-xs font-body capitalize ${colors[k]}`}>{k}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-surface rounded-full h-1.5">
-                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: analytics.completedAttempts > 0 ? `${(v / analytics.completedAttempts) * 100}%` : '0%' }} />
+                      <span className={`text-sm capitalize ${colors[k]}`}>{k}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-24 bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
+                          <div className="bg-indigo-500 h-full rounded-full" style={{ width: analytics.completedAttempts > 0 ? `${(v / analytics.completedAttempts) * 100}%` : '0%' }} />
                         </div>
-                        <span className="text-xs font-mono text-slate-500 w-4">{v}</span>
+                        <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 w-4 text-right">{v}</span>
                       </div>
                     </div>
                   )
@@ -264,100 +267,105 @@ export default function OrgAptitudeResultsPage() {
         {tab === 'board' && (
           <div>
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2 mb-5">
+            <div className="flex flex-wrap items-center gap-2 mb-6">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search students..." onKeyDown={e => e.key === 'Enter' && loadData()}
-                  className="bg-surface border border-border rounded-lg pl-8 pr-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500/40 placeholder-slate-600 font-body w-48" />
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all w-48 sm:w-64" />
               </div>
               <input type="number" value={scoreMin} onChange={e => setScoreMin(e.target.value)}
                 placeholder="Min %" min={0} max={100}
-                className="bg-surface border border-border rounded-lg px-3 py-2 text-xs text-slate-200 outline-none font-mono w-20" />
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 font-mono w-24 transition-all" />
               <input type="number" value={scoreMax} onChange={e => setScoreMax(e.target.value)}
                 placeholder="Max %" min={0} max={100}
-                className="bg-surface border border-border rounded-lg px-3 py-2 text-xs text-slate-200 outline-none font-mono w-20" />
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 font-mono w-24 transition-all" />
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                className="bg-surface border border-border rounded-lg px-3 py-2 text-xs text-slate-300 outline-none font-mono">
+                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all cursor-pointer">
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
                 <option value="shortlisted">Shortlisted</option>
                 <option value="selected">Selected</option>
                 <option value="rejected">Rejected</option>
               </select>
-              <button onClick={loadData} className="px-3 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-lg text-xs font-body hover:bg-indigo-500/20 transition-all">Apply</button>
-              <span className="ml-auto text-[11px] font-mono text-slate-500">{entries.length} students</span>
+              <button onClick={loadData} className="px-4 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm">Apply</button>
+              <span className="ml-auto text-xs font-mono font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">{entries.length} students</span>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" /></div>
             ) : entries.length === 0 ? (
-              <div className="text-center py-20">
-                <Brain className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                <p className="text-slate-500 font-body">No students have completed this test yet.</p>
+              <div className="text-center py-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+                <Brain className="w-12 h-12 text-zinc-300 dark:text-zinc-600 mx-auto mb-4" />
+                <p className="text-zinc-500">No students found for this filter.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {entries.map((entry, idx) => (
                   <motion.div key={entry.attemptId}
                     initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.02 }}
-                    className={`border rounded-xl p-4 ${getRankBg(entry.rank)}`}>
-                    <div className="flex items-center gap-3 flex-wrap">
+                    className={`rounded-xl p-4 transition-all shadow-sm border ${getRankBg(entry.rank)}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                      
                       {/* Rank */}
-                      <div className="flex-shrink-0 w-10 text-center">
-                        {getMedal(entry.rank)
-                          ? <span className="text-xl">{getMedal(entry.rank)}</span>
-                          : <span className="text-sm font-mono text-slate-500">#{entry.rank}</span>}
-                      </div>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0 w-8 text-center">
+                          {getMedal(entry.rank)
+                            ? <span className="text-2xl drop-shadow-sm">{getMedal(entry.rank)}</span>
+                            : <span className="text-sm font-mono font-bold text-zinc-400">#{entry.rank}</span>}
+                        </div>
 
-                      {/* Avatar + name */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 text-sm font-bold text-indigo-400 overflow-hidden">
+                        {/* Avatar + name */}
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center flex-shrink-0 text-base font-bold text-indigo-600 dark:text-indigo-400 overflow-hidden border border-indigo-200 dark:border-indigo-500/30">
                           {entry.profilePicture
                             ? <img src={entry.profilePicture} alt="" className="w-full h-full object-cover" />
                             : entry.candidateName[0]?.toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-body font-semibold text-sm text-zinc-900 dark:text-white truncate">{entry.candidateName}</p>
-                          <p className="text-[10px] font-mono text-slate-500 truncate">{entry.college || entry.company || entry.email}</p>
+                          <p className="font-semibold text-sm text-zinc-900 dark:text-white truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{entry.candidateName}</p>
+                          <p className="text-[11px] font-mono text-zinc-500 truncate">{entry.college || entry.company || entry.email}</p>
                         </div>
                       </div>
 
                       {/* Accuracy + Category bars */}
-                      <div className="flex items-center gap-4 flex-shrink-0">
-                        <div className="text-center">
-                          <p className={`font-display font-bold text-lg ${entry.accuracy >= 75 ? 'text-emerald' : entry.accuracy >= 50 ? 'text-amber' : 'text-rose'}`}>
+                      <div className="flex items-center gap-6 flex-shrink-0 bg-zinc-50 dark:bg-zinc-950 px-4 py-2 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                        <div className="text-center w-14">
+                          <p className={`font-bold text-xl ${entry.accuracy >= 75 ? 'text-emerald-600 dark:text-emerald-500' : entry.accuracy >= 50 ? 'text-amber-600 dark:text-amber-500' : 'text-rose-600 dark:text-rose-500'}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                             {entry.accuracy}%
                           </p>
-                          <p className="text-[9px] font-mono text-slate-600">Accuracy</p>
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider mt-0.5">Accuracy</p>
                         </div>
-                        <div className="hidden sm:flex flex-col gap-1 w-32">
+                        <div className="hidden lg:flex flex-col gap-1.5 w-36">
                           {Object.entries(entry.categoryScores || {}).filter(([, v]) => v?.total > 0).map(([cat, v]) => (
-                            <div key={cat} className="flex items-center gap-1">
-                              <span className="text-[9px] font-mono text-slate-600 w-8 capitalize">{cat.slice(0, 3)}</span>
+                            <div key={cat} className="flex items-center gap-2">
+                              <span className="text-[9px] font-mono text-zinc-500 w-8 capitalize">{cat.slice(0, 3)}</span>
                               <ScoreBar val={v.total > 0 ? (v.score / v.total) * 100 : 0} />
-                              <span className="text-[9px] font-mono text-slate-500 w-8">{v.score}/{v.total}</span>
+                              <span className="text-[9px] font-mono font-medium text-zinc-700 dark:text-zinc-300 w-8">{v.score}/{v.total}</span>
                             </div>
                           ))}
                         </div>
                       </div>
 
                       {/* Right meta */}
-                      <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
-                        <div className="text-center hidden md:block">
-                          <p className="text-sm font-mono text-slate-400">{fmtTime(entry.timeTaken)}</p>
-                          <p className="text-[9px] font-mono text-slate-600">Time</p>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 flex-shrink-0 sm:w-56">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300">{fmtTime(entry.timeTaken)}</p>
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider mt-0.5">Time</p>
                         </div>
-                        {entry.violations > 0 && (
-                          <span className="text-[9px] font-mono text-rose bg-rose/10 border border-rose/20 px-1.5 py-0.5 rounded-full">
-                            ⚠ {entry.violations} violations
-                          </span>
-                        )}
-                        <StatusSelect
-                          current={entry.candidateStatus}
-                          onChange={s => handleStatusChange(entry.attemptId, s)}
-                          disabled={updatingStatus === entry.attemptId}
-                        />
+                        <div className="flex flex-col items-end gap-1.5">
+                           {entry.violations > 0 && (
+                             <span className="text-[9px] font-mono text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 px-1.5 py-0.5 rounded-md shadow-sm flex items-center gap-1">
+                               <Shield className="w-2.5 h-2.5" /> {entry.violations} violations
+                             </span>
+                           )}
+                        </div>
+                        <div className="pl-2 border-l border-zinc-200 dark:border-zinc-800">
+                           <StatusSelect
+                             current={entry.candidateStatus}
+                             onChange={s => handleStatusChange(entry.attemptId, s)}
+                             disabled={updatingStatus === entry.attemptId}
+                           />
+                        </div>
                       </div>
                     </div>
                   </motion.div>

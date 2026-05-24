@@ -149,7 +149,7 @@ export default function InterviewRoomPage() {
     wsRef.current = ws
 
     ws.onopen = () => {
-      sendMessage('START_INTERVIEW', { candidateName: user?.name || 'Candidate' })
+      console.log('WS opened, waiting for connected event...')
     }
 
     ws.onmessage = (event) => {
@@ -165,12 +165,18 @@ export default function InterviewRoomPage() {
 
   const handleWSMessage = useCallback((type, payload) => {
     switch (type) {
+      case 'connected': {
+        sendMessage('START_INTERVIEW', { candidateName: user?.name || 'Candidate' })
+        break
+      }
+
       case 'INTERVIEW_STARTED': {
         const firstQ = payload.firstQuestion
         // Greeting goes to transcript only; the main bubble will show the first question
         setTranscript(p => [...p, { role: 'ai', content: payload.greeting }, { role: 'ai', content: firstQ?.question }])
         setCurrentQ(firstQ)
         setTotalQs(payload.totalQuestions)
+        setQIndex(payload.questionIndex || 0)
         setPhase('active')
         // Show greeting in bubble while it's being spoken
         setAiMessage(payload.greeting)
@@ -339,6 +345,13 @@ export default function InterviewRoomPage() {
     }
   }, [interviewId])
 
+  // ── Start camera when active ───────────────────────────────────────
+  useEffect(() => {
+    if (phase === 'active') {
+      proctoring.startCamera()
+    }
+  }, [phase, proctoring.startCamera])
+
   // ── Auto-scroll transcript on new messages ─────────────────────────
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -346,7 +359,6 @@ export default function InterviewRoomPage() {
 
   // ── Start after countdown ──────────────────────────────────────────
   const handleCountdownComplete = useCallback(() => {
-    proctoring.enterFullscreen()
     connectWS()
 
     // Start total timer
@@ -421,8 +433,6 @@ export default function InterviewRoomPage() {
     return (
       <PreInterviewCheck
         onComplete={() => {
-          // Start camera AFTER user passes the check
-          proctoring.startCamera()
           setPhase('countdown')
         }}
       />

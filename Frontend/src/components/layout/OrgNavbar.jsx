@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useAuth } from '../../context/AuthContext'
+import { useOrgAuth } from '../../context/OrgAuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import {
   Mic, LayoutDashboard, Plus, Sun, Moon, Monitor,
-  User, LogOut, ChevronDown
+  Building2, LogOut, ChevronDown, Settings
 } from 'lucide-react'
 
 const THEME_ICONS = { dark: Moon, light: Sun, system: Monitor }
 
-export default function Navbar() {
-  const { user, logout } = useAuth()
+export default function OrgNavbar() {
+  const { org, orgLogout } = useOrgAuth()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -34,7 +34,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const handleLogout = () => { logout(); navigate('/'); setDropdownOpen(false) }
+  const handleLogout = () => { orgLogout(); navigate('/org/login'); setDropdownOpen(false) }
 
   const cycleTheme = () => {
     const order = ['system', 'dark', 'light']
@@ -42,9 +42,9 @@ export default function Navbar() {
   }
 
   const ThemeIcon = THEME_ICONS[theme] || Monitor
-  const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : '?'
+  const initials = org?.name
+    ? org.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'O'
 
   return (
     <nav
@@ -55,16 +55,17 @@ export default function Navbar() {
       }`}
       style={{ fontFamily: 'Inter, system-ui' }}
     >
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
         {/* Logo */}
-        <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 group">
+        <Link to={org ? '/org/dashboard' : '/'} className="flex items-center gap-2.5 group">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
             <Mic className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
             IntervuSetu
           </span>
+          <span className="text-[10px] font-mono bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full border border-blue-500/20">Org</span>
         </Link>
 
         {/* Right */}
@@ -73,26 +74,26 @@ export default function Navbar() {
           <button
             onClick={cycleTheme}
             title={`Theme: ${theme}`}
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <ThemeIcon className="w-4 h-4" />
           </button>
 
-          {user ? (
+          {org ? (
             <>
               {/* New Interview */}
               <Link
-                to="/interview/create"
+                to="/org/interview/create"
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
               >
-                <Plus className="w-3.5 h-3.5" />New Interview
+                <Plus className="w-3.5 h-3.5" />Create Interview
               </Link>
 
               {/* Dashboard */}
-              {location.pathname !== '/dashboard' && (
+              {location.pathname !== '/org/dashboard' && (
                 <Link
-                  to="/dashboard"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
+                  to="/org/dashboard"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />Dashboard
                 </Link>
@@ -104,11 +105,15 @@ export default function Navbar() {
                   onClick={() => setDropdownOpen(p => !p)}
                   className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
                 >
-                  <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">
-                    {initials}
-                  </div>
+                  {org?.logo ? (
+                    <img src={org.logo} alt={org.name} className="w-6 h-6 rounded-full object-cover border border-zinc-200 dark:border-zinc-700" />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">
+                      {initials}
+                    </div>
+                  )}
                   <span className="hidden sm:block text-xs font-medium text-zinc-700 dark:text-zinc-300 max-w-[96px] truncate">
-                    {user.name?.split(' ')[0]}
+                    {org.name}
                   </span>
                   <ChevronDown className={`w-3 h-3 text-zinc-600 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -124,19 +129,13 @@ export default function Navbar() {
                     >
                       {/* User info */}
                       <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{user.name}</p>
-                        <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{org.name}</p>
+                        <p className="text-xs text-zinc-500 truncate mt-0.5">{org.email}</p>
                       </div>
 
                       <div className="py-1">
                         <button
-                          onClick={() => { navigate('/profile'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
-                        >
-                          <User className="w-3.5 h-3.5" />Profile
-                        </button>
-                        <button
-                          onClick={() => { navigate('/dashboard'); setDropdownOpen(false) }}
+                          onClick={() => { navigate('/org/dashboard'); setDropdownOpen(false) }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" />Dashboard
@@ -183,13 +182,13 @@ export default function Navbar() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                to="/login"
-                className="px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
+                to="/org/login"
+                className="px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:text-zinc-200 transition-colors"
               >
                 Sign In
               </Link>
               <Link
-                to="/register"
+                to="/org/register"
                 className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
               >
                 Get Started
