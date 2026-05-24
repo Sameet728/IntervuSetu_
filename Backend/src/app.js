@@ -74,22 +74,28 @@ app.get("/health", (req, res) => {
 });
 
 // ─── API Routes ─────────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
-app.use("/api/interviews", interviewRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/payment", paymentRoutes);
-app.use("/api/aptitude", aptitudeRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/contact", contactRoutes);
+const apiRouter = express.Router();
+
+apiRouter.use("/auth", authRoutes);
+apiRouter.use("/interviews", interviewRoutes);
+apiRouter.use("/reports", reportRoutes);
+apiRouter.use("/payment", paymentRoutes);
+apiRouter.use("/aptitude", aptitudeRoutes);
+apiRouter.use("/admin", adminRoutes);
+apiRouter.use("/contact", contactRoutes);
 
 // Org routes
-app.use("/api/org/auth", orgAuthRoutes);
-app.use("/api/org/interviews", orgInterviewRoutes);
-app.use("/api/org/candidates", orgCandidateRoutes);
-app.use("/api/org/aptitude", orgAptitudeRoutes);
+apiRouter.use("/org/auth", orgAuthRoutes);
+apiRouter.use("/org/interviews", orgInterviewRoutes);
+apiRouter.use("/org/candidates", orgCandidateRoutes);
+apiRouter.use("/org/aptitude", orgAptitudeRoutes);
 
 // Scheduling routes
-app.use("/api/schedule", scheduleRoutes);
+apiRouter.use("/schedule", scheduleRoutes);
+
+// Mount on both /api and root to support different frontend configs
+app.use("/api", apiRouter);
+app.use("/", apiRouter);
 
 // ─── Error Handlers ─────────────────────────────────────────────────
 app.use(notFound);
