@@ -178,22 +178,85 @@ const generatePDFBuffer = async (report, user, isAptitude) => {
   
   const html = await ejs.renderFile(templatePath, data);
   
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--font-render-hinting=none']
+  const fs = require('fs');
+  const possiblePaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  ].filter(Boolean);
+  const executablePath = possiblePaths.find((p) => {
+    try { return fs.existsSync(p); } catch { return false; }
   });
-  
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-  
-  const pdfBuffer = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: { top: '0', bottom: '0', left: '0', right: '0' }
-  });
-  
-  await browser.close();
-  return pdfBuffer;
+
+  try {
+    const launchOptions = {
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--font-render-hinting=none'],
+      ...(executablePath ? { executablePath } : {}),
+    };
+    
+    const browser = await puppeteer.launch(launchOptions);
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0', bottom: '0', left: '0', right: '0' }
+    });
+    
+    await browser.close();
+    return pdfBuffer;
+  } catch (err) {
+    console.warn(`⚠️ Puppeteer failed (${err.message}), falling back to PDFKit generator`);
+    return generatePDFKitFallback(report, user);
+  }
 };
+
+function generatePDFKitFallback(report, user) {
+  const PDFDocument = require('pdfkit');
+  return new Promise((resolve) => {
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+    doc.fontSize(22).fillColor('#1e293b').text('INTERVUSEETU - INTERVIEW REPORT', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(14).fillColor('#334155').text(`Candidate: ${user?.name || 'Candidate'}`);
+    doc.text(`Role: ${report.role || ''} (${report.experienceLevel || ''})`);
+    doc.text(`Overall Score: ${report.overallScore ?? 0}/10`);
+    doc.text(`Technical: ${report.technicalScore ?? 0}/10 | Communication: ${report.communicationScore ?? 0}/10`);
+    doc.text(`Recommendation: ${(report.recommendation || 'hire').toUpperCase()}`);
+    doc.moveDown();
+
+    doc.fontSize(15).fillColor('#0f172a').text('Strengths:');
+    (report.strengths || []).forEach((s) => doc.fontSize(10).fillColor('#16a34a').text(`• ${s}`));
+    doc.moveDown();
+
+    doc.fontSize(15).fillColor('#0f172a').text('Areas for Improvement:');
+    (report.weaknesses || []).forEach((w) => doc.fontSize(10).fillColor('#dc2626').text(`• ${w}`));
+    doc.moveDown();
+
+    if (report.overallFeedback) {
+      doc.fontSize(14).fillColor('#0f172a').text('Overall Feedback:');
+      doc.fontSize(10).fillColor('#475569').text(report.overallFeedback);
+      doc.moveDown();
+    }
+
+    if (report.questionBreakdown?.length) {
+      doc.fontSize(14).fillColor('#0f172a').text('Question Breakdown:');
+      report.questionBreakdown.forEach((q, i) => {
+        doc.fontSize(11).fillColor('#1e293b').text(`Q${i + 1} [${q.questionType}]: ${q.question} (Score: ${q.score}/10)`);
+        if (q.feedback) doc.fontSize(9).fillColor('#64748b').text(`Feedback: ${q.feedback}`);
+        doc.moveDown(0.5);
+      });
+    }
+
+    doc.end();
+  });
+}
 
 module.exports = { generatePDFBuffer };

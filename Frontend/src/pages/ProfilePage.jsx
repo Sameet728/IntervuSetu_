@@ -4,11 +4,12 @@ import { motion } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
 import { Card, Button, Input, Select } from '../components/ui/index'
 import { useAuth } from '../context/AuthContext'
-import { updateProfile } from '../api/authAPI'
+import { updateProfile, testGroqKey } from '../api/authAPI'
 import toast from 'react-hot-toast'
 import {
   User, Briefcase, GraduationCap, Code2, Target, Upload,
-  Plus, X, Save, ArrowLeft, FileText, CheckCircle2, CreditCard
+  Plus, X, Save, ArrowLeft, FileText, CheckCircle2, CreditCard,
+  Cpu, Key, ExternalLink, Zap, Check, AlertCircle, Eye, EyeOff
 } from 'lucide-react'
 
 const SKILL_SUGGESTIONS = [
@@ -44,6 +45,8 @@ export default function ProfilePage() {
     yearsOfExperience: user?.yearsOfExperience || 0,
     targetRole: user?.targetRole || '',
     experienceLevel: user?.experienceLevel || '',
+    preferredAIEngine: user?.preferredAIEngine || localStorage.getItem('intervusetu_ai_engine') || 'groq',
+    groqApiKey: user?.groqApiKey || localStorage.getItem('intervusetu_groq_key') || '',
   })
 
   const [skills, setSkills] = useState(user?.skills || [])
@@ -51,6 +54,33 @@ export default function ProfilePage() {
   const [resumeFile, setResumeFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [testingGroq, setTestingGroq] = useState(false)
+  const [groqStatus, setGroqStatus] = useState(null)
+  const [showGroqKey, setShowGroqKey] = useState(false)
+
+  const handleTestGroq = async () => {
+    if (!form.groqApiKey.trim()) {
+      toast.error('Please enter a Groq API key first')
+      return
+    }
+    setTestingGroq(true)
+    setGroqStatus(null)
+    try {
+      const res = await testGroqKey(form.groqApiKey.trim())
+      if (res.data?.success) {
+        toast.success('Groq API Key is valid and working!')
+        setGroqStatus({ success: true, message: res.data.message })
+      } else {
+        toast.error(res.data?.message || 'Invalid Groq API Key')
+        setGroqStatus({ success: false, message: res.data?.message })
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Groq connection failed')
+      setGroqStatus({ success: false, message: err.response?.data?.message || err.message })
+    } finally {
+      setTestingGroq(false)
+    }
+  }
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }))
 
@@ -84,9 +114,14 @@ export default function ProfilePage() {
 
       let payload = resumeFile ? fd : { ...form, skills }
 
+      localStorage.setItem('intervusetu_ai_engine', form.preferredAIEngine)
+      if (form.groqApiKey) {
+        localStorage.setItem('intervusetu_groq_key', form.groqApiKey)
+      }
+
       await updateProfile(payload)
       setSaved(true)
-      toast.success('Profile updated!')
+      toast.success('Profile & AI Settings updated!')
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile')
@@ -345,6 +380,163 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </Card>
+
+            {/* ── AI Model Engine & API Settings ────────────────────────── */}
+            <Card className="p-5 sm:p-6 border-blue-500/20 bg-blue-500/5">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-blue-500" />
+                    AI Model Engine (Questions & Final Report)
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Choose which AI model generates the 1st interview questions and synthesizes the final report. In-between turns continue using real-time CPU engine.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                  {form.preferredAIEngine === 'groq' ? '⚡ Groq LPU' : '💻 Local Qwen'}
+                </span>
+              </div>
+
+              {/* Toggle Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <button
+                  type="button"
+                  onClick={() => set('preferredAIEngine', 'groq')}
+                  className={`p-4 rounded-xl border text-left transition-all relative ${
+                    form.preferredAIEngine === 'groq'
+                      ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-950/40 shadow-sm'
+                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <Zap className={`w-4 h-4 ${form.preferredAIEngine === 'groq' ? 'text-blue-500' : 'text-zinc-400'}`} />
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Groq AI (Cloud LPU)</span>
+                    </div>
+                    {form.preferredAIEngine === 'groq' && (
+                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    Llama 3.3 70B & 3.1 8B. Ultra-fast question synthesis and deep evaluation reasoning.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => set('preferredAIEngine', 'qwen_local')}
+                  className={`p-4 rounded-xl border text-left transition-all relative ${
+                    form.preferredAIEngine === 'qwen_local'
+                      ? 'border-cyan-500 bg-cyan-500/10 dark:bg-cyan-950/40 shadow-sm'
+                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <Cpu className={`w-4 h-4 ${form.preferredAIEngine === 'qwen_local' ? 'text-cyan-500' : 'text-zinc-400'}`} />
+                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Local Qwen 2.5 (Offline)</span>
+                    </div>
+                    {form.preferredAIEngine === 'qwen_local' && (
+                      <span className="w-5 h-5 rounded-full bg-cyan-500 text-white flex items-center justify-center text-xs">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500">
+                    100% On-Device (468.6 MB). Zero cloud API tokens, $0 cost, unlimited interviews.
+                  </p>
+                </button>
+              </div>
+
+              {/* Groq API Key Input (visible if Groq selected) */}
+              {form.preferredAIEngine === 'groq' ? (
+                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-blue-500" />
+                      Groq API Key
+                    </label>
+                    <a
+                      href="https://console.groq.com/keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-blue-500 hover:underline flex items-center gap-1"
+                    >
+                      Get free Groq key <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showGroqKey ? 'text' : 'password'}
+                        value={form.groqApiKey}
+                        onChange={(e) => set('groqApiKey', e.target.value)}
+                        placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pr-9 focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGroqKey(!showGroqKey)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      >
+                        {showGroqKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      loading={testingGroq}
+                      disabled={testingGroq || !form.groqApiKey.trim()}
+                      onClick={handleTestGroq}
+                      className="text-xs shrink-0"
+                    >
+                      Test Key
+                    </Button>
+                  </div>
+
+                  {groqStatus && (
+                    <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                      groqStatus.success
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {groqStatus.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                      <span>{groqStatus.message}</span>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-zinc-400">
+                    Your API key is securely saved with your account and will be used to generate questions and reports via Groq Llama 3.3.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <div>
+                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                        Local Qwen 2.5 0.5B Activated
+                      </p>
+                      <p className="text-[11px] text-zinc-500">
+                        Questions and final reports will run completely on-device without cloud API calls.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="/offline-ai"
+                    className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                  >
+                    Manage Model Hub <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               )}
             </Card>

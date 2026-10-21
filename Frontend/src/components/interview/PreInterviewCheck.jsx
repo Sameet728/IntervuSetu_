@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, Video, Volume2, CheckCircle2, ChevronRight,
-  AlertCircle, VideoOff, RefreshCw, WifiOff
+  AlertCircle, VideoOff, RefreshCw, WifiOff, HardDrive, Cpu, Zap
 } from 'lucide-react'
 
 // Instructions list
@@ -20,6 +20,18 @@ export default function PreInterviewCheck({ onComplete }) {
   const [camStatus, setCamStatus]   = useState('idle')   // idle | loading | ready | denied | error
   const [speakerReady, setSpeakerReady] = useState(false)
   const [speakerTesting, setSpeakerTesting] = useState(false)
+  const [offlineEngineReady, setOfflineEngineReady] = useState(false)
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/audio/models/status')
+      .then(r => r.json())
+      .then(d => {
+        if (d && (d.unlimited_interviews_ready || (d.whistle?.ready && d.qwen?.ready))) {
+          setOfflineEngineReady(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const videoRef      = useRef(null)
   const streamRef     = useRef(null)
@@ -274,11 +286,19 @@ export default function PreInterviewCheck({ onComplete }) {
                     transition={{ duration: 0.08 }}
                   />
                 </div>
-                {!micReady && (
-                  <p className="text-[10px] text-slate-600 mt-1.5 font-mono">
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[10px] text-slate-500 font-mono">
                     Speak aloud — bar should move
                   </p>
-                )}
+                  <a
+                    href="/voice-test"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-semibold text-cyan/80 hover:text-cyan hover:underline flex items-center gap-1"
+                  >
+                    Voice Lab (STT/TTS Test) ↗
+                  </a>
+                </div>
               </div>
             </CheckCard>
 
@@ -303,6 +323,47 @@ export default function PreInterviewCheck({ onComplete }) {
                 </button>
               )}
             </CheckCard>
+
+            {/* Offline AI Engine Card */}
+            <div className={`p-4 rounded-xl border transition-all ${offlineEngineReady ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface border-border'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className={offlineEngineReady ? 'text-emerald-400' : 'text-slate-400'}>
+                    <Cpu className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm text-slate-200">On-Device AI Engine</p>
+                      {offlineEngineReady && (
+                        <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                          UNLIMITED FREE MODE
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs mt-0.5 font-mono ${offlineEngineReady ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      {offlineEngineReady
+                        ? 'Whistle STT + Qwen 2.5 Active (Sub-250ms Live Speed)'
+                        : 'Cloud Mode Active (Optional: Download Offline Pack)'
+                      }
+                    </p>
+                  </div>
+                </div>
+                {offlineEngineReady ? (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  </motion.div>
+                ) : (
+                  <a
+                    href="/offline-ai"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card hover:border-emerald-500/40 text-fg-muted hover:text-emerald-400 transition-colors"
+                  >
+                    Get Offline Pack ↗
+                  </a>
+                )}
+              </div>
+            </div>
 
             {/* Proctoring warning */}
             <div className="p-4 rounded-xl border border-amber/30 bg-amber/5 flex items-start gap-3">
@@ -331,6 +392,13 @@ export default function PreInterviewCheck({ onComplete }) {
                   ? <><CheckCircle2 className="w-5 h-5" /> Start Interview</>
                   : <>Complete all checks to continue <ChevronRight className="w-4 h-4" /></>
                 }
+              </button>
+              <button
+                type="button"
+                onClick={handleStart}
+                className="w-full mt-2 py-2 text-xs font-semibold text-cyan/80 hover:text-cyan hover:underline transition-all flex items-center justify-center gap-1.5"
+              >
+                ⚡ Fast Pass: Skip checks & start immediately (Demo Mode)
               </button>
             </div>
 

@@ -29,8 +29,15 @@ const createInterviewValidation = [
   body("techStack")
     .notEmpty().withMessage("Tech stack is required"),
   body("questionCount")
-    .optional()
-    .isInt({ min: 3, max: 20 }).withMessage("Question count must be between 3 and 20"),
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((val) => {
+      if (val === undefined || val === null || val === "" || val === 0 || val === "0") return true;
+      const n = Number(val);
+      if (isNaN(n) || n < 3 || n > 20) {
+        throw new Error("Question count must be between 3 and 20");
+      }
+      return true;
+    }),
   body("interviewType")
     .optional()
     .isIn(["technical", "hr", "behavioral", "system_design", "mixed"])

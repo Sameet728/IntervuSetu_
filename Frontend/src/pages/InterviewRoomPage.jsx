@@ -7,12 +7,12 @@ import { useSTT } from '../hooks/useSTT'
 import { useTTS } from '../hooks/useTTS'
 import VoiceWave from '../components/interview/VoiceWave'
 import PreInterviewCheck from '../components/interview/PreInterviewCheck'
-import Editor from '@monaco-editor/react'
+import CodeEditor from '../components/interview/CodeEditor'
 import { getInterview } from '../api/interviewAPI'
 import {
   Mic, MicOff, Send, SkipForward, RotateCcw, Code2,
   AlertTriangle, Camera, Clock, Radio,
-  CheckCircle2, XCircle, Shield
+  CheckCircle2, XCircle, Shield, Zap, Lightbulb
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -82,7 +82,7 @@ export default function InterviewRoomPage() {
   const [showCode, setShowCode]   = useState(false)
   const [code, setCode]           = useState('')
   const [violationCount, setViolationCount] = useState(0)
-  const [maxViolations, setMaxViolations]   = useState(3)
+  const [maxViolations, setMaxViolations]   = useState(100)
   const [skipUsed, setSkipUsed]   = useState(false)
   const [lastScore, setLastScore] = useState(null)
   const [processingState, setProcessingState] = useState(false)
@@ -90,6 +90,7 @@ export default function InterviewRoomPage() {
   const [timer, setTimer]         = useState(0) // seconds elapsed
   const [shortFeedback, setShortFeedback] = useState(null)
   const [transcript, setTranscript] = useState([])
+  const [pacingInfo, setPacingInfo] = useState(null)
 
   // ── Refs ───────────────────────────────────────────────────────────
   const wsRef              = useRef(null)
@@ -100,15 +101,24 @@ export default function InterviewRoomPage() {
   const transcriptRef      = useRef([])       // kept for legacy
   const transcriptEndRef   = useRef(null)     // auto-scroll target
   const elaborateReminderRef = useRef(null)   // 20-sec interval after blocked auto-submit
+  const handleSubmitAnswerRef = useRef(null)
+  // ⚠️ currentQ ref — keeps handleWSMessage closures always reading the LIVE question
+  const currentQRef        = useRef(null)
 
   // ── Hooks ──────────────────────────────────────────────────────────
   const tts = useTTS()
 
+  const processingStateRef = useRef(false)
+  processingStateRef.current = processingState
+
   const handleSilence = useCallback((text) => {
-    if (text && !processingState) {
-      handleSubmitAnswer(text, true)
+    const candidateText = (text || '').trim()
+    console.log('🎤 handleSilence received:', candidateText.substring(0, 40) + '...', 'processing:', processingStateRef.current)
+    if (!candidateText || processingStateRef.current) return
+    if (handleSubmitAnswerRef.current) {
+      handleSubmitAnswerRef.current(candidateText, true)
     }
-  }, [processingState])
+  }, [])
 
   const handleStillThere = useCallback(() => {
     toast('👋 Still there? Take your time.', { icon: '⌛', duration: 4000 })
@@ -172,23 +182,23 @@ export default function InterviewRoomPage() {
 
       case 'INTERVIEW_STARTED': {
         const firstQ = payload.firstQuestion
-        // Greeting goes to transcript only; the main bubble will show the first question
-        setTranscript(p => [...p, { role: 'ai', content: payload.greeting }, { role: 'ai', content: firstQ?.question }])
-        setCurrentQ(firstQ)
+        const introText = payload.greeting || firstQ?.question || ''
+        const unifiedFirstQ = { ...firstQ, question: introText }
+        setTranscript([{ role: 'ai', content: introText }])
+        setCurrentQ(unifiedFirstQ)
+        currentQRef.current = unifiedFirstQ
         setTotalQs(payload.totalQuestions)
         setQIndex(payload.questionIndex || 0)
         setPhase('active')
-        // Show greeting in bubble while it's being spoken
-        setAiMessage(payload.greeting)
-        tts.speak(payload.greeting, () => {
-          setTimeout(() => {
-            // After greeting finishes → swap bubble to the first question
-            setAiMessage(firstQ?.question)
-            tts.speak(firstQ?.question, () => {
-              stt.start()
-              sendMessage('QUESTION_STARTED', { questionId: firstQ?.questionId })
-            })
-          }, 300)
+        setAiMessage(introText)
+        const isCodeQ = firstQ?.questionType === 'code'
+        setShowCode(isCodeQ)
+        if (isCodeQ) {
+          toast('💻 Coding Challenge! Code editor is open for your solution.', { icon: '⚡', duration: 4000 })
+        }
+        tts.speak(introText, () => {
+          stt.start()
+          sendMessage('QUESTION_STARTED', { questionId: firstQ?.questionId })
         })
         break
       }
@@ -203,26 +213,38 @@ export default function InterviewRoomPage() {
       case 'FOLLOWUP_QUESTION': {
         setProcessingState(false)
         setIsFollowup(true)
+        stt.reset()
+        setUserAnswer('')
         if (payload.evaluation?.score != null) setLastScore(payload.evaluation.score)
+        if (payload.evaluation?.pacing) setPacingInfo(payload.evaluation.pacing)
         tts.stopThinking()
 
-        const processNext = () => {
+        // Use the live ref to avoid stale closure — read current question type accurately
+        const liveCurrentQ = currentQRef.current
+        if (liveCurrentQ?.questionType === 'code') {
+          // Keep code editor open for follow-up on coding question
+          setShowCode(true)
+        }
+        // Note: if it's not a code question, leave showCode as-is (already false)
+
+        const processFollowup = () => {
           setShortFeedback(null)
           processNextRef.current = null
-          setAiMessage(payload.question)
-          setTranscript(p => [...p, { role: 'ai', content: payload.question }])
+          const followupText = payload.question || ''
+          setAiMessage(followupText)
+          setTranscript(p => [...p, { role: 'ai', content: followupText }])
           stt.reset()
           setUserAnswer('')
-          tts.speak(payload.question, () => stt.start())
+          // TTS speaks the follow-up question, then mic auto-starts
+          tts.speak(followupText, () => stt.start())
         }
-        processNextRef.current = processNext
+        processNextRef.current = processFollowup
 
         if (payload.evaluation?.shortFeedback) {
-          const fb = payload.evaluation
-          setShortFeedback(fb)
-          feedbackTimeoutRef.current = setTimeout(processNext, 4500)
+          setShortFeedback(payload.evaluation)
+          feedbackTimeoutRef.current = setTimeout(processFollowup, 4500)
         } else {
-          processNext()
+          processFollowup()
         }
         break
       }
@@ -230,27 +252,41 @@ export default function InterviewRoomPage() {
       case 'NEXT_QUESTION': {
         setProcessingState(false)
         setIsFollowup(false)
+        stt.reset()
+        setUserAnswer('')
         if (payload.prevEvaluation?.score != null) setLastScore(payload.prevEvaluation.score)
+        if (payload.prevEvaluation?.pacing) setPacingInfo(payload.prevEvaluation.pacing)
         setSkipUsed(payload.skipUsed || false)
         tts.stopThinking()
+
+        const next = payload.question
+        const isCodeQ = next?.questionType === 'code'
+
+        // Automatically popup code editor immediately for coding questions
+        if (isCodeQ) {
+          setShowCode(true)
+          toast('💻 Coding Question! Code editor is ready for your solution.', { icon: '⚡', duration: 4500 })
+        } else {
+          setShowCode(false)
+        }
 
         const processNext = () => {
           stopElaborateReminder()
           setShortFeedback(null)
           processNextRef.current = null
-          const next = payload.question
           setCurrentQ(next)
+          currentQRef.current = next  // keep live ref in sync
           setQIndex(payload.questionIndex)
-          setAiMessage(next?.question)
-          setTranscript(p => [...p, { role: 'ai', content: next?.question }])
+          // Use conversationalText (with natural bridge phrase) if available, else raw question
+          const displayText = next?.conversationalText || next?.question || ''
+          setAiMessage(displayText)
+          setTranscript(p => [...p, { role: 'ai', content: displayText }])
           stt.reset()
           setUserAnswer('')
           setCode('')
-          setShowCode(next?.questionType === 'code')
 
-          const questionText = next?.question
-          const intro = payload.wasSkipped ? "Moving to the next question." : `Question ${payload.questionIndex + 1}.`
-          tts.speak(intro + ' ' + questionText, () => {
+          // TTS speaks the full bridge + question, then mic auto-starts
+          tts.speak(displayText, () => {
             stt.start()
             sendMessage('QUESTION_STARTED', { questionId: next?.questionId })
           })
@@ -258,9 +294,8 @@ export default function InterviewRoomPage() {
         processNextRef.current = processNext
 
         if (payload.prevEvaluation?.shortFeedback) {
-          const fb = payload.prevEvaluation
-          setShortFeedback(fb)
-          feedbackTimeoutRef.current = setTimeout(processNext, 4500)
+          setShortFeedback(payload.prevEvaluation)
+          feedbackTimeoutRef.current = setTimeout(processNext, 4000)
         } else {
           processNext()
         }
@@ -274,15 +309,50 @@ export default function InterviewRoomPage() {
         break
       }
 
+      case 'AI_HINT': {
+        setProcessingState(false)
+        tts.stopThinking()
+        const hintMsg = payload.message || payload.hint || "Here is a hint to guide you."
+        setAiMessage(hintMsg)
+        setTranscript(p => [...p, { role: 'ai', content: hintMsg }])
+        toast(payload.hint || hintMsg, { icon: '💡', duration: 8000 })
+        tts.speak(hintMsg, () => stt.start())
+        break
+      }
+
+      case 'AI_CLARIFICATION': {
+        setProcessingState(false)
+        tts.stopThinking()
+        const clarifyMsg = payload.message || payload.clarification || "Here is clarification on the question."
+        setAiMessage(clarifyMsg)
+        setTranscript(p => [...p, { role: 'ai', content: clarifyMsg }])
+        toast(payload.clarification || clarifyMsg, { icon: '💬', duration: 8000 })
+        tts.speak(clarifyMsg, () => stt.start())
+        break
+      }
+
+      case 'AI_REASSURANCE': {
+        setProcessingState(false)
+        tts.stopThinking()
+        const msg = payload.message || "Take your time! Whenever you're ready."
+        toast(msg, { icon: '⏳', duration: 5000 })
+        tts.speak(msg, () => stt.start())
+        break
+      }
+
       case 'SKIP_DENIED': {
+        setProcessingState(false)
         toast.error(payload.message || 'Cannot skip')
         break
       }
 
       case 'VIOLATION_RECORDED': {
-        setViolationCount(payload.violationCount)
-        setMaxViolations(payload.maxViolations)
-        toast(payload.warning, { icon: '⚠️', duration: 5000,
+        const vCount = (typeof payload.violationCount === 'number' && !isNaN(payload.violationCount)) ? payload.violationCount : 1
+        const maxV = (typeof payload.maxViolations === 'number' && !isNaN(payload.maxViolations)) ? payload.maxViolations : 100
+        setViolationCount(vCount)
+        setMaxViolations(maxV)
+        const warnMsg = (payload.warning && !payload.warning.includes('NaN')) ? payload.warning : `⚠️ Warning ${vCount}/${maxV}: ${payload.violationType || 'Violation recorded'}`
+        toast(warnMsg, { icon: '⚠️', duration: 5000,
           style: { background: '#fef3c7', borderColor: '#f59e0b', color: '#b45309' } })
         break
       }
@@ -314,6 +384,7 @@ export default function InterviewRoomPage() {
         break
       }
     }
+  // currentQ intentionally NOT in deps — we use currentQRef to avoid stale closures
   }, [tts, stt, sendMessage, navigate, interviewId, stopElaborateReminder])
 
   // ── Init ──────────────────────────────────────────────────────────
@@ -370,29 +441,40 @@ export default function InterviewRoomPage() {
   // ── Answer submission ──────────────────────────────────────────────
 
   const handleSubmitAnswer = useCallback((text = null, isAuto = false) => {
-    const finalAnswer = text || stt.stop() || userAnswer
-    if (!finalAnswer.trim() && !code.trim() && !showCode) {
-      toast('Please provide an answer before submitting', { icon: 'ℹ️' })
+    const finalAnswer = (text || stt.stop() || userAnswer || '').trim()
+    if (!finalAnswer && !code.trim()) {
+      if (!isAuto) toast('Please provide an answer before submitting', { icon: 'ℹ️' })
       return
     }
 
-    if (isAuto && !showCode) {
-      const words = finalAnswer.trim().split(/\s+/).filter(Boolean).length
-      if (words < 30) {
-        // Block the auto-submit, restart mic
-        stt.start()
-        toast('⚠️ Answer too short — please elaborate or click Submit manually', { duration: 4000 })
-        // Start 20-sec periodic reminder ONLY if one isn't already running
-        if (!elaborateReminderRef.current) {
-          elaborateReminderRef.current = setInterval(() => {
-            toast('Still waiting... Please elaborate or click Submit manually.', { icon: '💬', duration: 3500 })
-          }, 20000)
+    if (isAuto) {
+      if (showCode) {
+        // In coding round — only auto-submit if candidate said a completion/tool command.
+        // Regular silence while typing code should NOT interrupt.
+        const isDoneOrCommand = /(repeat|again|hint|clue|clarify|skip|done|finished|ready to submit|submitted)/i.test(finalAnswer)
+        if (!isDoneOrCommand) {
+          return  // candidate is still coding — keep mic on
         }
-        return
+      } else {
+        const words = finalAnswer.split(/\s+/).filter(Boolean).length
+        const isConversational = /(repeat|again|hint|clue|clarify|skip)/i.test(finalAnswer)
+        // Require at least 25 words OR a conversational command to auto-submit
+        if (words < 25 && !isConversational) {
+          toast(`Please elaborate more (${words}/25 words) to auto-submit, or click Submit Answer.`, {
+            id: 'min-words-toast',
+            icon: '🎙️',
+            duration: 4000,
+          })
+          return  // too short — keep listening!
+        }
       }
+      toast.success('Silence detected — submitting answer...', { icon: '🚀', duration: 2500 })
     }
 
-    // Real submission — clear any pending reminder loop
+    // Real submission — stop listening and clear any pending reminder loop
+    stt.stop()
+    stt.reset()
+    setUserAnswer('')
     stopElaborateReminder()
 
     setTranscript(p => [...p, { role: 'user', content: showCode ? `${finalAnswer}\n\n[Code]:\n${code}` : finalAnswer }])
@@ -403,13 +485,19 @@ export default function InterviewRoomPage() {
     })
   }, [stt, userAnswer, code, showCode, sendMessage, stopElaborateReminder])
 
+  handleSubmitAnswerRef.current = handleSubmitAnswer
+
 
   const handleSkip = useCallback(() => {
-    if (skipUsed) { toast.error('You can only skip once per interview'); return }
+    if (processingState) return
+    setProcessingState(true)
     stt.stop()
+    stt.reset()
+    setUserAnswer('')
     tts.stop()
+    toast('Skipping question (Score: 0)...', { icon: '⏭️' })
     sendMessage('SKIP_QUESTION', {})
-  }, [skipUsed, stt, tts, sendMessage])
+  }, [processingState, stt, tts, sendMessage])
 
   const handleRepeat = useCallback(() => {
     stt.stop()
@@ -417,13 +505,21 @@ export default function InterviewRoomPage() {
     sendMessage('REPEAT_QUESTION', {})
   }, [stt, tts, sendMessage])
 
+  const handleRequestHint = useCallback(() => {
+    if (processingState) return
+    toast('Requesting hint...', { icon: '💡' })
+    sendMessage('REQUEST_HINT', { code: showCode ? code : '' })
+  }, [processingState, showCode, code, sendMessage])
+
   const skipFeedbackWait = useCallback(() => {
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current)
     tts.stop()
+    stt.reset()
+    setUserAnswer('')
     if (processNextRef.current) {
       processNextRef.current()
     }
-  }, [tts])
+  }, [tts, stt])
 
   // ── Timer display ─────────────────────────────────────────────────
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
@@ -477,16 +573,34 @@ export default function InterviewRoomPage() {
           <span className="text-xs font-mono text-zinc-500 font-medium">Q{qIndex + 1}/{totalQs}</span>
         </div>
 
-        {/* Center — Q type badge */}
+        {/* Center — Q type badge & Engine Indicator */}
         <div className="hidden sm:flex items-center gap-2">
-          {currentQ?.questionType === 'code' && (
+          <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25" title="Unlimited Free Mode: Live voice & critiques processed locally on-device">
+            <Zap className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Unlimited AI</span>
+          </span>
+          {currentQ?.topic === 'Self Introduction' || currentQ?.questionId === 'q_intro' ? (
+            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 rounded border border-purple-200 dark:border-purple-800">
+              👋 Warm-up Intro
+            </span>
+          ) : currentQ?.questionType === 'code' ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
               <Code2 className="w-3.5 h-3.5" /> Code Round
             </span>
-          )}
+          ) : null}
           {isFollowup && (
             <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
               ↩ Follow-up
+            </span>
+          )}
+          {pacingInfo?.urgency === 'tight' && (
+            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-700" title={`${pacingInfo.minsPerRemainingQ}m per question remaining`}>
+              ⏱️ Brisk Pace ({pacingInfo.minsPerRemainingQ}m/Q)
+            </span>
+          )}
+          {pacingInfo?.urgency === 'critical' && (
+            <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded border border-red-200 dark:border-red-700 animate-pulse" title="Final stretch — covering remaining questions">
+              ⚡ Final Stretch
             </span>
           )}
         </div>
@@ -504,7 +618,7 @@ export default function InterviewRoomPage() {
       <div className="flex-1 flex overflow-hidden min-h-0 bg-zinc-50/50 dark:bg-zinc-950/50">
 
         {/* ── Left panel — AI Question + Answer ──────────────────── */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 gap-3">
+        <div className={`flex-1 flex flex-col min-h-0 p-4 gap-3 ${showCode ? 'overflow-y-auto' : 'overflow-hidden'}`}>
 
           {/* AI Message */}
           <motion.div
@@ -520,6 +634,11 @@ export default function InterviewRoomPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2.5 mb-2">
                   <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 font-display">AI Interviewer</span>
+                  {isFollowup && (
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-700 uppercase tracking-wider">
+                      {pacingInfo?.urgency === 'tight' || pacingInfo?.urgency === 'critical' ? '⚡ Quick Follow-up' : 'Follow-up'}
+                    </span>
+                  )}
                   {processingState && <span className="flex items-center gap-1 text-xs text-zinc-500 font-medium"><VoiceWave thinking size="sm" /> Thinking...</span>}
                   {tts.speaking && !processingState && <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"><VoiceWave speaking size="sm" /> Speaking...</span>}
                   {stt.listening && !tts.speaking && !processingState && (
@@ -547,84 +666,82 @@ export default function InterviewRoomPage() {
             </div>
           </motion.div>
 
-          {/* Code editor */}
+          {/* Code editor with integrated question prompt & robust typing */}
           <AnimatePresence>
             {showCode && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 280 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex-shrink-0 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-sm"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="flex-shrink-0"
               >
-                <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                    <Code2 className="w-3.5 h-3.5" /> Code Editor
-                  </span>
-                  <button onClick={() => setShowCode(false)} className="text-zinc-500 hover:text-zinc-300 text-xs font-medium uppercase tracking-wider transition-colors">Hide</button>
-                </div>
-                <div style={{ height: 240 }} className="p-1">
-                  <Editor
-                    height="100%"
-                    defaultLanguage="javascript"
-                    theme="vs-dark"
-                    value={code}
-                    onChange={(val) => setCode(val || '')}
-                    options={{ minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, padding: { top: 12 } }}
-                  />
-                </div>
+                <CodeEditor
+                  value={code}
+                  onChange={setCode}
+                  question={currentQ}
+                  questionText={currentQ?.question || aiMessage}
+                  onClose={() => setShowCode(false)}
+                />
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ── Two STT boxes ──────────────────────────────────── */}
-          <div className="flex-1 grid grid-rows-2 gap-3 min-h-0 overflow-hidden">
+          {/* ── Two STT boxes (adaptive layout when coding) ─────────── */}
+          <div className={`flex-1 min-h-0 overflow-hidden ${showCode ? 'flex flex-col gap-2' : 'grid grid-rows-2 gap-3'}`}>
 
             {/* Box A — Live STT */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors">
+            <div className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors ${showCode ? 'max-h-24' : ''}`}>
               <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Mic className="w-3.5 h-3.5" /> Live Voice Text
                 </span>
                 {stt.listening && <span className="text-[10px] font-bold text-red-500 animate-pulse uppercase tracking-wider">● LIVE</span>}
               </div>
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-3">
                 {stt.interimText ? (
                   <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed">{stt.interimText}</p>
                 ) : stt.listening ? (
-                  <p className="text-xs text-zinc-400 font-medium italic">Listening... speak now</p>
+                  <p className="text-xs text-zinc-400 font-medium italic">Listening... speak your thought process while coding</p>
                 ) : (
-                  <p className="text-xs text-zinc-400 font-medium italic">Press Speak to start recording</p>
+                  <p className="text-xs text-zinc-400 font-medium italic">Press Speak to start recording voice explanation</p>
                 )}
               </div>
             </div>
 
             {/* Box B — Accumulated Answer */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors">
+            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors min-h-0">
               <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-200 dark:border-zinc-800">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Your Answer Draft
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Your Spoken Answer & Notes
                 </span>
-                {(stt.transcript || userAnswer) && (
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                    {(stt.transcript || userAnswer).trim().split(/\s+/).filter(Boolean).length} words
-                  </span>
-                )}
+                {(stt.transcript || userAnswer) && (() => {
+                  const words = (stt.transcript || userAnswer).trim().split(/\s+/).filter(Boolean).length
+                  return (
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-colors ${
+                      words >= 25
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30'
+                        : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
+                    }`}>
+                      {words}/25 words {words >= 25 ? '✓ ready' : ''}
+                    </span>
+                  )
+                })()}
               </div>
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-3">
                 {stt.transcript || userAnswer ? (
-                  <p className="text-[15px] font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-[14px] font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
                     {stt.transcript || userAnswer}
                   </p>
                 ) : (
-                  <p className="text-xs text-zinc-400 font-medium italic">Your spoken answer will build up here...</p>
+                  <p className="text-xs text-zinc-400 font-medium italic">Your spoken explanation and notes will build up here...</p>
                 )}
               </div>
               <textarea
                 placeholder="Or type additional notes here..."
                 value={userAnswer}
                 onChange={e => setUserAnswer(e.target.value)}
-                className="flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 text-sm font-medium text-zinc-700 dark:text-zinc-300 outline-none resize-none px-4 py-3 placeholder-zinc-400 dark:placeholder-zinc-600 focus:bg-white dark:focus:bg-zinc-900 transition-colors"
-                rows={2}
+                className="flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 text-xs font-medium text-zinc-700 dark:text-zinc-300 outline-none resize-none px-3 py-2 placeholder-zinc-400 dark:placeholder-zinc-600 focus:bg-white dark:focus:bg-zinc-900 transition-colors"
+                rows={showCode ? 1 : 2}
               />
             </div>
 
@@ -683,6 +800,12 @@ export default function InterviewRoomPage() {
               <RotateCcw className="w-4 h-4" /> Repeat
             </button>
 
+            <button onClick={handleRequestHint} disabled={processingState}
+              title="Get a helpful hint from the AI interviewer"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/40 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:border-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-500/20 text-sm font-semibold transition-all shadow-sm disabled:opacity-50">
+              <Lightbulb className="w-4 h-4 text-amber-500" /> Hint
+            </button>
+
             <button onClick={() => setShowCode(p => !p)} disabled={processingState}
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all shadow-sm disabled:opacity-50 ${
                 showCode ? 'border-blue-200 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10' : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100'
@@ -690,20 +813,25 @@ export default function InterviewRoomPage() {
               <Code2 className="w-4 h-4" /> {showCode ? 'Hide Code' : 'Show Code Editor'}
             </button>
 
-            {!skipUsed && (
-              <button onClick={handleSkip} disabled={processingState}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-amber-200 dark:hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-500 text-sm font-semibold transition-all shadow-sm disabled:opacity-50 ml-auto mr-1">
-                <SkipForward className="w-4 h-4" /> Skip
-              </button>
-            )}
+            {/* Skip button — unlimited skips allowed */}
+            <button
+              onClick={handleSkip}
+              disabled={processingState}
+              title="Skip this question (will receive 0 for this question)"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-amber-200 dark:hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-500 text-sm font-semibold transition-all shadow-sm ml-auto mr-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <SkipForward className="w-4 h-4" />
+              Skip
+            </button>
 
             <button
               onClick={() => handleSubmitAnswer()}
               disabled={processingState || tts.speaking}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md disabled:opacity-50 ${skipUsed ? 'ml-auto' : ''}`}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
             >
-              <Send className="w-4 h-4" /> Submit Answer
+              <Send className="w-4 h-4" /> {showCode ? 'Submit Code & Answer' : 'Submit Answer'}
             </button>
+
           </div>
         </div>
 

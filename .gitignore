@@ -38,3 +38,13 @@ backend/uploads/
 
 # Misc scripts
 seed_out.txt
+
+# Large AI models & weights (downloaded on demand)
+models/
+Backend/models/
+*.gguf
+*.bin
+*.tar.gz
+*.onnx
+__pycache__/
+*.pyc

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import {
   Mic, LayoutDashboard, Plus, Sun, Moon, Monitor,
-  User, LogOut, ChevronDown
+  User, LogOut, ChevronDown, Cpu, HardDrive
 } from 'lucide-react'
 
 const THEME_ICONS = { dark: Moon, light: Sun, system: Monitor }
@@ -80,6 +80,33 @@ export default function Navbar() {
 
           {user ? (
             <>
+              {/* Offline AI Hub */}
+              <Link
+                to="/offline-ai"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-500/10 transition-colors"
+                title="Download on-device models for unlimited offline interviews"
+              >
+                <HardDrive className="w-3.5 h-3.5 text-emerald-500" />Offline AI Pack
+              </Link>
+
+              {/* Qwen AI Lab */}
+              <Link
+                to="/qwen-test"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
+                title="Test Local Qwen 2.5 0.5B AI"
+              >
+                <Cpu className="w-3.5 h-3.5" />Qwen AI
+              </Link>
+
+              {/* Voice Lab */}
+              <Link
+                to="/voice-test"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium hover:border-blue-500/50 hover:text-blue-500 transition-colors"
+                title="Test STT and TTS Audio"
+              >
+                <Mic className="w-3.5 h-3.5 text-blue-500" />Voice Lab
+              </Link>
+
               {/* New Interview */}
               <Link
                 to="/interview/create"
@@ -129,6 +156,24 @@ export default function Navbar() {
                       </div>
 
                       <div className="py-1">
+                        <button
+                          onClick={() => { navigate('/offline-ai'); setDropdownOpen(false) }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors text-left font-medium"
+                        >
+                          <HardDrive className="w-3.5 h-3.5 text-emerald-500" />Offline AI Pack (Free)
+                        </button>
+                        <button
+                          onClick={() => { navigate('/qwen-test'); setDropdownOpen(false) }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left font-medium"
+                        >
+                          <Cpu className="w-3.5 h-3.5 text-blue-500" />Qwen AI Lab (0.5B)
+                        </button>
+                        <button
+                          onClick={() => { navigate('/voice-test'); setDropdownOpen(false) }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
+                        >
+                          <Mic className="w-3.5 h-3.5 text-blue-500" />Voice Lab (STT/TTS)
+                        </button>
                         <button
                           onClick={() => { navigate('/profile'); setDropdownOpen(false) }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
@@ -182,6 +227,27 @@ export default function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-2">
+              <Link
+                to="/offline-ai"
+                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-500/10 transition-colors"
+              >
+                <HardDrive className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Offline Pack</span>
+              </Link>
+              <Link
+                to="/qwen-test"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-500/25 bg-blue-500/5 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
+              >
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Qwen AI</span>
+              </Link>
+              <Link
+                to="/voice-test"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:text-blue-500 transition-colors"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span>Voice Lab</span>
+              </Link>
               <Link
                 to="/login"
                 className="px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"

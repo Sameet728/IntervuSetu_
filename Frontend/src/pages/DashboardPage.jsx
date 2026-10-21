@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
 import { Button, Badge, Spinner, ScorePill } from '../components/ui/index'
-import { getMyInterviews, deleteInterview } from '../api/interviewAPI'
+import { getMyInterviews, deleteInterview, startPrebuiltInterview } from '../api/interviewAPI'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import {
   Plus, Search, Trash2, BarChart3, Clock, Code2, Brain,
   Users, Layers, Sparkles, ChevronRight, RotateCw, TrendingUp,
-  CheckCircle2, AlertCircle, Circle, FileText
+  CheckCircle2, AlertCircle, Circle, FileText, Mic, Zap, Play
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
@@ -65,6 +65,20 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sort, setSort]             = useState('newest')
   const [deleting, setDeleting]     = useState(null)
+  const [startingPrebuilt, setStartingPrebuilt] = useState(null)
+
+  const handleStartPrebuilt = async (id) => {
+    setStartingPrebuilt(id)
+    try {
+      const res = await startPrebuiltInterview(id)
+      toast.success('Ready-made interview loaded instantly!')
+      navigate(`/interview/${res.data.data.interviewId}/room`)
+    } catch {
+      toast.error('Failed to start interview')
+    } finally {
+      setStartingPrebuilt(null)
+    }
+  }
 
   const load = async () => {
     setLoading(true)
@@ -129,7 +143,12 @@ export default function DashboardPage() {
             </div>
             <p className="text-sm text-zinc-500 mt-0.5">Track your interview performance</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link to="/voice-test">
+              <Button variant="secondary" size="sm">
+                <Mic className="w-3.5 h-3.5 text-blue-500" />Voice Lab (STT/TTS)
+              </Button>
+            </Link>
             <Link to="/aptitude">
               <Button variant="secondary" size="sm">
                 <Brain className="w-3.5 h-3.5 text-blue-500" />Aptitude Test
@@ -182,6 +201,60 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
         )}
+        {/* ── Ready-Made Quick Launch ──────────────────────────── */}
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-5 mb-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Quick Practice: Ready-Made Interviews
+                </h2>
+                <p className="text-xs text-zinc-500">Curated questions ready to start immediately — 0ms generation wait</p>
+              </div>
+            </div>
+            <Link to="/interview/create" className="text-xs text-blue-500 hover:underline font-semibold flex items-center gap-1">
+              Explore All Tracks →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { id: 'frontend-react', title: 'Frontend React Specialist', role: 'React, Hooks, Performance', diff: 'Medium', dur: '30m', badge: 'Popular' },
+              { id: 'backend-node', title: 'Backend & Distributed Systems', role: 'Node.js, Redis, System Design', diff: 'Hard', dur: '45m', badge: 'Advanced' },
+              { id: 'fullstack-mern', title: 'Full Stack Developer', role: 'MERN Stack, REST, Auth', diff: 'Medium', dur: '35m', badge: 'Core' },
+            ].map(track => (
+              <div key={track.id} className="p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40 hover:border-blue-500/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      {track.badge}
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500">{track.dur} • {track.diff}</span>
+                  </div>
+                  <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-0.5">{track.title}</h3>
+                  <p className="text-[11px] text-zinc-500 mb-3">{track.role}</p>
+                </div>
+                <button
+                  onClick={() => handleStartPrebuilt(track.id)}
+                  disabled={startingPrebuilt !== null}
+                  className="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
+                >
+                  {startingPrebuilt === track.id ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>Start Now ⚡</>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* ── Filter Row ───────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">

@@ -247,20 +247,12 @@ export default function LandingPage() {
 
         <motion.div variants={fadeUp} initial="initial" animate="whileInView" transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-          {user ? (
-            <Link to="/dashboard" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#14b8a6] text-white text-base font-semibold hover:bg-teal-600 transition-all shadow-sm">
-              Go to Dashboard <ArrowRight className="w-4 h-4" />
-            </Link>
-          ) : (
-            <Link to="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#14b8a6] text-white text-base font-semibold hover:bg-teal-600 transition-all shadow-sm">
-              Start Building <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
-          {!user && (
-            <Link to="/org/login" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-base font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all">
-              Contact Sales
-            </Link>
-          )}
+          <Link to="/interview/create" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#14b8a6] text-white text-base font-semibold hover:bg-teal-600 transition-all shadow-sm">
+            Start Interview <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link to="/dashboard" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-base font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all">
+            Dashboard
+          </Link>
         </motion.div>
 
         {/* ── Abstract UI Graphic ── */}

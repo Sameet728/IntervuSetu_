@@ -128,6 +128,11 @@ const interviewSchema = new mongoose.Schema(
       default: "adaptive",
     },
     targetDuration: { type: Number, default: 45 }, // minutes
+    aiEngine: {
+      type: String,
+      enum: ["groq", "qwen_local", "local"],
+      default: "groq",
+    },
 
     // NEW: Skip tracking
     skipUsed: { type: Boolean, default: false },

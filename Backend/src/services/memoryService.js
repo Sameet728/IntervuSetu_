@@ -68,7 +68,8 @@ const buildContextPayload = (shortTermMemory = [], longTermSummary = "") => {
 const formatTranscriptText = (transcript = []) => {
   return transcript
     .map((entry) => {
-      const time = new Date(entry.timestamp).toLocaleTimeString();
+      const d = entry.timestamp ? new Date(entry.timestamp) : new Date();
+      const time = isNaN(d.getTime()) ? new Date().toLocaleTimeString() : d.toLocaleTimeString();
       const role = entry.role === "ai" ? "🤖 Interviewer" : "👤 Candidate";
       return `[${time}] ${role}:\n${entry.content}\n`;
     })

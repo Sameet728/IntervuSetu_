@@ -15,3 +15,6 @@ export const updateProfile = (data) => {
 
 // Quick theme update
 export const updateTheme = (theme) => api.put('/auth/theme', { theme })
+
+// Test Groq API key connectivity
+export const testGroqKey = (apiKey) => api.post('/audio/test-groq', { apiKey })

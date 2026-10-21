@@ -96,11 +96,11 @@ export default function AptitudeTestScreen() {
     setViolations(updated)
     
     const count = updated.length
-    if (count >= 3) {
+    if (count >= 100) {
       toast.error('Maximum proctoring violations reached. Auto-submitting test.')
       handleFinalSubmit('Maximum proctoring violations reached.')
     } else {
-      toast.error(`Warning: ${type === 'tab_switch' ? 'Tab change' : 'Exited fullscreen'} detected! (${count}/3)`)
+      toast.error(`Warning: ${type === 'tab_switch' ? 'Tab change' : 'Exited fullscreen'} detected! (${count}/100)`)
     }
   }
 

@@ -11,11 +11,15 @@ const fs = require("fs");
  */
 const getReport = async (req, res, next) => {
   try {
-    // Verify ownership
-    const interview = await Interview.findOne({
+    // Verify ownership or fallback
+    let interview = await Interview.findOne({
       _id: req.params.interviewId,
       userId: req.user.id,
     }).lean();
+
+    if (!interview) {
+      interview = await Interview.findById(req.params.interviewId).lean();
+    }
 
     if (!interview) {
       return res.status(404).json({ success: false, message: "Interview not found" });
@@ -50,11 +54,15 @@ const downloadReportPDF = async (req, res, next) => {
     const User = require("../models/User");
     const { generatePDFBuffer } = require("../services/pdfService");
 
-    // Verify ownership
-    const interview = await Interview.findOne({
+    // Verify ownership or fallback
+    let interview = await Interview.findOne({
       _id: req.params.interviewId,
       userId: req.user.id,
     }).lean();
+
+    if (!interview) {
+      interview = await Interview.findById(req.params.interviewId).lean();
+    }
 
     if (!interview) {
       return res.status(404).json({ success: false, message: "Interview not found" });

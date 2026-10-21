@@ -15,56 +15,65 @@ const buildReport = async (interviewId) => {
   const interview = await Interview.findById(interviewId).lean();
   if (!interview) throw new Error("Interview not found");
 
-  const completedQuestions = interview.questions.filter(
-    (q) => q.status === "completed"
+  const evaluatedQuestions = interview.questions.filter(
+    (q) => q.status === "completed" || q.status === "skipped"
   );
 
-  // ── AI-generated analysis ──────────────────────────────────────────
-  const aiAnalysis = await generateFinalReport({
+  const user = await User.findById(interview.userId).select("groqApiKey preferredAIEngine").lean();
+  const aiEngine = interview.aiEngine || user?.preferredAIEngine || process.env.PREFERRED_AI_ENGINE || "qwen_local";
+  const groqApiKey = user?.groqApiKey || process.env.GROQ_API_KEY || null;
+
+  // ── AI-generated analysis (Exclusively Local Qwen 2.5 0.5B as requested) ──────
+  const { generateFinalReportFallback } = require("./localAIService");
+  const aiAnalysis = await generateFinalReportFallback({
     role: interview.role,
     experienceLevel: interview.experienceLevel,
     techStack: interview.techStack,
     interviewType: interview.interviewType || "mixed",
-    questionsData: completedQuestions.map((q) => ({
+    questionsData: evaluatedQuestions.map((q) => ({
       question: q.question,
       questionType: q.questionType,
       difficulty: q.difficulty,
-      score: q.score,
-      feedback: q.feedback,
-      timeTaken: q.timeTaken,
+      score: q.status === "skipped" ? 0 : (q.score ?? 0),
+      feedback: q.status === "skipped" ? "Question skipped by candidate (Score: 0/10)." : q.feedback,
+      timeTaken: q.timeTaken || 0,
+      skipped: q.status === "skipped",
     })),
     longTermSummary: interview.longTermSummary,
   });
 
   // ── Per-question breakdown with user answers ────────────────────────
-  const questionBreakdown = completedQuestions.map((q) => {
-    // Get the main answer (first answer, type "main")
+  const questionBreakdown = evaluatedQuestions.map((q) => {
+    const isSkipped = q.status === "skipped";
     const mainAnswer = q.answers?.find((a) => a.type === "main");
-    const userAnswer = mainAnswer?.answer || q.answers?.[0]?.answer || "";
-    const userCode = mainAnswer?.code || null;
+    const userAnswer = isSkipped
+      ? "[Question skipped by candidate]"
+      : (mainAnswer?.answer || q.answers?.[0]?.answer || "");
+    const userCode = isSkipped ? null : (mainAnswer?.code || null);
 
     return {
       questionId: q.questionId,
       question: q.question,
       questionType: q.questionType,
       difficulty: q.difficulty,
-      score: q.score ?? 0,
-      feedback: q.feedback,
+      score: isSkipped ? 0 : (q.score ?? 0),
+      status: q.status,
+      feedback: isSkipped ? "Question skipped by candidate (Score: 0/10)" : q.feedback,
       idealAnswer: q.idealAnswer,
-      userAnswer,           // NEW: stores what candidate actually said
-      userCode,             // NEW: stores candidate's code submission
-      timeTaken: q.timeTaken,
-      followupCount: q.followupCount,
-      strengths: q.strengths || [],
-      weaknesses: q.weaknesses || [],
+      userAnswer,           // Stores what candidate said or [Question skipped by candidate]
+      userCode,             // Stores candidate's code submission if any
+      timeTaken: q.timeTaken || 0,
+      followupCount: q.followupCount || 0,
+      strengths: isSkipped ? [] : (q.strengths || []),
+      weaknesses: isSkipped ? ["Question skipped"] : (q.weaknesses || []),
     };
   });
 
   // ── Timing stats ──────────────────────────────────────────────────
   const totalTime = interview.totalTimeTaken || 0;
   const avgTime =
-    completedQuestions.length > 0
-      ? Math.round(totalTime / completedQuestions.length)
+    evaluatedQuestions.length > 0
+      ? Math.round(totalTime / evaluatedQuestions.length)
       : 0;
 
   // ── Full transcript as text ───────────────────────────────────────

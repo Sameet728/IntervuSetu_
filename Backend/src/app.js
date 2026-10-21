@@ -17,6 +17,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const aptitudeRoutes = require("./routes/aptitudeRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const audioRoutes = require("./routes/audioRoutes");
 const { errorHandler, notFound } = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -83,6 +84,7 @@ apiRouter.use("/payment", paymentRoutes);
 apiRouter.use("/aptitude", aptitudeRoutes);
 apiRouter.use("/admin", adminRoutes);
 apiRouter.use("/contact", contactRoutes);
+apiRouter.use("/audio", audioRoutes);
 
 // Org routes
 apiRouter.use("/org/auth", orgAuthRoutes);

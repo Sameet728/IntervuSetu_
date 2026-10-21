@@ -26,6 +26,9 @@ import AdminPanelPage       from './pages/AdminPanelPage'
 import OrgAptitudeCreatePage  from './pages/org/OrgAptitudeCreatePage'
 import OrgAptitudeResultsPage from './pages/org/OrgAptitudeResultsPage'
 import AptitudeJoinPage     from './pages/AptitudeJoinPage'
+import VoiceTestPage        from './pages/VoiceTestPage'
+import QwenTestPage         from './pages/QwenTestPage'
+import OfflineModelHub      from './pages/OfflineModelHub'
 
 function OrgProtectedRoute() {
   const { org, orgLoading } = useOrgAuth()
@@ -55,6 +58,14 @@ export default function App() {
       <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage />} />
       <Route path="/interview/join/:shareCode" element={<JoinInterviewPage />} />
       <Route path="/aptitude/join/:shareCode"   element={<AptitudeJoinPage />} />
+      <Route path="/voice-test" element={<VoiceTestPage />} />
+      <Route path="/test-voice" element={<VoiceTestPage />} />
+      <Route path="/qwen-test"  element={<QwenTestPage />} />
+      <Route path="/ai-test"    element={<QwenTestPage />} />
+      <Route path="/qwen"       element={<QwenTestPage />} />
+      <Route path="/offline-ai" element={<OfflineModelHub />} />
+      <Route path="/models"     element={<OfflineModelHub />} />
+      <Route path="/model-hub"  element={<OfflineModelHub />} />
 
       {/* Org auth */}
       <Route path="/org/register" element={<OrgRegisterPage />} />

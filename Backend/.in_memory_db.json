@@ -1,0 +1,713 @@
+{
+  "Interview": [
+    {
+      "_id": "6ad7c1ab00000b31f9c4ea50",
+      "id": "6ad7c1ab00000b31f9c4ea50",
+      "userId": "660000000000000000000001",
+      "role": "Full Stack Engineer",
+      "experienceLevel": "mid",
+      "techStack": [
+        "React",
+        "Node.js",
+        "Express",
+        "MongoDB"
+      ],
+      "interviewType": "mixed",
+      "difficulty": "medium",
+      "totalQuestions": 5,
+      "status": "completed",
+      "totalTimeTaken": 520,
+      "startedAt": "2026-10-20T19:33:00.000Z",
+      "completedAt": "2026-10-20T19:41:40.000Z",
+      "skipUsed": false,
+      "violationCount": 1,
+      "violations": [
+        {
+          "type": "no_face",
+          "details": "Brief gaze shift"
+        }
+      ],
+      "questions": [
+        {
+          "questionId": "q_intro",
+          "question": "Hey Demo! Welcome, welcome. I always like to start these conversations naturally rather than jumping straight into questions. So tell me — in your own words, who are you and what brings you here today?",
+          "questionType": "hr",
+          "difficulty": "easy",
+          "topic": "Self Introduction",
+          "status": "completed",
+          "score": 9,
+          "feedback": "Warm and authentic introduction covering relevant background and passion for engineering.",
+          "timeTaken": 65,
+          "answers": [
+            {
+              "type": "main",
+              "answer": "Computer Science and data science student at MIT Academy of veterinary community. I'm passionate about software development about solving an AI. I've built projects using node.js express.js and mongodb. I'm here to Showcase my skills learn from this opportunity and work as a developer.",
+              "score": 9
+            }
+          ]
+        },
+        {
+          "questionId": "q4",
+          "question": "What is the N+1 query problem and how does it specifically manifest when using MongoDB with Mongoose? How do you detect it and fix it using aggregation pipelines or populate?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "topic": "Database Optimization",
+          "status": "completed",
+          "score": 8.5,
+          "feedback": "Solid explanation of the N+1 query pattern in Document databases and effective mitigation via aggregation pipelines.",
+          "timeTaken": 110,
+          "answers": [
+            {
+              "type": "main",
+              "answer": "The N+1 query issue occurs when querying parent records followed by individual queries for each associated child document. In Mongoose, we resolve this using aggregation $lookup pipelines with proper indexing.",
+              "score": 8.5
+            }
+          ]
+        },
+        {
+          "questionId": "q2",
+          "question": "Design a secure authentication system for a React SPA backed by a Node.js REST API. Cover JWT access tokens, refresh token rotation, HttpOnly cookies, and how to prevent CSRF and XSS attacks end-to-end.",
+          "questionType": "system_design",
+          "difficulty": "medium",
+          "topic": "Auth & Security Architecture",
+          "status": "completed",
+          "score": 7.5,
+          "feedback": "Good security fundamentals on refresh token rotation and HttpOnly cookie protection.",
+          "timeTaken": 125,
+          "answers": [
+            {
+              "type": "main",
+              "answer": "We store access tokens in memory to prevent XSS and long-lived refresh tokens in HttpOnly SameSite=Strict cookies. Automatic rotation invalidates reused tokens upon refresh.",
+              "score": 7.5
+            }
+          ]
+        },
+        {
+          "questionId": "q1",
+          "question": "Explain JavaScript's event loop, call stack, microtask queue, and macrotask queue. What is the execution order when you have Promise.resolve().then(), setTimeout(fn, 0), and process.nextTick() all scheduled at the same time?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "topic": "JavaScript Engine Internals",
+          "status": "completed",
+          "score": 7.5,
+          "feedback": "Good grasp of microtasks vs macrotask execution order in V8 runtime.",
+          "timeTaken": 110,
+          "answers": [
+            {
+              "type": "main",
+              "answer": "process.nextTick takes priority before microtask queue resolution, followed by Promise then-callbacks, and macrotasks like setTimeout(0) execute in subsequent turns of the event loop.",
+              "score": 7.5
+            }
+          ]
+        },
+        {
+          "questionId": "q3",
+          "question": "Implement a debounce(fn, wait, options) function in JavaScript that supports both leading-edge and trailing-edge execution, and includes a .cancel() method to abort any pending invocation.",
+          "questionType": "code",
+          "difficulty": "medium",
+          "topic": "JavaScript Core — Closures & Timers",
+          "status": "completed",
+          "score": 9.5,
+          "feedback": "Outstanding implementation of debounce with cancellation and leading/trailing execution control.",
+          "timeTaken": 110,
+          "answers": [
+            {
+              "type": "main",
+              "answer": "Closure wraps timerId and tracks leading invocation state, resetting on delay completion with a dedicated cancel() method.",
+              "score": 9.5
+            }
+          ]
+        }
+      ],
+      "reportId": "6ad7c8d60044fad8356faaa8",
+      "updatedAt": "2026-10-20T20:02:30.425Z"
+    },
+    {
+      "userId": "660000000000000000000001",
+      "role": "Backend Engineer",
+      "experienceLevel": "senior",
+      "techStack": [
+        "Node.js",
+        "Express",
+        "Distributed Systems",
+        "MongoDB"
+      ],
+      "questions": [
+        {
+          "answers": [
+            {
+              "type": "main",
+              "answer": "Hi I'm Sumit Pisada computer science and data science student about software development problem solving and AI I have been producing the node.js xql.js and Mobility here I am showcasing my skills learning from this opportunity and grow as a developer",
+              "code": null,
+              "score": 9,
+              "timestamp": "2026-10-21T08:08:39.868Z"
+            }
+          ],
+          "status": "completed",
+          "followupCount": 0,
+          "questionId": "q_intro",
+          "question": "Hey Demo! Great to finally connect. I'm really excited to chat with you today about the Backend Engineer position. Before we dive into the technical stuff, I'd love to just hear a bit about you — maybe give me a quick intro, who you are, your background, and what's been keeping you busy lately?",
+          "questionType": "hr",
+          "difficulty": "easy",
+          "expectedAnswer": "Clear articulation of background, relevant experience, projects, and role alignment.",
+          "topic": "Self Introduction",
+          "score": 9,
+          "startedAt": "2026-10-21T08:08:15.107Z",
+          "feedback": "Great introduction! Communicated background, technical projects, and career focus clearly. Clear overview of background and recent experience.",
+          "idealAnswer": "A great self-introduction outlines education/background, core technical stack, recent project highlights, and motivation for the role.",
+          "strengths": [
+            "Confident communication and clear overview of technical background"
+          ],
+          "weaknesses": [
+            "Good communication"
+          ],
+          "completedAt": "2026-10-21T08:08:39.868Z",
+          "timeTaken": 25
+        },
+        {
+          "answers": [
+            {
+              "type": "main",
+              "answer": "Uh in one of my web development project I investigate an issue where requested where following an unexpectedly I check browser Network logs API responses server logs and database operations to isolate the problem after identifying the calls I fix it and tested successfully request",
+              "code": null,
+              "score": 8,
+              "timestamp": "2026-10-21T08:09:38.624Z",
+              "followupQuestion": "Got it. I want to dig into that a little more — What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?"
+            },
+            {
+              "type": "followup",
+              "answer": "Energies process.nextric executes the first before promise microtask  Promise callbacks then execute before set in intermediate which returned the check phase of the event group  And this is the next step calls and start input output so I use them carefully to maintain application responses  Responsibos",
+              "code": null,
+              "score": 8,
+              "timestamp": "2026-10-21T08:11:36.606Z"
+            }
+          ],
+          "status": "completed",
+          "followupCount": 1,
+          "questionId": "q1",
+          "question": "Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "topic": "Node.js Internals",
+          "expectedAnswer": "Phases: timers, pending callbacks, idle/prepare, poll, check (setImmediate), close. process.nextTick executes immediately after the current operation before microtask queue and event loop ticks.",
+          "startedAt": "2026-10-21T08:08:39.870Z",
+          "_conversationalText": "Thanks for introducing yourself! Great to learn more about your background. Let's dive right into our first technical question — Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "score": 8,
+          "feedback": "The candidate correctly identified the execution order between process.nextTick, Promise microtasks, and setImmediate, which is the exact execution priority required by the question. No technical concepts or explanations were missed or needed improvement Could elaborate further on production scaling, failure modes, and trade-offs for Node.js Internals.",
+          "idealAnswer": "Phases: timers, pending callbacks, idle/prepare, poll, check (setImmediate), close. process.nextTick executes immediately after the current operation before microtask queue and event loop ticks.",
+          "strengths": [
+            "The candidate correctly identified the execution order between process.nextTick, Promise microtasks, and setImmediate, which is the exact execution priority required by the question. No technical concepts or explanations were missed or needed improvement"
+          ],
+          "weaknesses": [
+            "Could elaborate further on production scaling, failure modes, and trade-offs for Node.js Internals."
+          ],
+          "completedAt": "2026-10-21T08:11:36.606Z",
+          "timeTaken": 177
+        },
+        {
+          "answers": [],
+          "status": "skipped",
+          "followupCount": 0,
+          "questionId": "q4",
+          "question": "Compare optimistic locking with pessimistic locking in high-concurrency database transactions. In what specific production scenarios would you choose each?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "topic": "Database Concurrency",
+          "expectedAnswer": "Optimistic uses version checks on update (best for high read, low conflict). Pessimistic locks rows via SELECT FOR UPDATE (best for high-contention bank balances or seat booking).",
+          "startedAt": "2026-10-21T08:11:36.607Z",
+          "_conversationalText": "Good, I appreciate that. Compare optimistic locking with pessimistic locking in high-concurrency database transactions. In what specific production scenarios would you choose each?",
+          "score": 0,
+          "feedback": "Question skipped by candidate (Score: 0/10).",
+          "completedAt": "2026-10-21T08:13:52.357Z",
+          "timeTaken": 136
+        },
+        {
+          "answers": [],
+          "status": "skipped",
+          "followupCount": 0,
+          "questionId": "q2",
+          "question": "How would you design an idempotent payment processing endpoint to guarantee that network retries never result in duplicate debit transactions?",
+          "questionType": "system_design",
+          "difficulty": "hard",
+          "topic": "Idempotent API Design",
+          "expectedAnswer": "Require a client-generated Idempotency-Key header. Check and acquire an atomic lock/record in Redis or DB with transaction status before processing payment.",
+          "startedAt": "2026-10-21T08:13:52.357Z",
+          "_conversationalText": "No worries, let's move on. Let me give you a design scenario. How would you design an idempotent payment processing endpoint to guarantee that network retries never result in duplicate debit transactions?",
+          "score": 0,
+          "feedback": "Question skipped by candidate (Score: 0/10).",
+          "completedAt": "2026-10-21T08:13:56.317Z",
+          "timeTaken": 4
+        },
+        {
+          "answers": [
+            {
+              "type": "main",
+              "answer": "",
+              "code": "function solution() {\n  const requests = new Map();\n  const LIMIT = 100;\n  const WINDOW = 60000;\n\n  return function isAllowed(ip) {\n    const now = Date.now();\n    const timestamps = requests.get(ip) || [];\n    const valid = timestamps.filter(t => now - t < WINDOW);\n\n    if (valid.length >= LIMIT) {\n      requests.set(ip, valid);\n      return false;\n    }\n\n    valid.push(now);\n    requests.set(ip, valid);\n    return true;\n  };\n}",
+              "score": 9.5,
+              "timestamp": "2026-10-21T08:15:08.979Z"
+            }
+          ],
+          "status": "completed",
+          "followupCount": 0,
+          "questionId": "q3",
+          "question": "Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?",
+          "questionType": "code",
+          "difficulty": "hard",
+          "topic": "Rate Limiting & Concurrency",
+          "expectedAnswer": "Track timestamps in array per IP, filter out timestamps older than window. In distributed clusters, use Redis with sorted sets (ZADD/ZREMRANGEBYSCORE) or Token Bucket with Lua scripts.",
+          "startedAt": "2026-10-21T08:13:56.317Z",
+          "_conversationalText": "No worries, let's move on. I'm going to give you a coding problem now. Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?",
+          "score": 9.5,
+          "feedback": "Code structure is cleanly outlined for Rate Limiting & Concurrency and targets the core functional requirements. Consider testing edge cases such as empty inputs, boundary values, and optimal space complexity for Rate Limiting & Concurrency.",
+          "idealAnswer": "Track timestamps in array per IP, filter out timestamps older than window. In distributed clusters, use Redis with sorted sets (ZADD/ZREMRANGEBYSCORE) or Token Bucket with Lua scripts.",
+          "strengths": [
+            "Strong code implementation and logical structure for Rate Limiting & Concurrency"
+          ],
+          "weaknesses": [
+            "Could delve deeper into production failure modes and trade-offs for Rate Limiting & Concurrency"
+          ],
+          "completedAt": "2026-10-21T08:15:08.979Z",
+          "timeTaken": 73
+        }
+      ],
+      "totalQuestions": 5,
+      "interviewType": "technical",
+      "difficulty": "hard",
+      "targetDuration": 45,
+      "status": "completed",
+      "_id": "6ad872b5006e0b0699deef10",
+      "id": "6ad872b5006e0b0699deef10",
+      "createdAt": "2026-10-21T08:07:17.158Z",
+      "updatedAt": "2026-10-21T08:15:22.364Z",
+      "transcript": [
+        {
+          "role": "ai",
+          "content": "Hey Demo! Great to finally connect. I'm really excited to chat with you today about the Backend Engineer position. Before we dive into the technical stuff, I'd love to just hear a bit about you — maybe give me a quick intro, who you are, your background, and what's been keeping you busy lately?",
+          "questionId": "q_intro",
+          "entryType": "greeting",
+          "timestamp": "2026-10-21T08:07:52.299Z"
+        },
+        {
+          "role": "user",
+          "content": "Hi I'm Sumit Pisada computer science and data science student about software development problem solving and AI I have been producing the node.js xql.js and Mobility here I am showcasing my skills learning from this opportunity and grow as a developer",
+          "questionId": "q_intro",
+          "entryType": "answer",
+          "timestamp": "2026-10-21T08:08:39.866Z"
+        },
+        {
+          "role": "ai",
+          "content": "Thanks for introducing yourself! Great to learn more about your background. Let's dive right into our first technical question — Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "questionId": "q1",
+          "entryType": "question",
+          "timestamp": "2026-10-21T08:08:39.872Z"
+        },
+        {
+          "role": "user",
+          "content": "Uh in one of my web development project I investigate an issue where requested where following an unexpectedly I check browser Network logs API responses server logs and database operations to isolate the problem after identifying the calls I fix it and tested successfully request",
+          "questionId": "q1",
+          "entryType": "answer",
+          "timestamp": "2026-10-21T08:09:32.276Z"
+        },
+        {
+          "role": "ai",
+          "content": "Got it. I want to dig into that a little more — What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "questionId": "q1",
+          "entryType": "followup",
+          "timestamp": "2026-10-21T08:09:41.702Z"
+        },
+        {
+          "role": "user",
+          "content": "Energies process.nextric executes the first before promise microtask  Promise callbacks then execute before set in intermediate which returned the check phase of the event group  And this is the next step calls and start input output so I use them carefully to maintain application responses  Responsibos",
+          "questionId": "q1",
+          "entryType": "answer",
+          "timestamp": "2026-10-21T08:11:29.992Z"
+        },
+        {
+          "role": "ai",
+          "content": "Good, I appreciate that. Compare optimistic locking with pessimistic locking in high-concurrency database transactions. In what specific production scenarios would you choose each?",
+          "questionId": "q4",
+          "entryType": "question",
+          "timestamp": "2026-10-21T08:11:36.607Z"
+        },
+        {
+          "role": "user",
+          "content": "[Question skipped]",
+          "questionId": "q4",
+          "entryType": "skip",
+          "timestamp": "2026-10-21T08:13:52.357Z"
+        },
+        {
+          "role": "ai",
+          "content": "No worries, let's move on. Let me give you a design scenario. How would you design an idempotent payment processing endpoint to guarantee that network retries never result in duplicate debit transactions?",
+          "questionId": "q2",
+          "entryType": "question",
+          "timestamp": "2026-10-21T08:13:52.357Z"
+        },
+        {
+          "role": "user",
+          "content": "[Question skipped]",
+          "questionId": "q2",
+          "entryType": "skip",
+          "timestamp": "2026-10-21T08:13:56.317Z"
+        },
+        {
+          "role": "ai",
+          "content": "No worries, let's move on. I'm going to give you a coding problem now. Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?",
+          "questionId": "q3",
+          "entryType": "question",
+          "timestamp": "2026-10-21T08:13:56.317Z"
+        },
+        {
+          "role": "user",
+          "content": "\n\n[Code Submitted]",
+          "questionId": "q3",
+          "entryType": "answer",
+          "timestamp": "2026-10-21T08:15:00.962Z"
+        },
+        {
+          "role": "ai",
+          "content": "And we're done! Thank you for a really engaging conversation. I'll have your full performance report ready shortly.",
+          "entryType": "closing",
+          "timestamp": "2026-10-21T08:15:08.979Z"
+        }
+      ],
+      "violations": [
+        {
+          "type": "focus_lost",
+          "details": "Window lost focus"
+        },
+        {
+          "type": "focus_lost",
+          "details": "Window lost focus"
+        },
+        {
+          "type": "focus_lost",
+          "details": "Window lost focus"
+        }
+      ],
+      "shortTermMemory": [
+        {
+          "question": "Hey Demo! Great to finally connect. I'm really excited to chat with you today about the Backend Engineer position. Before we dive into the technical stuff, I'd love to just hear a bit about you — maybe give me a quick intro, who you are, your background, and what's been keeping you busy lately?",
+          "questionType": "hr",
+          "answer": "Hi I'm Sumit Pisada computer science and data science student about software development problem solving and AI I have been producing the node.js xql.js and Mobility here I am showcasing my skills learning from this opportunity and grow as a developer",
+          "score": 9
+        },
+        {
+          "question": "Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "questionType": "theory",
+          "answer": "Energies process.nextric executes the first before promise microtask  Promise callbacks then execute before set in intermediate which returned the check phase of the event group  And this is the next step calls and start input output so I use them carefully to maintain application responses  Responsibos",
+          "score": 8
+        },
+        {
+          "question": "Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?",
+          "questionType": "code",
+          "answer": "",
+          "score": 9.5
+        }
+      ],
+      "longTermSummary": "",
+      "skippedQuestions": [
+        "q4",
+        "q2"
+      ],
+      "skipUsed": true,
+      "currentQuestionIndex": 5,
+      "startedAt": "2026-10-21T08:07:52.298Z",
+      "violationCount": 3,
+      "skipCount": 2,
+      "completedAt": "2026-10-21T08:15:08.979Z",
+      "totalTimeTaken": 437,
+      "reportId": "6ad8749700def558d12e1468"
+    }
+  ],
+  "User": [
+    {
+      "_id": "660000000000000000000001",
+      "id": "660000000000000000000001",
+      "name": "Demo Candidate",
+      "email": "candidate@intervusetu.ai",
+      "role": "candidate",
+      "plan": "pro",
+      "interviewsCount": 1,
+      "isActive": true,
+      "interviews": [
+        "6ad7c1ab00000b31f9c4ea50"
+      ]
+    }
+  ],
+  "Report": [
+    {
+      "interviewId": "6ad7c1ab00000b31f9c4ea50",
+      "_id": "6ad7c8d60044fad8356faaa8",
+      "id": "6ad7c8d60044fad8356faaa8",
+      "userId": "660000000000000000000001",
+      "role": "Full Stack Engineer",
+      "experienceLevel": "mid",
+      "techStack": [
+        "React",
+        "Node.js",
+        "Express",
+        "MongoDB"
+      ],
+      "interviewType": "mixed",
+      "difficulty": "medium",
+      "overallScore": 8.4,
+      "communicationScore": 8.1,
+      "technicalScore": 8.6,
+      "problemSolvingScore": 8.4,
+      "hrScore": 8.4,
+      "codeQualityScore": 7.5,
+      "strengths": [
+        "The candidate demonstrated strong technical skills in React, Node.js, Express, and MongoDB.",
+        "They showed proficiency in coding and problem-solving, which is essential for a Full Stack Engineer role.",
+        "They were able to effectively communicate their skills and knowledge to the interviewer."
+      ],
+      "weaknesses": [
+        "The candidate's average interview score across turns is 8.4/10, indicating a good performance but not exceptional.",
+        "There are areas where the candidate could benefit from more practice and exposure to different technologies and frameworks."
+      ],
+      "overallFeedback": "The candidate demonstrated solid conceptual familiarity with React, Node.js, Express, MongoDB for the Full Stack Engineer position. Responses reflected practical intuition, with opportunities to be even more structured on distributed system edge cases.",
+      "recommendation": "strong_hire",
+      "improvementAreas": [
+        "Continue practicing production-grade architectural trade-offs in React, Node.js, Express, MongoDB.",
+        "Structure answers with the STAR or Problem-Solution-Result framework."
+      ],
+      "topicsToStudy": [
+        "Core Web Vitals & Runtime Performance",
+        "Distributed Caching & Concurrency Control",
+        "Event-Driven Architecture",
+        "Observability & Production Resiliency"
+      ],
+      "questionBreakdown": [
+        {
+          "questionId": "q_intro",
+          "question": "Hey Demo! Welcome, welcome. I always like to start these conversations naturally rather than jumping straight into questions. So tell me — in your own words, who are you and what brings you here today?",
+          "questionType": "hr",
+          "difficulty": "easy",
+          "score": 9,
+          "status": "completed",
+          "feedback": "Warm and authentic introduction covering relevant background and passion for engineering.",
+          "userAnswer": "Computer Science and data science student at MIT Academy of veterinary community. I'm passionate about software development about solving an AI. I've built projects using node.js express.js and mongodb. I'm here to Showcase my skills learn from this opportunity and work as a developer.",
+          "userCode": null,
+          "timeTaken": 65,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": []
+        },
+        {
+          "questionId": "q4",
+          "question": "What is the N+1 query problem and how does it specifically manifest when using MongoDB with Mongoose? How do you detect it and fix it using aggregation pipelines or populate?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "score": 8.5,
+          "status": "completed",
+          "feedback": "Solid explanation of the N+1 query pattern in Document databases and effective mitigation via aggregation pipelines.",
+          "userAnswer": "The N+1 query issue occurs when querying parent records followed by individual queries for each associated child document. In Mongoose, we resolve this using aggregation $lookup pipelines with proper indexing.",
+          "userCode": null,
+          "timeTaken": 110,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": []
+        },
+        {
+          "questionId": "q2",
+          "question": "Design a secure authentication system for a React SPA backed by a Node.js REST API. Cover JWT access tokens, refresh token rotation, HttpOnly cookies, and how to prevent CSRF and XSS attacks end-to-end.",
+          "questionType": "system_design",
+          "difficulty": "medium",
+          "score": 7.5,
+          "status": "completed",
+          "feedback": "Good security fundamentals on refresh token rotation and HttpOnly cookie protection.",
+          "userAnswer": "We store access tokens in memory to prevent XSS and long-lived refresh tokens in HttpOnly SameSite=Strict cookies. Automatic rotation invalidates reused tokens upon refresh.",
+          "userCode": null,
+          "timeTaken": 125,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": []
+        },
+        {
+          "questionId": "q1",
+          "question": "Explain JavaScript's event loop, call stack, microtask queue, and macrotask queue. What is the execution order when you have Promise.resolve().then(), setTimeout(fn, 0), and process.nextTick() all scheduled at the same time?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "score": 7.5,
+          "status": "completed",
+          "feedback": "Good grasp of microtasks vs macrotask execution order in V8 runtime.",
+          "userAnswer": "process.nextTick takes priority before microtask queue resolution, followed by Promise then-callbacks, and macrotasks like setTimeout(0) execute in subsequent turns of the event loop.",
+          "userCode": null,
+          "timeTaken": 110,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": []
+        },
+        {
+          "questionId": "q3",
+          "question": "Implement a debounce(fn, wait, options) function in JavaScript that supports both leading-edge and trailing-edge execution, and includes a .cancel() method to abort any pending invocation.",
+          "questionType": "code",
+          "difficulty": "medium",
+          "score": 9.5,
+          "status": "completed",
+          "feedback": "Outstanding implementation of debounce with cancellation and leading/trailing execution control.",
+          "userAnswer": "Closure wraps timerId and tracks leading invocation state, resetting on delay completion with a dedicated cancel() method.",
+          "userCode": null,
+          "timeTaken": 110,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": []
+        }
+      ],
+      "totalTimeTaken": 520,
+      "averageTimePerQuestion": 104,
+      "violationCount": 1,
+      "transcriptText": "",
+      "updatedAt": "2026-10-20T20:02:30.425Z"
+    },
+    {
+      "interviewId": "6ad872b5006e0b0699deef10",
+      "_id": "6ad8749700def558d12e1468",
+      "id": "6ad8749700def558d12e1468",
+      "userId": "660000000000000000000001",
+      "role": "Backend Engineer",
+      "experienceLevel": "senior",
+      "techStack": [
+        "Node.js",
+        "Express",
+        "Distributed Systems",
+        "MongoDB"
+      ],
+      "interviewType": "technical",
+      "difficulty": "hard",
+      "overallScore": 5.3,
+      "communicationScore": 5,
+      "technicalScore": 5.5,
+      "problemSolvingScore": 5.3,
+      "hrScore": 5.3,
+      "codeQualityScore": 7.5,
+      "strengths": [
+        "The candidate demonstrated strong technical skills in Node.js, Express, and MongoDB."
+      ],
+      "weaknesses": [
+        "The candidate had a slight average score of 5.3/10 across all turns, indicating room for improvement in certain areas."
+      ],
+      "overallFeedback": "The candidate demonstrated solid conceptual familiarity with Node.js, Express, Distributed Systems, MongoDB for the Backend Engineer position. Responses reflected practical intuition, with opportunities to be even more structured on distributed system edge cases.",
+      "recommendation": "borderline",
+      "improvementAreas": [
+        "Continue practicing production-grade architectural trade-offs in Node.js, Express, Distributed Systems, MongoDB.",
+        "Structure answers with the STAR or Problem-Solution-Result framework."
+      ],
+      "topicsToStudy": [
+        "Core Web Vitals & Runtime Performance",
+        "Distributed Caching & Concurrency Control",
+        "Event-Driven Architecture",
+        "Observability & Production Resiliency"
+      ],
+      "questionBreakdown": [
+        {
+          "questionId": "q_intro",
+          "question": "Hey Demo! Great to finally connect. I'm really excited to chat with you today about the Backend Engineer position. Before we dive into the technical stuff, I'd love to just hear a bit about you — maybe give me a quick intro, who you are, your background, and what's been keeping you busy lately?",
+          "questionType": "hr",
+          "difficulty": "easy",
+          "score": 9,
+          "status": "completed",
+          "feedback": "Great introduction! Communicated background, technical projects, and career focus clearly. Clear overview of background and recent experience.",
+          "idealAnswer": "A great self-introduction outlines education/background, core technical stack, recent project highlights, and motivation for the role.",
+          "userAnswer": "Hi I'm Sumit Pisada computer science and data science student about software development problem solving and AI I have been producing the node.js xql.js and Mobility here I am showcasing my skills learning from this opportunity and grow as a developer",
+          "userCode": null,
+          "timeTaken": 25,
+          "followupCount": 0,
+          "strengths": [
+            "Confident communication and clear overview of technical background"
+          ],
+          "weaknesses": [
+            "Good communication"
+          ]
+        },
+        {
+          "questionId": "q1",
+          "question": "Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "score": 8,
+          "status": "completed",
+          "feedback": "The candidate correctly identified the execution order between process.nextTick, Promise microtasks, and setImmediate, which is the exact execution priority required by the question. No technical concepts or explanations were missed or needed improvement Could elaborate further on production scaling, failure modes, and trade-offs for Node.js Internals.",
+          "idealAnswer": "Phases: timers, pending callbacks, idle/prepare, poll, check (setImmediate), close. process.nextTick executes immediately after the current operation before microtask queue and event loop ticks.",
+          "userAnswer": "Uh in one of my web development project I investigate an issue where requested where following an unexpectedly I check browser Network logs API responses server logs and database operations to isolate the problem after identifying the calls I fix it and tested successfully request",
+          "userCode": null,
+          "timeTaken": 177,
+          "followupCount": 1,
+          "strengths": [
+            "The candidate correctly identified the execution order between process.nextTick, Promise microtasks, and setImmediate, which is the exact execution priority required by the question. No technical concepts or explanations were missed or needed improvement"
+          ],
+          "weaknesses": [
+            "Could elaborate further on production scaling, failure modes, and trade-offs for Node.js Internals."
+          ]
+        },
+        {
+          "questionId": "q4",
+          "question": "Compare optimistic locking with pessimistic locking in high-concurrency database transactions. In what specific production scenarios would you choose each?",
+          "questionType": "theory",
+          "difficulty": "medium",
+          "score": 0,
+          "status": "skipped",
+          "feedback": "Question skipped by candidate (Score: 0/10)",
+          "userAnswer": "[Question skipped by candidate]",
+          "userCode": null,
+          "timeTaken": 136,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": [
+            "Question skipped"
+          ]
+        },
+        {
+          "questionId": "q2",
+          "question": "How would you design an idempotent payment processing endpoint to guarantee that network retries never result in duplicate debit transactions?",
+          "questionType": "system_design",
+          "difficulty": "hard",
+          "score": 0,
+          "status": "skipped",
+          "feedback": "Question skipped by candidate (Score: 0/10)",
+          "userAnswer": "[Question skipped by candidate]",
+          "userCode": null,
+          "timeTaken": 4,
+          "followupCount": 0,
+          "strengths": [],
+          "weaknesses": [
+            "Question skipped"
+          ]
+        },
+        {
+          "questionId": "q3",
+          "question": "Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?",
+          "questionType": "code",
+          "difficulty": "hard",
+          "score": 9.5,
+          "status": "completed",
+          "feedback": "Code structure is cleanly outlined for Rate Limiting & Concurrency and targets the core functional requirements. Consider testing edge cases such as empty inputs, boundary values, and optimal space complexity for Rate Limiting & Concurrency.",
+          "idealAnswer": "Track timestamps in array per IP, filter out timestamps older than window. In distributed clusters, use Redis with sorted sets (ZADD/ZREMRANGEBYSCORE) or Token Bucket with Lua scripts.",
+          "userAnswer": "",
+          "userCode": "function solution() {\n  const requests = new Map();\n  const LIMIT = 100;\n  const WINDOW = 60000;\n\n  return function isAllowed(ip) {\n    const now = Date.now();\n    const timestamps = requests.get(ip) || [];\n    const valid = timestamps.filter(t => now - t < WINDOW);\n\n    if (valid.length >= LIMIT) {\n      requests.set(ip, valid);\n      return false;\n    }\n\n    valid.push(now);\n    requests.set(ip, valid);\n    return true;\n  };\n}",
+          "timeTaken": 73,
+          "followupCount": 0,
+          "strengths": [
+            "Strong code implementation and logical structure for Rate Limiting & Concurrency"
+          ],
+          "weaknesses": [
+            "Could delve deeper into production failure modes and trade-offs for Rate Limiting & Concurrency"
+          ]
+        }
+      ],
+      "totalTimeTaken": 437,
+      "averageTimePerQuestion": 87,
+      "violationCount": 3,
+      "transcriptText": "[1:37:52 pm] 🤖 Interviewer:\nHey Demo! Great to finally connect. I'm really excited to chat with you today about the Backend Engineer position. Before we dive into the technical stuff, I'd love to just hear a bit about you — maybe give me a quick intro, who you are, your background, and what's been keeping you busy lately?\n\n---\n\n[1:38:39 pm] 👤 Candidate:\nHi I'm Sumit Pisada computer science and data science student about software development problem solving and AI I have been producing the node.js xql.js and Mobility here I am showcasing my skills learning from this opportunity and grow as a developer\n\n---\n\n[1:38:39 pm] 🤖 Interviewer:\nThanks for introducing yourself! Great to learn more about your background. Let's dive right into our first technical question — Explain the Node.js event loop phases in detail. What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?\n\n---\n\n[1:39:32 pm] 👤 Candidate:\nUh in one of my web development project I investigate an issue where requested where following an unexpectedly I check browser Network logs API responses server logs and database operations to isolate the problem after identifying the calls I fix it and tested successfully request\n\n---\n\n[1:39:41 pm] 🤖 Interviewer:\nGot it. I want to dig into that a little more — What is the exact execution priority between process.nextTick, Promise microtasks, and setImmediate?\n\n---\n\n[1:41:29 pm] 👤 Candidate:\nEnergies process.nextric executes the first before promise microtask  Promise callbacks then execute before set in intermediate which returned the check phase of the event group  And this is the next step calls and start input output so I use them carefully to maintain application responses  Responsibos\n\n---\n\n[1:41:36 pm] 🤖 Interviewer:\nGood, I appreciate that. Compare optimistic locking with pessimistic locking in high-concurrency database transactions. In what specific production scenarios would you choose each?\n\n---\n\n[1:43:52 pm] 👤 Candidate:\n[Question skipped]\n\n---\n\n[1:43:52 pm] 🤖 Interviewer:\nNo worries, let's move on. Let me give you a design scenario. How would you design an idempotent payment processing endpoint to guarantee that network retries never result in duplicate debit transactions?\n\n---\n\n[1:43:56 pm] 👤 Candidate:\n[Question skipped]\n\n---\n\n[1:43:56 pm] 🤖 Interviewer:\nNo worries, let's move on. I'm going to give you a coding problem now. Implement an in-memory sliding window rate limiter in JavaScript that limits requests to 100 per minute per client IP. How would you distribute this across multiple server instances?\n\n---\n\n[1:45:00 pm] 👤 Candidate:\n\n\n[Code Submitted]\n\n---\n\n[1:45:08 pm] 🤖 Interviewer:\nAnd we're done! Thank you for a really engaging conversation. I'll have your full performance report ready shortly.\n",
+      "updatedAt": "2026-10-21T08:15:22.364Z"
+    }
+  ],
+  "InterviewTemplate": [],
+  "Organization": [],
+  "AptitudeAttempt": [],
+  "AptitudeQuestion": [],
+  "AptitudeTest": [],
+  "ScheduleSlot": []
+}

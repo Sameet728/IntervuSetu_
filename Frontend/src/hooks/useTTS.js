@@ -57,9 +57,51 @@ export function useTTS() {
     utterance.pitch  = 1.0
     utterance.volume = 1.0
 
-    utterance.onstart = () => { setSpeaking(true); setThinking(false) }
-    utterance.onend   = () => { setSpeaking(false); if (onEnd) onEnd() }
-    utterance.onerror = () => { setSpeaking(false); if (onEnd) onEnd() }
+    let pulseInterval = null
+    let fallbackTimeout = null
+    let ended = false
+
+    const cleanup = () => {
+      if (pulseInterval) clearInterval(pulseInterval)
+      if (fallbackTimeout) clearTimeout(fallbackTimeout)
+      pulseInterval = null
+      fallbackTimeout = null
+    }
+
+    const handleFinish = () => {
+      if (ended) return
+      ended = true
+      cleanup()
+      setSpeaking(false)
+      if (onEnd) onEnd()
+    }
+
+    utterance.onstart = () => {
+      setSpeaking(true)
+      setThinking(false)
+      // Chrome TTS 15-second pause bug workaround
+      pulseInterval = setInterval(() => {
+        if (!window.speechSynthesis || !window.speechSynthesis.speaking) {
+          cleanup()
+          return
+        }
+        window.speechSynthesis.pause()
+        window.speechSynthesis.resume()
+      }, 9000)
+    }
+
+    utterance.onend   = handleFinish
+    utterance.onerror = handleFinish
+
+    // Safety fallback timeout based on length (average 2.5 words/sec)
+    const wordCount = (text || '').split(/\s+/).filter(Boolean).length
+    const expectedDurationMs = Math.max(6000, (wordCount / 2.2) * 1000 + 4000)
+    fallbackTimeout = setTimeout(() => {
+      if (!ended) {
+        console.warn('TTS safety fallback triggered after', expectedDurationMs, 'ms')
+        handleFinish()
+      }
+    }, expectedDurationMs)
 
     window.speechSynthesis.speak(utterance)
   }, [])

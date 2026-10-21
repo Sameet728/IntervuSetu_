@@ -26,12 +26,21 @@ export default function ViolationWarning({ violation, onDismiss }) {
                 </div>
                 <p className="text-slate-300 text-xs font-body mt-1">{violation.warning}</p>
                 <div className="flex gap-1 mt-2">
-                  {Array.from({ length: violation.maxViolations }).map((_, i) => (
-                    <div key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-colors duration-300
-                        ${i < violation.violationCount ? 'bg-rose' : 'bg-border'}`}
-                    />
-                  ))}
+                  {(violation.maxViolations || 3) <= 10 ? (
+                    Array.from({ length: violation.maxViolations || 3 }).map((_, i) => (
+                      <div key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300
+                          ${i < violation.violationCount ? 'bg-rose' : 'bg-border'}`}
+                      />
+                    ))
+                  ) : (
+                    <div className="w-full bg-zinc-700/50 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-rose-500 h-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, ((violation.violationCount || 0) / (violation.maxViolations || 100)) * 100)}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <p className="text-[10px] text-slate-600 font-mono mt-1.5">
                   {violation.remainingChances === 0

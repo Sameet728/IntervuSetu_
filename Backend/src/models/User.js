@@ -82,6 +82,16 @@ const userSchema = new mongoose.Schema(
       enum: ["dark", "light", "system"],
       default: "system",
     },
+    preferredAIEngine: {
+      type: String,
+      enum: ["groq", "qwen_local"],
+      default: "groq",
+    },
+    groqApiKey: {
+      type: String,
+      default: "",
+      trim: true,
+    },
 
     // Password Reset
     resetPasswordOtp: {

@@ -2,7 +2,9 @@ const AptitudeTest = require("../models/AptitudeTest");
 const AptitudeAttempt = require("../models/AptitudeAttempt");
 const crypto = require("crypto");
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith("your_"))
+  ? new Resend(process.env.RESEND_API_KEY)
+  : { emails: { send: async () => ({ id: "mock_email_id" }) } };
 
 // ─── CREATE TEST ──────────────────────────────────────────────────────────────
 const createTest = async (req, res, next) => {

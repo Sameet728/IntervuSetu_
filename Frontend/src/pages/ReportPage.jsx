@@ -347,6 +347,11 @@ export default function ReportPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 line-clamp-2">
                         <span className="text-zinc-500 mr-2 text-xs">Q{i+1}</span>{q.question}
+                        {q.status === 'skipped' && (
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 border border-amber-500/30 text-amber-500 uppercase tracking-wider">
+                            Skipped
+                          </span>
+                        )}
                       </p>
                       <div className="flex flex-wrap items-center gap-3 mt-1.5">
                         <span className="text-[10px] uppercase text-zinc-500 flex items-center gap-1 font-semibold tracking-wider">

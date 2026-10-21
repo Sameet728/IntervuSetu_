@@ -8,6 +8,8 @@ const {
   getTranscript,
   submitInterview,
   deleteInterview,
+  getPrebuiltInterviews,
+  startPrebuiltInterview,
 } = require("../controllers/interviewController");
 const { protect } = require("../middlewares/authMiddleware");
 const { createInterviewValidation } = require("../middlewares/validationMiddleware");
@@ -17,8 +19,14 @@ const { checkUserPlan } = require("../middlewares/planMiddleware");
 // GET /api/interviews/join/:shareCode → template info for join page
 router.get("/join/:shareCode", getTemplateInfo);
 
+// GET /api/interviews/prebuilt → list all ready-made interviews
+router.get("/prebuilt", getPrebuiltInterviews);
+
 // All routes below are protected
 router.use(protect);
+
+// POST   /api/interviews/prebuilt/:id/start → start ready-made interview instantly
+router.post("/prebuilt/:id/start", startPrebuiltInterview);
 
 // POST   /api/interviews/create       → create interview + generate questions
 router.post("/create", checkUserPlan, createInterviewValidation, createInterview);

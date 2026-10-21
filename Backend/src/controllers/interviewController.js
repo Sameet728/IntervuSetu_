@@ -7,6 +7,49 @@ const Organization = require("../models/Organization");
 const { generateQuestions } = require("../services/geminiService");
 const { buildReport } = require("../services/reportService");
 
+// ─── Structured Interview Order Helper ─────────────────────────────────────
+/**
+ * Sorts generated questions into a natural interview flow:
+ * 1. Self Introduction (always first — injected)
+ * 2. HR warm-up questions
+ * 3. Behavioral questions
+ * 4. Technical / Theory questions
+ * 5. System Design
+ * 6. Coding questions (always last, 1-2 max)
+ */
+function sortQuestionsStructured(questions, interviewType = "mixed") {
+  const TYPE_ORDER = { hr: 0, behavioral: 1, theory: 2, system_design: 3, code: 4 };
+
+  // Inject mandatory self-introduction question as first question
+  const selfIntroQ = {
+    questionId: "q_intro",
+    question: "To start things off, tell me about yourself — your background, what you've been working on recently, and what excites you about this role.",
+    questionType: "hr",
+    difficulty: "easy",
+    expectedAnswer: "Clear articulation of background, relevant experience, and genuine motivation for the role.",
+    topic: "Self Introduction",
+    status: "pending",
+    answers: [],
+    followupCount: 0,
+    score: null,
+  };
+
+  // Remove any existing intro-style questions to avoid duplicates
+  const filtered = questions.filter(
+    (q) => !/(tell me about yourself|introduce yourself|walk me through your background)/i.test(q.question)
+  );
+
+  // Sort by type order
+  const sorted = filtered.sort((a, b) => {
+    const aOrder = TYPE_ORDER[a.questionType] ?? 2;
+    const bOrder = TYPE_ORDER[b.questionType] ?? 2;
+    return aOrder - bOrder;
+  });
+
+  return [selfIntroQ, ...sorted];
+}
+
+
 /**
  * GET /api/interviews/join/:shareCode
  * Public — returns template info for the join page (no auth required)
@@ -86,7 +129,14 @@ const createInterview = async (req, res, next) => {
       difficulty = "adaptive",
       targetDuration = 45,
       templateId, // optional — if joining org interview
+      aiEngine: reqAiEngine,
+      groqApiKey: reqGroqApiKey,
     } = req.body;
+
+    // Fetch user preferences for default AI engine & Groq key
+    const currentUser = await User.findById(req.user.id).select("preferredAIEngine groqApiKey").lean();
+    const activeAiEngine = reqAiEngine || currentUser?.preferredAIEngine || (process.env.GROQ_API_KEY ? "groq" : "qwen_local");
+    const activeGroqApiKey = reqGroqApiKey || currentUser?.groqApiKey || process.env.GROQ_API_KEY || null;
 
     // ─── Template-based interview (org join flow) ─────────────────────
     if (templateId) {
@@ -118,6 +168,9 @@ const createInterview = async (req, res, next) => {
         });
       }
 
+      // Enforce structured question ordering with mandatory self-intro as question 0
+      const orderedQuestions = sortQuestionsStructured(template.questions, template.interviewType);
+
       // Create interview from template (copy questions)
       const interview = await Interview.create({
         userId: req.user.id,
@@ -127,11 +180,12 @@ const createInterview = async (req, res, next) => {
         role: template.role,
         experienceLevel: "mid",
         techStack: template.techStack,
-        questions: template.questions.map((q) => ({ ...q, status: "pending", answers: [] })),
-        totalQuestions: template.questions.length,
+        questions: orderedQuestions.map((q) => ({ ...q, status: "pending", answers: [] })),
+        totalQuestions: orderedQuestions.length,
         interviewType: template.interviewType,
         difficulty: template.difficulty,
         targetDuration: template.duration,
+        aiEngine: activeAiEngine,
         status: "created",
       });
 
@@ -166,27 +220,55 @@ const createInterview = async (req, res, next) => {
       ? techStack
       : techStack.split(",").map((t) => t.trim());
 
-    // Generate questions via Gemini
+    // ─── Auto-compute question count from duration + difficulty ─────────
+    //   Duration guidance: ~4-5 min per question (incl. follow-ups)
+    //   Difficulty modifier: hard = more depth = fewer questions
+    const durationMins = Math.max(10, Math.min(120, Number(targetDuration) || 45));
+    let computedCount;
+    if (questionCount && questionCount !== 8) {
+      // User explicitly set a count — respect it
+      computedCount = Math.min(Math.max(questionCount, 3), 20);
+    } else {
+      // Auto-calculate from duration
+      const minutesPerQ = difficulty === "hard" ? 6 : difficulty === "easy" ? 3.5 : 5;
+      computedCount = Math.round(durationMins / minutesPerQ);
+      computedCount = Math.min(Math.max(computedCount, 3), 15);
+    }
+
+    // ─── Determine coding question count (1 for <30min, 2 for ≥30min) ──
+    const codingQCount = interviewType !== "hr" && interviewType !== "behavioral"
+      ? (durationMins >= 30 ? 2 : 1)
+      : 0;
+
+    // Generate questions via Groq or Local Qwen
     const generatedQuestions = await generateQuestions({
       role,
       experienceLevel,
       techStack: parsedTechStack,
-      count: Math.min(Math.max(questionCount, 3), 20), // clamp 3–20
+      count: computedCount,
       interviewType,
       difficulty,
+      codingQCount,
+      aiEngine: activeAiEngine,
+      groqApiKey: activeGroqApiKey,
     });
 
-    // Create interview
+    // ─── Enforce structured question ordering ──────────────────────────
+    // Order: [1 self-intro HR] → [HR questions] → [Technical/Theory] → [Coding]
+    const orderedQuestions = sortQuestionsStructured(generatedQuestions, interviewType);
+
+    // Create interview with structured question ordering
     const interview = await Interview.create({
       userId: req.user.id,
       role,
       experienceLevel,
       techStack: parsedTechStack,
-      questions: generatedQuestions,
-      totalQuestions: generatedQuestions.length,
+      questions: orderedQuestions,
+      totalQuestions: orderedQuestions.length,
       interviewType,
       difficulty,
       targetDuration,
+      aiEngine: activeAiEngine,
       status: "created",
     });
 
@@ -302,10 +384,14 @@ const getMyInterviews = async (req, res, next) => {
  */
 const getInterview = async (req, res, next) => {
   try {
-    const interview = await Interview.findOne({
+    let interview = await Interview.findOne({
       _id: req.params.id,
       userId: req.user.id,
     }).lean();
+
+    if (!interview) {
+      interview = await Interview.findById(req.params.id).lean();
+    }
 
     if (!interview) {
       return res.status(404).json({ success: false, message: "Interview not found" });
@@ -322,12 +408,18 @@ const getInterview = async (req, res, next) => {
  */
 const getTranscript = async (req, res, next) => {
   try {
-    const interview = await Interview.findOne({
+    let interview = await Interview.findOne({
       _id: req.params.id,
       userId: req.user.id,
     })
       .select("transcript role experienceLevel interviewType startedAt completedAt")
       .lean();
+
+    if (!interview) {
+      interview = await Interview.findById(req.params.id)
+        .select("transcript role experienceLevel interviewType startedAt completedAt")
+        .lean();
+    }
 
     if (!interview) {
       return res.status(404).json({ success: false, message: "Interview not found" });
@@ -421,6 +513,80 @@ const deleteInterview = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/interviews/prebuilt
+ * Return pre-built ready-made interviews
+ */
+const PREBUILT_INTERVIEWS = require("../config/prebuiltInterviews");
+
+const getPrebuiltInterviews = (req, res) => {
+  const previews = PREBUILT_INTERVIEWS.map((item) => ({
+    id: item.id,
+    title: item.title,
+    role: item.role,
+    badge: item.badge,
+    badgeColor: item.badgeColor,
+    experienceLevel: item.experienceLevel,
+    interviewType: item.interviewType,
+    difficulty: item.difficulty,
+    duration: item.duration,
+    techStack: item.techStack,
+    description: item.description,
+    icon: item.icon,
+    questionCount: item.questions.length,
+  }));
+  res.json({ success: true, data: previews });
+};
+
+/**
+ * POST /api/interviews/prebuilt/:id/start
+ * Instantly start a ready-made interview without generating questions
+ */
+const startPrebuiltInterview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const template = PREBUILT_INTERVIEWS.find((t) => t.id === id);
+    if (!template) {
+      return res.status(404).json({ success: false, message: "Ready-made interview not found" });
+    }
+
+    const userId = req.user?.id || req.user?._id || "660000000000000000000001";
+
+    // Enforce structured question ordering with mandatory self-intro as question 0
+    const orderedQuestions = sortQuestionsStructured(template.questions, template.interviewType);
+
+    const interview = await Interview.create({
+      userId,
+      role: template.role,
+      experienceLevel: template.experienceLevel,
+      techStack: template.techStack,
+      questions: orderedQuestions.map((q) => ({
+        ...q,
+        status: "pending",
+        answers: [],
+        followupCount: 0,
+      })),
+      totalQuestions: orderedQuestions.length,
+      interviewType: template.interviewType,
+      difficulty: template.difficulty,
+      targetDuration: template.duration,
+      status: "created",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Ready-made interview loaded instantly",
+      data: {
+        interviewId: interview._id,
+        role: interview.role,
+        totalQuestions: interview.totalQuestions,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getTemplateInfo,
   createInterview,
@@ -429,4 +595,6 @@ module.exports = {
   getTranscript,
   submitInterview,
   deleteInterview,
+  getPrebuiltInterviews,
+  startPrebuiltInterview,
 };

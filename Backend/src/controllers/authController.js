@@ -166,7 +166,7 @@ const updateProfile = async (req, res, next) => {
     const allowedFields = [
       "name", "phone", "userType", "college", "year", "branch",
       "company", "yearsOfExperience", "skills", "targetRole",
-      "experienceLevel", "preferredTheme",
+      "experienceLevel", "preferredTheme", "preferredAIEngine", "groqApiKey",
     ];
 
     const updates = {};
