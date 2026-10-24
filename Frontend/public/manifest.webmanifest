@@ -4,8 +4,8 @@
   "description": "Practise real interviews with an AI voice interviewer and get structured feedback you can act on.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f5f2",
-  "theme_color": "#5854d6",
+  "background_color": "#03050a",
+  "theme_color": "#03050a",
   "icons": [
     {
       "src": "/icons/icon-192.png",

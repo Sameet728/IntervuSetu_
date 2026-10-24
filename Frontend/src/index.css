@@ -19,36 +19,41 @@
 .dark {
   color-scheme: dark;
 
-  /* Surfaces — deep midnight navy */
-  --canvas:          8 11 22;
-  --canvas-inset:    5 7 15;
-  --surface:         16 21 38;
-  --surface-2:       21 27 46;
-  --surface-3:       28 36 58;
-  --raised:          24 31 53;
+  /* Surfaces — obsidian, a breath of indigo at the edge of black */
+  --canvas:          3 5 10;
+  --canvas-inset:    1 2 5;
+  --surface:         10 14 23;
+  --surface-2:       15 20 33;
+  --surface-3:       23 29 45;
+  --raised:          18 23 37;
 
   /* Hairlines */
-  --hairline:        35 44 68;
-  --hairline-soft:   28 36 57;
-  --hairline-strong: 50 62 92;
+  --hairline:        30 38 55;
+  --hairline-soft:   22 28 42;
+  --hairline-strong: 46 56 77;
 
   /* Ink */
-  --ink:             238 241 247;
-  --ink-muted:       164 173 192;
-  --ink-subtle:      122 132 154;
-  --ink-faint:       92 102 124;
+  --ink:             240 242 250;
+  --ink-muted:       165 174 194;
+  --ink-subtle:      125 135 158;
+  --ink-faint:       100 110 132;
 
   /* Primary — muted indigo / lavender */
-  --accent:          139 135 240;
-  --accent-hover:    156 152 248;
-  --accent-active:   120 116 226;
-  --accent-soft:     38 37 82;
-  --accent-on:       12 12 30;
+  --accent:          144 139 246;
+  --accent-hover:    163 159 255;
+  --accent-active:   123 118 230;
+  --accent-soft:     34 32 72;
+  --accent-on:       10 10 26;
 
   /* AI signature — controlled electric violet */
-  --ai:              154 130 255;
-  --ai-blue:         96 154 255;
-  --ai-soft:         36 32 70;
+  --ai:              160 136 255;
+  --ai-blue:         104 160 255;
+  --ai-soft:         32 28 64;
+
+  /* Brand mark — lit lavender on black */
+  --mark-a:          117 98 242;
+  --mark-b:          155 135 255;
+  --mark-c:          217 204 255;
 
   /* Status only */
   --success:         52 199 123;
@@ -59,26 +64,26 @@
   --danger-soft:     48 18 18;
 
   /* Neutral background ramp (legacy bg-zinc-*) */
-  --b-50:  14 19 33;   --b-100: 19 25 42;   --b-200: 26 34 55;
-  --b-300: 36 48 74;   --b-400: 53 65 92;   --b-500: 74 86 112;
-  --b-600: 92 104 128; --b-700: 27 36 58;   --b-800: 30 42 66;
-  --b-900: 16 21 38;   --b-950: 8 11 22;
+  --b-50:  12 15 24;   --b-100: 15 19 30;   --b-200: 21 27 41;
+  --b-300: 30 38 55;   --b-400: 46 57 78;   --b-500: 66 78 102;
+  --b-600: 86 99 123;  --b-700: 19 25 38;   --b-800: 25 32 48;
+  --b-900: 10 14 23;   --b-950: 3 5 10;
 
   /* Neutral text ramp (legacy text-zinc-*) */
   --t-400: 168 178 196; --t-500: 151 162 182; --t-600: 135 146 166;
   --t-700: 110 122 144; --t-800: 198 206 220; --t-900: 231 235 243;
 
   /* Neutral border ramp (legacy border-zinc-*) */
-  --l-50:  24 31 50;   --l-100: 30 38 60;  --l-200: 35 44 68;
-  --l-300: 42 53 80;   --l-400: 53 65 92;  --l-500: 62 74 100;
-  --l-600: 74 86 112;  --l-700: 52 64 94;  --l-800: 48 59 87;
-  --l-900: 35 44 68;   --l-950: 28 36 57;
+  --l-50:  17 22 34;   --l-100: 22 28 42;  --l-200: 30 38 55;
+  --l-300: 38 48 68;   --l-400: 50 62 84;  --l-500: 60 73 97;
+  --l-600: 73 86 110;  --l-700: 44 55 76;  --l-800: 39 49 69;
+  --l-900: 30 38 55;   --l-950: 22 28 42;
 
   /* Indigo ramp — steps 400/500/600 stay solid enough for white button text */
-  --a-50: 34 33 70;    --a-100: 42 41 88;   --a-200: 58 56 122;
-  --a-300: 111 107 214; --a-400: 139 135 240; --a-500: 156 152 248;
-  --a-600: 105 101 226; --a-700: 178 175 248; --a-800: 205 203 250;
-  --a-900: 226 225 251; --a-950: 240 239 252;
+  --a-50: 30 28 64;    --a-100: 38 36 82;   --a-200: 55 52 118;
+  --a-300: 116 111 224; --a-400: 144 139 246; --a-500: 163 159 255;
+  --a-600: 109 104 234; --a-700: 184 180 252; --a-800: 208 206 253;
+  --a-900: 228 227 253; --a-950: 242 241 255;
 
   --success-50: 12 42 30;   --success-100: 14 52 37;  --success-200: 18 74 52;
   --success-300: 26 104 72; --success-400: 52 199 123; --success-500: 40 176 106;
@@ -153,6 +158,11 @@
   --ai:              109 76 224;
   --ai-blue:         37 99 216;
   --ai-soft:         239 236 253;
+
+  /* Brand mark — deep indigo on porcelain */
+  --mark-a:          90 75 228;
+  --mark-b:          126 108 245;
+  --mark-c:          185 168 255;
 
   --success:         14 122 82;
   --success-soft:    229 246 236;
@@ -419,6 +429,11 @@
     filter: blur(12px);
     z-index: -1;
   }
+  .dark .ambient::before {
+    background:
+      radial-gradient(38rem 22rem at 22% 20%, rgb(var(--accent) / 0.11), transparent 62%),
+      radial-gradient(32rem 20rem at 78% 0%, rgb(var(--ai) / 0.09), transparent 60%);
+  }
 
   .dot-grid {
     background-image: radial-gradient(rgb(var(--ink) / 0.14) 1px, transparent 1px);
@@ -441,6 +456,13 @@
 
   .glow-accent { box-shadow: 0 18px 50px -20px rgb(var(--accent) / 0.65); }
   .glow-ai { box-shadow: 0 18px 50px -20px rgb(var(--ai) / 0.55); }
+
+  /* Lit mark for dark panels even while the page itself is in light mode */
+  .brand-mark-inverse {
+    --mark-a: 117 98 242;
+    --mark-b: 155 135 255;
+    --mark-c: 217 204 255;
+  }
 
 
   /* Anchored dark panel — the "midnight navy" accent surface */
@@ -584,8 +606,8 @@
   }
   .dark .page-shell {
     background-image:
-      radial-gradient(70rem 42rem at 12% -12%, rgb(var(--accent) / 0.16), transparent 58%),
-      radial-gradient(56rem 36rem at 92% -6%, rgb(var(--ai) / 0.13), transparent 56%);
+      radial-gradient(64rem 40rem at 12% -14%, rgb(var(--accent) / 0.10), transparent 60%),
+      radial-gradient(52rem 34rem at 92% -8%, rgb(var(--ai) / 0.075), transparent 58%);
   }
   .container-page { width: 100%; max-width: var(--page-max); margin-inline: auto; padding-inline: 1rem; }
   .prose-measure { max-width: var(--prose-max); }
