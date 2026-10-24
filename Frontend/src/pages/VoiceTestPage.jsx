@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
+import { Button, IconButton, StatusBadge } from '../components/ui/index'
+import { usePageEnter } from '../motion/hooks'
 import {
   Mic, MicOff, Volume2, VolumeX, Play, Pause, Square,
   RotateCcw, Sparkles, CheckCircle2, AlertCircle, Copy,
   ArrowRight, Activity, Radio, Cpu, RefreshCw, Sliders,
-  Zap, ShieldCheck, Tag, Info
+  Zap, ShieldCheck, Tag, Info, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { WhistleRecorder } from '../services/whistleSTT'
@@ -25,6 +27,7 @@ const DEFAULT_KEYWORDS = [
 
 export default function VoiceTestPage() {
   const navigate = useNavigate()
+  const root = usePageEnter()
 
   // ─── Mode: Whistle Neural vs Chrome Web Speech ────────────────────
   const [sttEngine, setSttEngine] = useState('whistle') // 'whistle' | 'webspeech'
@@ -203,7 +206,7 @@ export default function VoiceTestPage() {
     try {
       await recorder.start()
       setListening(true)
-      toast.success('⚡ Whistle Neural STT Active! Speak continuously.')
+      toast.success('Whistle Neural STT active! Speak continuously.')
     } catch (err) {
       console.error(err)
       toast.error('Could not start microphone: ' + err.message)
@@ -375,7 +378,7 @@ export default function VoiceTestPage() {
       if (res.ok) {
         const data = await res.json()
         setQwenResult(data)
-        toast.success(`⚡ Evaluated by Local Qwen 2.5 0.5B (${data.latency_ms || 2500}ms)!`)
+        toast.success(`Evaluated by Local Qwen 2.5 0.5B (${data.latency_ms || 2500}ms)!`)
       } else {
         toast.error('Local AI error')
       }
@@ -404,7 +407,7 @@ export default function VoiceTestPage() {
     if (!synthRef.current) return toast.error('TTS is not supported in this browser.')
     synthRef.current.cancel()
 
-    if (!ttsText.trim()) return toast('Please enter text to speak', { icon: 'ℹ️' })
+    if (!ttsText.trim()) return toast('Please enter text to speak')
 
     const utterance = new SpeechSynthesisUtterance(ttsText)
     const voiceObj = voices.find(v => v.name === selectedVoice)
@@ -495,154 +498,150 @@ export default function VoiceTestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors" style={{ fontFamily: 'Inter, system-ui' }}>
+    <div ref={root} className="page-shell">
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 pt-24 pb-16">
+      <main className="container-page pt-[calc(var(--nav-h)+2rem)] pb-16">
 
         {/* ── Header ────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
-              <Zap className="w-3.5 h-3.5" /> Whistle Neural & Web Speech Laboratory
+        <div data-enter className="mb-8 flex flex-col items-start justify-between gap-4 border-b border-hairline pb-6 md:flex-row md:items-center">
+          <div className="min-w-0">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-semibold text-success-500">
+              <Zap className="h-3.5 w-3.5" aria-hidden /> Whistle Neural &amp; Web Speech Laboratory
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Voice System Check (STT & TTS)
-            </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-              Test your Speech-to-Text with <strong>Whistle Neural AI (Rolling Chunker)</strong> and Text-to-Speech output.
+            <h1 className="t-h1">Voice System Check (STT &amp; TTS)</h1>
+            <p className="t-sm mt-1">
+              Test your Speech-to-Text with <strong className="font-semibold text-ink">Whistle Neural AI (Rolling Chunker)</strong> and Text-to-Speech output.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={testSpeakerBeep}
               disabled={speakerTesting}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-semibold hover:border-blue-500 text-zinc-700 dark:text-zinc-200 transition-all shadow-sm disabled:opacity-50"
+              icon={<Volume2 className="h-3.5 w-3.5 text-accent" aria-hidden />}
             >
-              <Volume2 className="w-3.5 h-3.5 text-blue-500" />
-              {speakerTesting ? 'Playing chime...' : 'Test Speaker Chime'}
-            </button>
+              {speakerTesting ? 'Playing chime…' : 'Test Speaker Chime'}
+            </Button>
             <Link
               to="/qwen-test"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold transition-all shadow-sm"
+              className="btn btn-ai btn-sm"
             >
-              <Cpu className="w-3.5 h-3.5" />
+              <Cpu className="h-3.5 w-3.5" aria-hidden />
               Qwen AI Playground
             </Link>
             <Link
               to="/interview/create"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all shadow-md shadow-blue-600/20"
+              className="btn btn-primary btn-sm"
             >
-              Go to Interview <ArrowRight className="w-3.5 h-3.5" />
+              Go to Interview <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
         </div>
 
         {/* ── Engine Status Cards ─────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div data-enter className="mb-8 grid gap-4 sm:grid-cols-3">
           {/* Whistle Card */}
-          <div className={`p-4 rounded-xl border transition-all ${whistleStatus.available ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-amber-500/5 border-amber-500/30'}`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-emerald-500" /> Whistle Neural STT
+          <div className={`card-inset p-4 ${whistleStatus.available ? 'border-success/30' : 'border-warning/30'}`}>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="eyebrow flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-success-500" aria-hidden /> Whistle Neural STT
               </span>
               {whistleStatus.available ? (
-                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> 16.9 MB Model Ready</span>
+                <StatusBadge tone="live">16.9 MB Model Ready</StatusBadge>
               ) : (
-                <span className="text-xs font-bold text-amber-500 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> Connecting...</span>
+                <StatusBadge tone="warn" pulse>Connecting</StatusBadge>
               )}
             </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">Cactus Compute CPU · 5-Beam Search · Punctuation</p>
+            <p className="t-xs">Cactus Compute CPU · 5-Beam Search · Punctuation</p>
           </div>
 
           {/* Qwen 2.5 0.5B Card */}
-          <div className={`p-4 rounded-xl border transition-all ${llmStatus.available ? 'bg-purple-500/5 border-purple-500/30' : 'bg-amber-500/5 border-amber-500/30'}`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-purple-500" /> Local AI (Qwen 2.5)
+          <div className={`card-inset p-4 ${llmStatus.available ? 'border-ai/30' : 'border-warning/30'}`}>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="eyebrow flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5 text-ai" aria-hidden /> Local AI (Qwen 2.5)
               </span>
               {llmStatus.available ? (
-                <span className="text-xs font-bold text-purple-500 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> 468 MB GGUF Ready</span>
+                <StatusBadge tone="live">468 MB GGUF Ready</StatusBadge>
               ) : (
-                <span className="text-xs font-bold text-amber-500 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> Connecting...</span>
+                <StatusBadge tone="warn" pulse>Connecting</StatusBadge>
               )}
             </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">Cross-Questioning & Brutal Feedback on CPU</p>
+            <p className="t-xs">Cross-Questioning &amp; Brutal Feedback on CPU</p>
           </div>
 
           {/* TTS Card */}
-          <div className={`p-4 rounded-xl border transition-all ${ttsSupported ? 'bg-indigo-500/5 border-indigo-500/30' : 'bg-red-500/5 border-red-500/30'}`}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <Volume2 className="w-3.5 h-3.5 text-indigo-500" /> TTS (AI Voice)
+          <div className={`card-inset p-4 ${ttsSupported ? 'border-accent/30' : 'border-danger/30'}`}>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="eyebrow flex items-center gap-1.5">
+                <Volume2 className="h-3.5 w-3.5 text-accent" aria-hidden /> TTS (AI Voice)
               </span>
               {ttsSupported ? (
-                <span className="text-xs font-bold text-indigo-500 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> {voices.length} Voices</span>
+                <StatusBadge tone="live">{voices.length} Voices</StatusBadge>
               ) : (
-                <span className="text-xs font-bold text-red-500 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> Unavailable</span>
+                <StatusBadge tone="off">Unavailable</StatusBadge>
               )}
             </div>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">Web Speech Synthesis Audio Output</p>
+            <p className="t-xs">Web Speech Synthesis Audio Output</p>
           </div>
         </div>
 
         {/* ── Main Two-Column Testing Grid ────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
           {/* ════ COLUMN 1: SPEECH-TO-TEXT (STT) ════ */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-            
+          <div className="card flex flex-col gap-6 p-5 sm:p-6">
+
             {/* STT Header & Mode Switcher */}
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${sttEngine === 'whistle' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-blue-500/10 border border-blue-500/20 text-blue-500'}`}>
-                    {sttEngine === 'whistle' ? <Zap className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  <div className={`grid h-9 w-9 place-items-center rounded-lg border ${sttEngine === 'whistle' ? 'border-success/25 bg-success/10 text-success-500' : 'border-accent/25 bg-accent/10 text-accent'}`}>
+                    {sttEngine === 'whistle' ? <Zap className="h-5 w-5" aria-hidden /> : <Mic className="h-5 w-5" aria-hidden />}
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      1. Speech-to-Text Engine
-                    </h2>
-                    <p className="text-xs text-zinc-500">Live candidate transcription</p>
+                    <h2 className="t-h3">1. Speech-to-Text Engine</h2>
+                    <p className="t-xs">Live candidate transcription</p>
                   </div>
                 </div>
 
                 {listening && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                    LISTENING LIVE
-                  </div>
+                  <StatusBadge tone="off" pulse>Listening live</StatusBadge>
                 )}
               </div>
 
               {/* Mode Toggle Tabs */}
-              <div className="grid grid-cols-2 gap-2 p-1 mt-4 bg-zinc-100 dark:bg-zinc-800/60 rounded-xl border border-zinc-200/80 dark:border-zinc-700/50">
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-hairline bg-inset p-1">
                 <button
                   type="button"
                   onClick={() => { if (!listening) setSttEngine('whistle') }}
                   disabled={listening}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  aria-pressed={sttEngine === 'whistle'}
+                  className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-fast ${
                     sttEngine === 'whistle'
-                      ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                      ? 'bg-surface text-success-500 shadow-1 ring-1 ring-success/25'
+                      : 'text-muted hover:text-ink'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5" />
-                  Whistle Neural (Punctuation & Chunker)
+                  <Zap className="h-3.5 w-3.5" aria-hidden />
+                  Whistle Neural (Punctuation &amp; Chunker)
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { if (!listening) setSttEngine('webspeech') }}
                   disabled={listening}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  aria-pressed={sttEngine === 'webspeech'}
+                  className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-fast ${
                     sttEngine === 'webspeech'
-                      ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm border border-blue-500/20'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                      ? 'bg-surface text-accent shadow-1 ring-1 ring-accent/25'
+                      : 'text-muted hover:text-ink'
                   }`}
                 >
-                  <Mic className="w-3.5 h-3.5" />
+                  <Mic className="h-3.5 w-3.5" aria-hidden />
                   Chrome Web Speech
                 </button>
               </div>
@@ -650,38 +649,45 @@ export default function VoiceTestPage() {
 
             {/* Whistle Keywords Bar */}
             {sttEngine === 'whistle' && (
-              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+              <div className="card-inset space-y-2 border-success/25 p-3.5">
+                <div className="flex items-center justify-between text-xs font-semibold text-success-500">
                   <span className="flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5" /> Technical Keyword Biasing (5-Beam Auto-Boost):
+                    <Tag className="h-3.5 w-3.5" aria-hidden /> Technical Keyword Biasing (5-Beam Auto-Boost):
                   </span>
-                  <span className="text-[10px] text-zinc-500">{keywords.length} active</span>
+                  <span className="num text-2xs text-subtle">{keywords.length} active</span>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto">
                   {keywords.map(kw => (
                     <span
                       key={kw}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-700 dark:text-zinc-300"
+                      className="chip gap-1 border-hairline bg-surface text-ink"
                     >
                       {kw}
                       {!listening && (
-                        <button onClick={() => removeKeyword(kw)} className="text-zinc-400 hover:text-red-500 ml-0.5">×</button>
+                        <button
+                          type="button"
+                          onClick={() => removeKeyword(kw)}
+                          aria-label={`Remove ${kw}`}
+                          className="-mr-0.5 grid h-4 w-4 place-items-center rounded text-subtle transition-colors hover:bg-danger/15 hover:text-danger-500"
+                        >
+                          <X className="h-3 w-3" aria-hidden />
+                        </button>
                       )}
                     </span>
                   ))}
                 </div>
                 {!listening && (
                   <form onSubmit={addKeyword} className="flex gap-2 pt-1">
+                    <label htmlFor="whistle-keyword" className="sr-only">Add technical keyword</label>
                     <input
+                      id="whistle-keyword"
                       type="text"
                       value={newKeyword}
                       onChange={e => setNewKeyword(e.target.value)}
-                      placeholder="Add keyword (e.g. Next.js, Redux, AWS)..."
-                      className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-emerald-500"
+                      placeholder="Add keyword (e.g. Next.js, Redux, AWS)…"
+                      className="input flex-1 text-xs"
                     />
-                    <button type="submit" className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">
-                      Add
-                    </button>
+                    <Button type="submit" size="sm">Add</Button>
                   </form>
                 )}
               </div>
@@ -689,35 +695,35 @@ export default function VoiceTestPage() {
 
             {/* Mic Meter & Controls */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-blue-500" /> Microphone Input Level:</span>
-                <span className="font-mono">{micLevel}%</span>
+              <div className="flex items-center justify-between text-xs font-medium text-muted">
+                <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-accent" aria-hidden /> Microphone Input Level:</span>
+                <span className="num">{micLevel}%</span>
               </div>
-              <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-200 dark:border-zinc-700/50">
+              <div className="h-3 w-full overflow-hidden rounded-full border border-hairline bg-inset p-0.5">
                 <motion.div
                   className={`h-full rounded-full transition-all duration-75 ${
                     micLevel > 60
-                      ? 'bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500'
+                      ? 'bg-gradient-to-r from-success-500 via-warning-500 to-danger-500'
                       : micLevel > 15
-                      ? 'bg-gradient-to-r from-blue-500 to-emerald-500'
-                      : 'bg-zinc-300 dark:bg-zinc-700'
+                      ? 'bg-gradient-to-r from-accent to-success-500'
+                      : 'bg-hairline-strong'
                   }`}
                   style={{ width: `${Math.max(micLevel, 3)}%` }}
                 />
               </div>
 
               {/* Status info bar */}
-              <div className="flex items-center justify-between text-xs text-zinc-500 pt-1">
+              <div className="flex items-center justify-between gap-2 pt-1 text-xs text-subtle">
                 <span className="flex items-center gap-1">
                   {sttEngine === 'whistle' ? (
-                    <><Zap className="w-3 h-3 text-emerald-500" /> Rolling Chunker with VAD Active (No 30s limit)</>
+                    <><Zap className="h-3 w-3 text-success-500" aria-hidden /> Rolling Chunker with VAD Active (No 30s limit)</>
                   ) : (
-                    <><Radio className="w-3 h-3 text-blue-500" /> Web Speech streaming</>
+                    <><Radio className="h-3 w-3 text-accent" aria-hidden /> Web Speech streaming</>
                   )}
                 </span>
                 {sttProcessing && (
-                  <span className="text-emerald-500 font-semibold animate-pulse flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3 animate-spin" /> Neural decoding...
+                  <span className="flex items-center gap-1 font-semibold text-success-500">
+                    <RefreshCw className="h-3 w-3 animate-spin" aria-hidden /> Neural decoding…
                   </span>
                 )}
               </div>
@@ -725,169 +731,158 @@ export default function VoiceTestPage() {
 
             {/* Mic Action Button */}
             <div className="flex gap-3">
-              <button
+              <Button
+                block
                 onClick={toggleRecording}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${
-                  listening
-                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
-                    : sttEngine === 'whistle'
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'
-                }`}
+                variant={listening ? 'danger' : 'primary'}
+                icon={listening ? <MicOff className="h-4 w-4" aria-hidden /> : sttEngine === 'whistle' ? <Zap className="h-4 w-4" aria-hidden /> : <Mic className="h-4 w-4" aria-hidden />}
               >
                 {listening ? (
-                  <><MicOff className="w-4 h-4" /> Stop Recording</>
+                  'Stop Recording'
                 ) : (
-                  <>
-                    {sttEngine === 'whistle' ? <Zap className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    Start {sttEngine === 'whistle' ? 'Whistle Neural STT' : 'Web Speech STT'}
-                  </>
+                  `Start ${sttEngine === 'whistle' ? 'Whistle Neural STT' : 'Web Speech STT'}`
                 )}
-              </button>
+              </Button>
               {transcript && (
-                <button
-                  onClick={clearTranscript}
-                  className="px-3.5 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-300 transition-all"
-                  title="Clear transcript"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
+                <IconButton label="Clear transcript" onClick={clearTranscript} className="btn-secondary">
+                  <RotateCcw className="h-4 w-4" aria-hidden />
+                </IconButton>
               )}
             </div>
 
             {/* Whistle Sentence History / Interim Stream */}
-            <div className="bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-4 min-h-[90px] flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-                  <Radio className="w-3 h-3 text-emerald-500 animate-pulse" />
+            <div className="card-inset flex min-h-[90px] flex-col justify-between gap-2 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="eyebrow flex items-center gap-1">
+                  <Radio className="h-3 w-3 text-success-500" aria-hidden />
                   {sttEngine === 'whistle' ? 'Punctuated Sentence Chunks (Neural Stream)' : 'Live Speech Stream (Interim)'}
                 </span>
                 {lastMetrics && (
-                  <span className="text-[10px] font-mono text-zinc-400">
+                  <span className="num text-2xs text-subtle">
                     TTFT: {Math.round(lastMetrics.ttft)}ms · {Math.round(lastMetrics.tps)} tokens/s
                   </span>
                 )}
               </div>
 
               {sttEngine === 'whistle' ? (
-                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                <div className="max-h-32 space-y-1.5 overflow-y-auto">
                   {chunksHistory.length > 0 ? (
                     chunksHistory.map((c, i) => (
-                      <div key={i} className="text-xs text-zinc-800 dark:text-zinc-200 flex items-start gap-2">
-                        <span className="text-[10px] text-zinc-400 font-mono mt-0.5">{c.time}:</span>
-                        <span className="font-medium text-emerald-600 dark:text-emerald-400">"{c.text}"</span>
+                      <div key={i} className="flex items-start gap-2 text-xs text-ink">
+                        <span className="num mt-0.5 text-2xs text-subtle">{c.time}:</span>
+                        <span className="font-medium text-success-500">“{c.text}”</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-zinc-400 italic">
-                      {listening ? 'Speak naturally... sentences commit on pauses or every 15s with perfect punctuation.' : 'Click "Start Whistle Neural STT" and speak.'}
+                    <p className="text-xs italic text-faint">
+                      {listening ? 'Speak naturally… sentences commit on pauses or every 15s with perfect punctuation.' : 'Click "Start Whistle Neural STT" and speak.'}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-sm italic text-zinc-700 dark:text-zinc-300 leading-relaxed font-mono">
-                  {liveInterim || (listening ? 'Speak into your microphone now...' : 'Click start to speak.')}
+                <p className="text-sm font-medium italic leading-relaxed text-ink">
+                  {liveInterim || (listening ? 'Speak into your microphone now…' : 'Click start to speak.')}
                 </p>
               )}
             </div>
 
             {/* Final Accumulated Transcript Box */}
-            <div className="bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-4 flex-1 min-h-[160px] flex flex-col justify-between">
+            <div className="card-inset flex min-h-[160px] flex-1 flex-col justify-between p-4">
               <div>
-                <div className="flex items-center justify-between mb-2 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Complete Stitched Transcript
+                <div className="mb-2 flex items-center justify-between gap-2 border-b border-hairline pb-2">
+                  <span className="eyebrow flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-success-500" aria-hidden /> Complete Stitched Transcript
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-zinc-500">{wordCount} words</span>
+                    <span className="num text-2xs text-subtle">{wordCount} words</span>
                     {transcript && (
-                      <button onClick={copyTranscript} className="text-zinc-400 hover:text-zinc-200 text-xs flex items-center gap-1" title="Copy text">
-                        <Copy className="w-3 h-3" />
-                      </button>
+                      <IconButton label="Copy transcript" onClick={copyTranscript}>
+                        <Copy className="h-3 w-3" aria-hidden />
+                      </IconButton>
                     )}
                   </div>
                 </div>
-                <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
-                  {transcript || <span className="text-xs text-zinc-400 italic">Recognized and punctuated words will be auto-stitched here...</span>}
+                <p className="text-sm font-medium leading-relaxed text-ink">
+                  {transcript || <span className="text-xs italic text-faint">Recognized and punctuated words will be auto-stitched here…</span>}
                 </p>
               </div>
             </div>
 
             {/* ════ Interactive Qwen 2.5 Local AI Tester ════ */}
-            <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5" /> Local AI Reaction (Qwen 2.5 0.5B)
+            <div className="card-inset space-y-3 border-ai/25 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="eyebrow flex items-center gap-1.5 text-ai">
+                  <Cpu className="h-3.5 w-3.5" aria-hidden /> Local AI Reaction (Qwen 2.5 0.5B)
                 </span>
-                <span className="text-[10px] text-zinc-500">468 MB GGUF · CPU</span>
+                <span className="num text-2xs text-subtle">468 MB GGUF · CPU</span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                <label htmlFor="qwen-test-question" className="field-label mb-1 block text-2xs">
                   Interview Question Being Answered:
                 </label>
                 <select
+                  id="qwen-test-question"
                   value={testQuestion}
                   onChange={e => setTestQuestion(e.target.value)}
-                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-purple-500"
+                  className="input w-full text-xs"
                 >
                   {SAMPLE_PROMPTS.map((q, i) => (
-                    <option key={i} value={q}>Q{i+1}: {q.slice(0, 60)}...</option>
+                    <option key={i} value={q}>Q{i+1}: {q.slice(0, 60)}…</option>
                   ))}
                 </select>
               </div>
 
-              <button
+              <Button
+                block
                 type="button"
+                variant="ai"
+                size="sm"
                 onClick={runQwenEvaluation}
-                disabled={qwenLoading}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white flex items-center justify-center gap-2 transition-all shadow-sm shadow-purple-600/20"
+                loading={qwenLoading}
+                icon={qwenLoading ? null : <Zap className="h-3.5 w-3.5" aria-hidden />}
               >
-                {qwenLoading ? (
-                  <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Qwen 2.5 Analyzing Answer...</>
-                ) : (
-                  <><Zap className="w-3.5 h-3.5" /> Test Qwen 2.5 Cross-Question & Brutal Feedback</>
-                )}
-              </button>
+                {qwenLoading ? 'Qwen 2.5 Analyzing Answer…' : 'Test Qwen 2.5 Cross-Question & Brutal Feedback'}
+              </Button>
 
               {qwenResult && (
-                <div className="bg-white dark:bg-zinc-900 border border-purple-500/30 rounded-xl p-3.5 space-y-2.5 text-xs animate-in fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                    <span className="font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" /> Score: {qwenResult.score} / 10
+                <div className="animate-fade-in space-y-2.5 rounded-lg border border-ai/25 bg-surface p-3.5 text-xs">
+                  <div className="flex items-center justify-between gap-2 border-b border-hairline pb-2">
+                    <span className="flex items-center gap-1 font-bold text-ai">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden /> Score: <span className="num">{qwenResult.score} / 10</span>
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-500">
-                      ⚡ {qwenResult.latency_ms}ms CPU
+                    <span className="num flex items-center gap-1 text-2xs text-subtle">
+                      <Zap className="h-3 w-3" aria-hidden /> {qwenResult.latency_ms}ms CPU
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Candidate Feedback:</span>
-                    <p className="text-zinc-700 dark:text-zinc-300 font-medium">{qwenResult.shortFeedback}</p>
+                    <span className="eyebrow block">Candidate Feedback:</span>
+                    <p className="font-medium text-ink">{qwenResult.shortFeedback}</p>
                   </div>
 
                   {qwenResult.brutalFeedback && (
-                    <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 block">Brutal Critique (Missing Detail):</span>
-                      <p className="text-red-700 dark:text-red-300 font-medium text-[11px] mt-0.5">{qwenResult.brutalFeedback}</p>
+                    <div className="rounded-md border border-danger/25 bg-danger/10 p-2">
+                      <span className="eyebrow block text-danger-500">Brutal Critique (Missing Detail):</span>
+                      <p className="mt-0.5 text-2xs font-medium text-danger-500">{qwenResult.brutalFeedback}</p>
                     </div>
                   )}
 
-                  <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Sharp Cross-Question:</span>
+                  <div className="rounded-md border border-ai/25 bg-ai/10 p-2.5">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="eyebrow text-ai">Sharp Cross-Question:</span>
                       <button
                         type="button"
                         onClick={() => {
                           setTtsText(qwenResult.crossQuestion)
                           speakText()
                         }}
-                        className="text-[10px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
+                        className="flex items-center gap-1 text-2xs font-semibold text-accent transition-colors hover:text-ink"
                       >
-                        <Volume2 className="w-3 h-3" /> Speak via TTS
+                        <Volume2 className="h-3 w-3" aria-hidden /> Speak via TTS
                       </button>
                     </div>
-                    <p className="text-purple-900 dark:text-purple-200 font-semibold italic text-xs">"{qwenResult.crossQuestion}"</p>
+                    <p className="text-xs font-semibold italic text-ink">“{qwenResult.crossQuestion}”</p>
                   </div>
                 </div>
               )}
@@ -897,37 +892,33 @@ export default function VoiceTestPage() {
 
 
           {/* ════ COLUMN 2: TEXT-TO-SPEECH (TTS) ════ */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
+          <div className="card flex flex-col gap-6 p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3 border-b border-hairline pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
-                  <Volume2 className="w-5 h-5" />
+                <div className="grid h-9 w-9 place-items-center rounded-lg border border-accent/25 bg-accent/10 text-accent">
+                  <Volume2 className="h-5 w-5" aria-hidden />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    2. Text-to-Speech (AI Voice)
-                  </h2>
-                  <p className="text-xs text-zinc-500">AI audio output synthesis</p>
+                  <h2 className="t-h3">2. Text-to-Speech (AI Voice)</h2>
+                  <p className="t-xs">AI audio output synthesis</p>
                 </div>
               </div>
 
               {speaking && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 text-xs font-bold animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-                  SPEAKING
-                </div>
+                <StatusBadge tone="info" pulse>Speaking</StatusBadge>
               )}
             </div>
 
             {/* Voice Selection */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-indigo-500" /> Synthesizer Voice
+              <label htmlFor="tts-voice" className="field-label mb-1.5 flex items-center gap-1">
+                <Sliders className="h-3.5 w-3.5 text-accent" aria-hidden /> Synthesizer Voice
               </label>
               <select
+                id="tts-voice"
                 value={selectedVoice}
                 onChange={e => setSelectedVoice(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-300 dark:border-zinc-700/80 rounded-xl px-3 py-2.5 text-xs text-zinc-800 dark:text-zinc-200 outline-none focus:border-indigo-500 transition-colors"
+                className="input w-full text-xs"
               >
                 {voices.map((v, i) => (
                   <option key={i} value={v.name}>
@@ -940,102 +931,97 @@ export default function VoiceTestPage() {
             {/* Sliders: Rate & Pitch */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-                  <span>Speed / Rate:</span>
-                  <span className="font-mono text-zinc-700 dark:text-zinc-300 font-bold">{rate}x</span>
+                <div className="mb-1 flex items-center justify-between text-xs text-muted">
+                  <label htmlFor="tts-rate">Speed / Rate:</label>
+                  <span className="num font-bold text-ink">{rate}x</span>
                 </div>
                 <input
+                  id="tts-rate"
                   type="range"
                   min="0.6"
                   max="1.5"
                   step="0.1"
                   value={rate}
                   onChange={e => setRate(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500 cursor-pointer"
+                  className="w-full cursor-pointer accent-accent"
                 />
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-                  <span>Pitch:</span>
-                  <span className="font-mono text-zinc-700 dark:text-zinc-300 font-bold">{pitch}</span>
+                <div className="mb-1 flex items-center justify-between text-xs text-muted">
+                  <label htmlFor="tts-pitch">Pitch:</label>
+                  <span className="num font-bold text-ink">{pitch}</span>
                 </div>
                 <input
+                  id="tts-pitch"
                   type="range"
                   min="0.7"
                   max="1.3"
                   step="0.1"
                   value={pitch}
                   onChange={e => setPitch(parseFloat(e.target.value))}
-                  className="w-full accent-indigo-500 cursor-pointer"
+                  className="w-full cursor-pointer accent-accent"
                 />
               </div>
             </div>
 
             {/* Quick Sample Prompts */}
             <div>
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                Sample Interview Prompts
-              </span>
-              <div className="grid grid-cols-2 gap-2">
+              <span className="eyebrow mb-2 block">Sample Interview Prompts</span>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {SAMPLE_PROMPTS.map((p, idx) => (
                   <button
                     key={idx}
                     onClick={() => { setTtsText(p); stopTTS() }}
-                    className={`text-left text-xs p-2.5 rounded-lg border transition-all truncate ${
+                    aria-pressed={ttsText === p}
+                    className={`truncate rounded-md border p-2.5 text-left text-xs transition-all duration-fast ${
                       ttsText === p
-                        ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold'
-                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        ? 'border-accent/45 bg-accent-soft/60 font-semibold text-accent'
+                        : 'border-hairline bg-inset text-muted hover:border-hairline-strong hover:text-ink'
                     }`}
                   >
-                    Question {idx + 1}: {p.slice(0, 32)}...
+                    Question {idx + 1}: {p.slice(0, 32)}…
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Custom Input Text */}
-            <div className="flex-1 flex flex-col">
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
+            <div className="flex flex-1 flex-col">
+              <label htmlFor="tts-text" className="field-label mb-1.5">
                 Text to Speak
               </label>
               <textarea
+                id="tts-text"
                 value={ttsText}
                 onChange={e => setTtsText(e.target.value)}
                 rows={4}
-                className="w-full flex-1 bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-300 dark:border-zinc-700/80 rounded-xl p-3.5 text-sm text-zinc-800 dark:text-zinc-200 outline-none resize-none focus:border-indigo-500 transition-colors"
-                placeholder="Type anything for the AI interviewer to speak..."
+                className="input w-full flex-1 resize-none text-sm"
+                placeholder="Type anything for the AI interviewer to speak…"
               />
             </div>
 
             {/* Speaking Controls */}
-            <div className="flex gap-2.5">
-              <button
+            <div className="flex flex-wrap gap-2.5">
+              <Button
+                className="flex-1"
                 onClick={speakText}
                 disabled={speaking && !paused}
-                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white flex items-center justify-center gap-2 transition-all shadow-sm shadow-indigo-600/20"
+                icon={<Play className="h-4 w-4 fill-current" aria-hidden />}
               >
-                <Play className="w-4 h-4 fill-current" />
                 {speaking ? 'Restart Speaking' : 'Play / Speak Text'}
-              </button>
+              </Button>
 
               {speaking && (
-                <button
-                  onClick={pauseResumeTTS}
-                  className="px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5"
-                >
-                  {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                <Button variant="secondary" size="sm" onClick={pauseResumeTTS} icon={paused ? <Play className="h-3.5 w-3.5" aria-hidden /> : <Pause className="h-3.5 w-3.5" aria-hidden />}>
                   {paused ? 'Resume' : 'Pause'}
-                </button>
+                </Button>
               )}
 
               {speaking && (
-                <button
-                  onClick={stopTTS}
-                  className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-500 flex items-center gap-1.5"
-                >
-                  <Square className="w-3.5 h-3.5 fill-current" /> Stop
-                </button>
+                <Button variant="danger" size="sm" onClick={stopTTS} icon={<Square className="h-3.5 w-3.5 fill-current" aria-hidden />}>
+                  Stop
+                </Button>
               )}
             </div>
 

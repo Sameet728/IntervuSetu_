@@ -1,17 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Mic, Video, Volume2, CheckCircle2, ChevronRight,
-  AlertCircle, VideoOff, RefreshCw, WifiOff, HardDrive, Cpu, Zap
+  Mic, Video, Volume2, CheckCircle2, ArrowUpRight,
+  AlertCircle, VideoOff, RefreshCw, Eye, MonitorOff, Cpu, Headphones
 } from 'lucide-react'
+import { Badge, Button, StatusBadge } from '../ui/index'
+import { prefersReducedMotion } from '../../motion/setup'
 
-// Instructions list
 const INSTRUCTIONS = [
-  { icon: '🎙️', text: 'Speak clearly and at a normal pace' },
-  { icon: '👁️', text: 'Stay visible and centered in frame' },
-  { icon: '🔇', text: 'Find a quiet environment with no interruptions' },
-  { icon: '🖥️', text: 'Interview runs in fullscreen — do not exit' },
-  { icon: '🚫', text: 'Do not switch tabs or windows during the session' },
+  { icon: Mic,         text: 'Speak clearly and at a normal pace' },
+  { icon: Eye,         text: 'Stay visible and centred in frame' },
+  { icon: Volume2,     text: 'Use headphones in a quiet room' },
+  { icon: Video,       text: 'The interview runs in fullscreen — stay in it' },
+  { icon: MonitorOff,  text: 'Do not switch tabs or windows during the session' },
 ]
 
 export default function PreInterviewCheck({ onComplete }) {
@@ -167,99 +168,94 @@ export default function PreInterviewCheck({ onComplete }) {
   const allReady = micReady && camStatus === 'ready' && speakerReady
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-canvas px-4 py-8 text-ink sm:py-12">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-3xl"
+        transition={{ duration: prefersReducedMotion() ? 0 : 0.4, ease: 'easeOut' }}
+        className="mx-auto w-full max-w-4xl"
       >
         {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', delay: 0.1 }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan/20 to-violet/20 border border-cyan/30 flex items-center justify-center mx-auto mb-4"
-          >
-            <span className="text-2xl">🎙️</span>
-          </motion.div>
-          <h1 className="text-2xl font-display font-bold text-white mb-1">System Check</h1>
-          <p className="text-slate-400 text-sm font-body">Complete all checks before your interview begins</p>
-        </div>
+        <header className="mb-7 text-center">
+          <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl border border-ai/25 bg-ai-soft text-ai" aria-hidden>
+            <Mic className="h-5 w-5" />
+          </span>
+          <p className="eyebrow mb-1">Before you begin</p>
+          <h1 className="t-h1">System check</h1>
+          <p className="t-body mx-auto mt-2 max-w-sm">
+            Camera, microphone and audio are verified once — then the room opens.
+          </p>
+        </header>
 
-        <div className="grid md:grid-cols-2 gap-5">
-          {/* ── Left: Camera Preview ─────────────────────────────── */}
+        <div className="grid gap-5 md:grid-cols-2">
+          {/* ── Left: camera preview + rules ───────────────────────── */}
           <div className="space-y-4">
-            <div className="relative rounded-2xl overflow-hidden border border-border bg-surface aspect-video flex items-center justify-center">
-              {/* Always render the video element; control visibility with CSS */}
+            <div className="relative aspect-video overflow-hidden rounded-xl border border-hairline bg-canvas-inset">
               <video
                 ref={videoCallbackRef}
                 autoPlay
                 playsInline
                 muted
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                aria-label="Camera preview"
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-slow ${
                   camStatus === 'ready' ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {/* Overlay states */}
               <AnimatePresence mode="wait">
                 {camStatus === 'idle' || camStatus === 'loading' ? (
                   <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-3 text-slate-500">
-                    <VideoOff className="w-8 h-8 animate-pulse" />
-                    <span className="text-xs font-mono">Requesting camera...</span>
+                    className="absolute inset-0 grid place-content-center justify-items-center gap-2.5 text-subtle">
+                    <VideoOff className="h-7 w-7 animate-pulse" aria-hidden />
+                    <p className="text-xs">Requesting camera access…</p>
                   </motion.div>
                 ) : camStatus === 'denied' ? (
                   <motion.div key="denied" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-3 text-rose text-center px-6">
-                    <WifiOff className="w-8 h-8" />
-                    <p className="text-xs font-body">Camera access denied.<br />Allow it in your browser settings and reload.</p>
-                    <button onClick={startMedia}
-                      className="flex items-center gap-1.5 text-xs bg-rose/20 border border-rose/30 px-3 py-1.5 rounded-lg hover:bg-rose/30 transition-colors">
-                      <RefreshCw className="w-3 h-3" /> Try again
-                    </button>
+                    className="absolute inset-0 grid place-content-center justify-items-center gap-2.5 px-6 text-center text-danger-500">
+                    <AlertCircle className="h-7 w-7" aria-hidden />
+                    <p className="text-xs text-muted">
+                      Camera access was blocked. Allow it in your browser settings, then retry.
+                    </p>
+                    <Button variant="secondary" size="sm" onClick={startMedia} icon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}>
+                      Try again
+                    </Button>
                   </motion.div>
                 ) : camStatus === 'error' ? (
                   <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex flex-col items-center gap-3 text-amber text-center px-6">
-                    <AlertCircle className="w-8 h-8" />
-                    <p className="text-xs font-body">Camera not available.<br />Check connection and try again.</p>
-                    <button onClick={startMedia}
-                      className="flex items-center gap-1.5 text-xs bg-amber/20 border border-amber/30 px-3 py-1.5 rounded-lg hover:bg-amber/30 transition-colors">
-                      <RefreshCw className="w-3 h-3" /> Retry
-                    </button>
+                    className="absolute inset-0 grid place-content-center justify-items-center gap-2.5 px-6 text-center text-warning-500">
+                    <VideoOff className="h-7 w-7" aria-hidden />
+                    <p className="text-xs text-muted">No camera was found. Plug one in or pick another device.</p>
+                    <Button variant="secondary" size="sm" onClick={startMedia} icon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}>
+                      Retry
+                    </Button>
                   </motion.div>
                 ) : null}
               </AnimatePresence>
 
-              {/* Connected badge */}
               {camStatus === 'ready' && (
-                <div className="absolute bottom-2 left-2 bg-bg/80 backdrop-blur text-xs px-2 py-1 rounded-full text-emerald border border-emerald/20 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Live
-                </div>
+                <span className="absolute bottom-2 left-2">
+                  <StatusBadge tone="live" pulse>Live</StatusBadge>
+                </span>
               )}
             </div>
 
-            {/* Instructions */}
-            <div className="bg-surface border border-border rounded-2xl p-4 space-y-2">
-              <p className="text-xs font-mono text-slate-500 uppercase mb-3">Interview Rules</p>
-              {INSTRUCTIONS.map((item, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs font-body text-slate-400">
-                  <span className="shrink-0">{item.icon}</span>
-                  <span>{item.text}</span>
-                </div>
-              ))}
-            </div>
+            <section className="card p-4" aria-label="Interview rules">
+              <h2 className="eyebrow mb-3">Ground rules</h2>
+              <ul className="space-y-2">
+                {INSTRUCTIONS.map(({ icon: Icon, text }) => (
+                  <li key={text} className="flex items-start gap-2.5 text-xs leading-relaxed text-muted">
+                    <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
 
-          {/* ── Right: Checks ────────────────────────────────────── */}
-          <div className="flex flex-col gap-4">
-
-            {/* Camera check */}
+          {/* ── Right: device checks ───────────────────────────────── */}
+          <div className="flex flex-col gap-3.5">
             <CheckCard
-              icon={<Video className="w-5 h-5" />}
+              icon={<Video className="h-5 w-5" />}
               label="Camera"
               ready={camStatus === 'ready'}
               denied={camStatus === 'denied' || camStatus === 'error'}
@@ -267,142 +263,112 @@ export default function PreInterviewCheck({ onComplete }) {
                 camStatus === 'ready' ? 'Camera online' :
                 camStatus === 'denied' ? 'Permission denied' :
                 camStatus === 'error' ? 'Not available' :
-                'Requesting access...'
+                'Requesting access…'
               }
             />
 
-            {/* Mic check */}
             <CheckCard
-              icon={<Mic className="w-5 h-5" />}
+              icon={<Mic className="h-5 w-5" />}
               label="Microphone"
               ready={micReady}
-              statusText={micReady ? 'Microphone detected' : 'Make some noise to test'}
+              statusText={micReady ? 'Picking you up' : 'Make some noise to test'}
             >
               <div className="mt-3">
-                <div className="h-2 w-full bg-bg rounded-full overflow-hidden">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-hairline" role="meter" aria-valuenow={Math.round(micLevel)} aria-valuemin={0} aria-valuemax={100} aria-label="Microphone level">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-violet to-cyan"
+                    className={`h-full rounded-full ${micReady ? 'bg-success-500' : 'bg-accent'}`}
                     animate={{ width: `${micLevel}%` }}
                     transition={{ duration: 0.08 }}
                   />
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    Speak aloud — bar should move
-                  </p>
-                  <a
-                    href="/voice-test"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-semibold text-cyan/80 hover:text-cyan hover:underline flex items-center gap-1"
-                  >
-                    Voice Lab (STT/TTS Test) ↗
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-2xs text-subtle">Speak — the bar should move</p>
+                  <a href="/voice-test" target="_blank" rel="noreferrer" className="text-2xs font-medium text-accent hover:underline">
+                    Voice lab
                   </a>
                 </div>
               </div>
             </CheckCard>
 
-            {/* Speaker check */}
             <CheckCard
-              icon={<Volume2 className="w-5 h-5" />}
-              label="Speaker / Headphones"
+              icon={<Headphones className="h-5 w-5" />}
+              label="Speaker"
               ready={speakerReady}
-              statusText={speakerReady ? 'Audio confirmed' : 'Click to play test sound'}
+              statusText={speakerReady ? 'Audio confirmed' : 'Play the test tone to confirm'}
             >
               {!speakerReady && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
                   onClick={testSpeaker}
-                  disabled={speakerTesting}
-                  className="mt-3 flex items-center gap-2 text-xs bg-violet hover:bg-violet/80 disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                  loading={speakerTesting}
+                  icon={speakerTesting ? null : <Volume2 className="h-3.5 w-3.5" aria-hidden />}
                 >
-                  {speakerTesting ? (
-                    <><span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" />Playing...</>
-                  ) : (
-                    <><Volume2 className="w-3.5 h-3.5" />Play Test Sound</>
-                  )}
-                </button>
+                  {speakerTesting ? 'Playing…' : 'Play test tone'}
+                </Button>
               )}
             </CheckCard>
 
-            {/* Offline AI Engine Card */}
-            <div className={`p-4 rounded-xl border transition-all ${offlineEngineReady ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-surface border-border'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className={offlineEngineReady ? 'text-emerald-400' : 'text-slate-400'}>
-                    <Cpu className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm text-slate-200">On-Device AI Engine</p>
-                      {offlineEngineReady && (
-                        <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                          UNLIMITED FREE MODE
-                        </span>
-                      )}
-                    </div>
-                    <p className={`text-xs mt-0.5 font-mono ${offlineEngineReady ? 'text-emerald-400' : 'text-slate-500'}`}>
-                      {offlineEngineReady
-                        ? 'Whistle STT + Qwen 2.5 Active (Sub-250ms Live Speed)'
-                        : 'Cloud Mode Active (Optional: Download Offline Pack)'
-                      }
-                    </p>
-                  </div>
-                </div>
-                {offlineEngineReady ? (
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  </motion.div>
-                ) : (
-                  <a
-                    href="/offline-ai"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card hover:border-emerald-500/40 text-fg-muted hover:text-emerald-400 transition-colors"
-                  >
-                    Get Offline Pack ↗
-                  </a>
-                )}
-              </div>
-            </div>
+            <CheckCard
+              icon={<Cpu className="h-5 w-5" />}
+              label="Answer engine"
+              ready={offlineEngineReady}
+              statusText={
+                offlineEngineReady
+                  ? 'On-device Whisper STT + Qwen 2.5 ready'
+                  : 'Cloud engine — offline pack optional'
+              }
+            >
+              {offlineEngineReady ? (
+                <Badge color="success" className="mt-2.5">Unlimited local mode</Badge>
+              ) : (
+                <a href="/offline-ai" target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs mt-2.5">
+                  Download offline pack <ArrowUpRight className="h-3 w-3" aria-hidden />
+                </a>
+              )}
+            </CheckCard>
 
-            {/* Proctoring warning */}
-            <div className="p-4 rounded-xl border border-amber/30 bg-amber/5 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-lg border border-warning-500/30 bg-warning-bg p-3.5">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning-500" aria-hidden />
               <div>
-                <p className="text-sm font-semibold text-amber">Proctoring Active</p>
-                <p className="text-xs text-slate-400 mt-0.5 font-body">
-                  Your session is monitored. Leaving fullscreen, switching tabs, or hiding your face will be logged as violations.
+                <p className="text-sm font-semibold text-warning-500">Proctoring is on</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                  Leaving fullscreen, switching tabs, or hiding your face is logged as a violation.
                 </p>
               </div>
             </div>
-
-            {/* Overall readiness */}
-            <div className="mt-auto">
-              <div className="flex gap-2 mb-4">
-                {[camStatus === 'ready', micReady, speakerReady].map((done, i) => (
-                  <div key={i} className={`flex-1 h-1 rounded-full transition-all duration-500 ${done ? 'bg-emerald' : 'bg-border'}`} />
-                ))}
-              </div>
-              <button
-                onClick={handleStart}
-                disabled={!allReady}
-                className="w-full bg-gradient-to-r from-violet to-cyan text-void font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-violet/20 disabled:opacity-40 disabled:grayscale cursor-pointer disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-              >
-                {allReady
-                  ? <><CheckCircle2 className="w-5 h-5" /> Start Interview</>
-                  : <>Complete all checks to continue <ChevronRight className="w-4 h-4" /></>
-                }
-              </button>
-              <button
-                type="button"
-                onClick={handleStart}
-                className="w-full mt-2 py-2 text-xs font-semibold text-cyan/80 hover:text-cyan hover:underline transition-all flex items-center justify-center gap-1.5"
-              >
-                ⚡ Fast Pass: Skip checks & start immediately (Demo Mode)
-              </button>
-            </div>
-
           </div>
+        </div>
+
+        {/* ── Footer: progress + start ─────────────────────────────── */}
+        <div className="mt-6">
+          <div className="mb-3 flex gap-1.5" role="group" aria-label="Checklist progress">
+            {[camStatus === 'ready', micReady, speakerReady].map((done, i) => (
+              <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-slow ${done ? 'bg-success-500' : 'bg-hairline-strong'}`} />
+            ))}
+          </div>
+          <p className="sr-only" role="status">
+            {[camStatus === 'ready', micReady, speakerReady].filter(Boolean).length} of 3 checks complete
+          </p>
+
+          <Button
+            size="lg"
+            block
+            disabled={!allReady}
+            onClick={handleStart}
+            icon={allReady ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
+          >
+            {allReady ? 'Start interview' : 'Finish the checks above to continue'}
+          </Button>
+
+          <button
+            type="button"
+            onClick={handleStart}
+            className="mx-auto mt-2 block text-2xs font-medium text-subtle underline-offset-2 hover:text-ink hover:underline"
+          >
+            Skip checks and start now
+          </button>
         </div>
 
       </motion.div>
@@ -410,36 +376,38 @@ export default function PreInterviewCheck({ onComplete }) {
   )
 }
 
-// ── Reusable check card ───────────────────────────────────────────────
+// ── One device check row ──────────────────────────────────────────────
 function CheckCard({ icon, label, ready, denied = false, statusText, children }) {
+  const Icon = ready ? CheckCircle2 : denied ? AlertCircle : null
   return (
-    <motion.div
+    <motion.section
       animate={{
-        borderColor: ready ? 'rgba(52,211,153,0.4)' : denied ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)',
-        backgroundColor: ready ? 'rgba(52,211,153,0.05)' : denied ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)',
+        borderColor: ready ? 'rgb(var(--success) / 0.35)' : denied ? 'rgb(var(--danger) / 0.35)' : 'rgb(var(--hairline))',
+        backgroundColor: ready ? 'rgb(var(--success-soft))' : denied ? 'rgb(var(--danger-soft))' : 'rgb(var(--surface))',
       }}
-      transition={{ duration: 0.4 }}
-      className="p-4 rounded-xl border"
+      transition={{ duration: prefersReducedMotion() ? 0 : 0.35 }}
+      className="rounded-lg border p-4"
+      aria-label={label}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className={ready ? 'text-emerald' : denied ? 'text-rose' : 'text-slate-400'}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className={ready ? 'text-success-500' : denied ? 'text-danger-500' : 'text-faint'} aria-hidden>
             {icon}
           </span>
-          <div>
-            <p className="font-semibold text-sm text-slate-200">{label}</p>
-            <p className={`text-xs mt-0.5 font-mono ${ready ? 'text-emerald' : denied ? 'text-rose' : 'text-slate-500'}`}>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink">{label}</p>
+            <p className={`mt-0.5 text-xs ${ready ? 'text-success-500' : denied ? 'text-danger-500' : 'text-subtle'}`}>
               {statusText}
             </p>
           </div>
         </div>
-        {ready && (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
-            <CheckCircle2 className="w-5 h-5 text-emerald" />
-          </motion.div>
+        {Icon && (
+          <motion.span initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18 }} aria-hidden>
+            <Icon className={`h-4 w-4 ${ready ? 'text-success-500' : 'text-danger-500'}`} />
+          </motion.span>
         )}
       </div>
       {children}
-    </motion.div>
+    </motion.section>
   )
 }

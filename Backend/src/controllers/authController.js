@@ -195,15 +195,21 @@ const updateProfile = async (req, res, next) => {
       }
     }
 
-    const user = await User.findByIdAndUpdate(
+    const updated = await User.findByIdAndUpdate(
       req.user.id,
       { $set: updates },
       { new: true, runValidators: true }
-    ).select("-__v -password");
+    );
 
-    if (!user) {
+    if (!updated) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    // Mongo returns a document with select(); the in-memory fallback returns a
+    // plain object, so strip the same fields manually for both storage modes.
+    const user = typeof updated.toObject === "function" ? updated.toObject() : { ...updated };
+    delete user.password;
+    delete user.__v;
 
     res.json({ success: true, user });
   } catch (error) {

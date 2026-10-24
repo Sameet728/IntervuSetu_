@@ -12,9 +12,11 @@ import { getInterview } from '../api/interviewAPI'
 import {
   Mic, MicOff, Send, SkipForward, RotateCcw, Code2,
   AlertTriangle, Camera, Clock, Radio,
-  CheckCircle2, XCircle, Shield, Zap, Lightbulb
+  CheckCircle2, Shield, Lightbulb, Sparkles, ScrollText, PanelRight, Check, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Badge, Button, IconButton, ScorePill, Spinner } from '../components/ui/index'
+import { prefersReducedMotion } from '../motion/setup'
 
 // ─── Countdown component (3-2-1 overlay) ─────────────────────────────
 function Countdown({ onComplete }) {
@@ -34,35 +36,40 @@ function Countdown({ onComplete }) {
   }, [count, onComplete])
 
   return (
-    <div className="fixed inset-0 z-50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm flex items-center justify-center">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-canvas/95 backdrop-blur-sm">
       <AnimatePresence mode="wait">
         <motion.div key={count}
-          initial={{ scale: 2, opacity: 0 }}
+          initial={{ scale: 1.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.5, opacity: 0 }}
+          exit={{ scale: 0.6, opacity: 0 }}
           transition={{ duration: 0.4, ease: 'backOut' }}
           className="text-center">
-          <div className="font-display font-bold text-9xl text-blue-600 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            {count > 0 ? count : '🎙️'}
+          <div className="num-xl text-accent" aria-hidden>
+            {count > 0 ? count : <Mic className="inline h-16 w-16" />}
           </div>
-          <p className="text-zinc-500 font-medium text-lg">{count > 0 ? 'Get ready...' : "Let's go!"}</p>
+          <p className="sr-only" role="status">{count > 0 ? `Starting in ${count}` : 'Interview started'}</p>
+          <p className="t-lead mt-3 text-muted">{count > 0 ? 'Get ready' : 'Go'}</p>
         </motion.div>
       </AnimatePresence>
     </div>
   )
 }
 
-// ─── Violation toast ──────────────────────────────────────────────────
+// ─── Violation counter ────────────────────────────────────────────────
 function ViolationBadge({ count, max }) {
+  const tone = count >= max - 1 ? 'danger' : count > 0 ? 'warning' : 'success'
   return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium font-mono lowercase ${
-      count >= max - 1 ? 'border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400' :
-      count > 0        ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-                         'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-    }`}>
-      <Shield className="w-3 h-3" />
-      <span>{max - count} chances left</span>
-    </div>
+    <span
+      className="badge"
+      style={{
+        color: `rgb(var(--${tone}))`,
+        borderColor: `rgb(var(--${tone}) / 0.32)`,
+        backgroundColor: `rgb(var(--${tone}) / 0.08)`,
+      }}
+    >
+      <Shield className="h-3 w-3" aria-hidden />
+      <span className="num">{max - count}</span> chances left
+    </span>
   )
 }
 
@@ -91,6 +98,7 @@ export default function InterviewRoomPage() {
   const [shortFeedback, setShortFeedback] = useState(null)
   const [transcript, setTranscript] = useState([])
   const [pacingInfo, setPacingInfo] = useState(null)
+  const [railOpen, setRailOpen] = useState(false)
 
   // ── Refs ───────────────────────────────────────────────────────────
   const wsRef              = useRef(null)
@@ -536,128 +544,143 @@ export default function InterviewRoomPage() {
   }
 
   if (phase === 'loading') return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
+    <div className="grid min-h-dvh place-items-center bg-canvas">
+      <Spinner size="lg" />
+      <span className="sr-only" role="status">Loading your interview room</span>
     </div>
   )
 
   if (phase === 'countdown') return <Countdown onComplete={handleCountdownComplete} />
 
   if (phase === 'complete') return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-        className="text-center">
-        <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h2 className="font-display font-bold text-2xl text-zinc-900 dark:text-zinc-50 mb-2">Interview Complete!</h2>
-        <p className="text-zinc-500 font-medium font-body">Generating your report...</p>
-        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin mx-auto mt-4" />
+    <div className="grid min-h-dvh place-items-center bg-canvas px-6">
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+        <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-success-500" aria-hidden />
+        <h1 className="t-h2">Interview complete</h1>
+        <p className="t-body mt-2 text-muted">Scoring your answers and building the report…</p>
+        <Spinner className="mx-auto mt-5" />
       </motion.div>
     </div>
   )
 
   return (
-    <div className="h-screen bg-white dark:bg-zinc-950 flex flex-col overflow-hidden transition-colors" style={{ fontFamily: 'Inter, system-ui' }}>
-      {/* ── Top Bar ─────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 backdrop-blur-sm z-10 transition-colors">
-        {/* Progress */}
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1">
-            {Array.from({ length: totalQs }).map((_, i) => (
-              <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${
-                i < qIndex      ? 'w-4 bg-green-500' :
-                i === qIndex    ? 'w-6 bg-blue-600' :
-                                  'w-4 bg-zinc-200 dark:bg-zinc-800'
-              }`} />
-            ))}
+    <div className="flex h-dvh flex-col overflow-hidden bg-canvas text-ink">
+      {/* ── Top bar ─────────────────────────────────────────────────── */}
+      <header className="flex-shrink-0 border-b border-hairline bg-surface px-3 py-2.5 sm:px-4">
+        <div className="flex items-center justify-between gap-3">
+          {/* Progress */}
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden items-center gap-1 sm:flex" aria-hidden>
+              {Array.from({ length: totalQs }).map((_, i) => (
+                <span key={i} className={`h-1.5 rounded-full transition-all duration-slow ease-out ${
+                  i < qIndex ? 'w-4 bg-success-500' :
+                  i === qIndex ? 'w-6 bg-accent' :
+                  'w-4 bg-hairline-strong'
+                }`} />
+              ))}
+            </div>
+            <p className="num shrink-0 text-xs font-medium text-muted">
+              Q{qIndex + 1}<span className="text-faint">/{totalQs}</span>
+            </p>
+            <progress
+              className="h-1 w-16 shrink-0 accent-accent sm:hidden"
+              value={qIndex}
+              max={Math.max(totalQs - 1, 1)}
+              aria-label={`Question ${qIndex + 1} of ${totalQs}`}
+            />
           </div>
-          <span className="text-xs font-mono text-zinc-500 font-medium">Q{qIndex + 1}/{totalQs}</span>
-        </div>
 
-        {/* Center — Q type badge & Engine Indicator */}
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25" title="Unlimited Free Mode: Live voice & critiques processed locally on-device">
-            <Zap className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Unlimited AI</span>
-          </span>
-          {currentQ?.topic === 'Self Introduction' || currentQ?.questionId === 'q_intro' ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 rounded border border-purple-200 dark:border-purple-800">
-              👋 Warm-up Intro
-            </span>
-          ) : currentQ?.questionType === 'code' ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
-              <Code2 className="w-3.5 h-3.5" /> Code Round
-            </span>
-          ) : null}
-          {isFollowup && (
-            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
-              ↩ Follow-up
-            </span>
-          )}
-          {pacingInfo?.urgency === 'tight' && (
-            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-700" title={`${pacingInfo.minsPerRemainingQ}m per question remaining`}>
-              ⏱️ Brisk Pace ({pacingInfo.minsPerRemainingQ}m/Q)
-            </span>
-          )}
-          {pacingInfo?.urgency === 'critical' && (
-            <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded border border-red-200 dark:border-red-700 animate-pulse" title="Final stretch — covering remaining questions">
-              ⚡ Final Stretch
-            </span>
-          )}
-        </div>
+          {/* Status chips */}
+          <div className="hidden items-center gap-1.5 md:flex">
+            <Badge color="success">On-device voice AI</Badge>
+            {(currentQ?.topic === 'Self Introduction' || currentQ?.questionId === 'q_intro') && (
+              <Badge color="accent">Warm-up</Badge>
+            )}
+            {currentQ?.questionType === 'code' && (
+              <Badge color="ai"><Code2 className="h-3 w-3" aria-hidden />Code round</Badge>
+            )}
+            {isFollowup && <Badge color="warning">Follow-up</Badge>}
+            {pacingInfo?.urgency === 'tight' && (
+              <Badge color="warning" className="num">{pacingInfo.minsPerRemainingQ}m/Q left</Badge>
+            )}
+            {pacingInfo?.urgency === 'critical' && <Badge color="danger">Final stretch</Badge>}
+          </div>
 
-        {/* Right — stats */}
-        <div className="flex items-center gap-4">
-          <ViolationBadge count={violationCount} max={maxViolations} />
-          <div className="flex items-center gap-1.5 text-xs font-bold font-mono text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1.5 rounded-md">
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />{fmtTime(timer)}
+          {/* Right — stats */}
+          <div className="flex shrink-0 items-center gap-2">
+            <ViolationBadge count={violationCount} max={maxViolations} />
+            <p className="num flex items-center gap-1.5 rounded-md border border-hairline bg-inset px-2 py-1 text-xs font-medium text-muted">
+              <Clock className="h-3.5 w-3.5 text-faint" aria-hidden />
+              <span className="tabular-nums">{fmtTime(timer)}</span>
+              <span className="sr-only">elapsed</span>
+            </p>
+            <IconButton
+              className="lg:hidden"
+              label={railOpen ? 'Close camera and transcript panel' : 'Open camera and transcript panel'}
+              onClick={() => setRailOpen(p => !p)}
+            >
+              {railOpen ? <X className="h-4 w-4" aria-hidden /> : <PanelRight className="h-4 w-4" aria-hidden />}
+            </IconButton>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* ── Main content — fixed height ────────────── */}
-      <div className="flex-1 flex overflow-hidden min-h-0 bg-zinc-50/50 dark:bg-zinc-950/50">
+      {/* ── Main content ────────────────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-canvas-inset">
 
-        {/* ── Left panel — AI Question + Answer ──────────────────── */}
-        <div className={`flex-1 flex flex-col min-h-0 p-4 gap-3 ${showCode ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+        {/* ── Left: question, answer, controls ──────────────────────── */}
+        <div className={`flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4 ${showCode ? 'overflow-y-auto' : 'overflow-hidden'}`}>
 
-          {/* AI Message */}
+          {/* AI message */}
           <motion.div
             key={aiMessage}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex-shrink-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm transition-colors"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: prefersReducedMotion() ? 0 : 0.25, ease: 'easeOut' }}
+            className="card flex-shrink-0 p-4 sm:p-5"
+            aria-live="polite"
           >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-600/10 border border-blue-100 dark:border-blue-600/20 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Radio className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 mb-2">
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 font-display">AI Interviewer</span>
+            <div className="flex items-start gap-3 sm:gap-4">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-ai/25 bg-ai-soft text-ai" aria-hidden>
+                <Radio className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <span className="text-sm font-semibold text-ink">AI interviewer</span>
                   {isFollowup && (
-                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-700 uppercase tracking-wider">
-                      {pacingInfo?.urgency === 'tight' || pacingInfo?.urgency === 'critical' ? '⚡ Quick Follow-up' : 'Follow-up'}
+                    <Badge color={pacingInfo?.urgency === 'tight' || pacingInfo?.urgency === 'critical' ? 'warning' : 'default'}>
+                      {pacingInfo?.urgency === 'tight' || pacingInfo?.urgency === 'critical' ? 'Quick follow-up' : 'Follow-up'}
+                    </Badge>
+                  )}
+                  {processingState && (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-muted">
+                      <VoiceWave thinking size="sm" /> Evaluating
                     </span>
                   )}
-                  {processingState && <span className="flex items-center gap-1 text-xs text-zinc-500 font-medium"><VoiceWave thinking size="sm" /> Thinking...</span>}
-                  {tts.speaking && !processingState && <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 font-medium"><VoiceWave speaking size="sm" /> Speaking...</span>}
+                  {tts.speaking && !processingState && (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-ai">
+                      <VoiceWave speaking size="sm" /> Speaking
+                    </span>
+                  )}
                   {stt.listening && !tts.speaking && !processingState && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-red-500 animate-pulse uppercase tracking-wider">● Recording</span>
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-danger-500">
+                      <span className="status-dot status-dot-off animate-pulse" aria-hidden /> Recording
+                    </span>
                   )}
                 </div>
-                <p className="text-zinc-700 dark:text-zinc-300 font-medium text-[15px] leading-relaxed">
+                <p className="text-[0.9375rem] font-medium leading-relaxed text-ink">
                   {processingState
-                    ? <span className="text-zinc-400 dark:text-zinc-500 italic">Evaluating your answer...</span>
+                    ? <span className="italic text-subtle">Evaluating your answer…</span>
                     : aiMessage}
                 </p>
                 {currentQ && !processingState && (
-                  <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">{currentQ.questionType?.replace('_', ' ')}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">{currentQ.difficulty}</span>
-                    {currentQ.topic && <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/30">{currentQ.topic}</span>}
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-hairline pt-3">
+                    <span className="chip">{currentQ.questionType?.replace('_', ' ')}</span>
+                    <span className="chip capitalize">{currentQ.difficulty}</span>
+                    {currentQ.topic && <span className="chip border-ai/25 bg-ai-soft text-ai">{currentQ.topic}</span>}
                     {lastScore != null && (
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ml-auto ${lastScore >= 7 ? 'text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-500/10 dark:border-green-500/20' : lastScore >= 4 ? 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20' : 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/20'}`}>
-                        Prev Score: {lastScore}/10
+                      <span className="ml-auto flex items-center gap-1.5 text-2xs text-subtle">
+                        Previous answer <ScorePill score={lastScore} />
                       </span>
                     )}
                   </div>
@@ -686,232 +709,253 @@ export default function InterviewRoomPage() {
             )}
           </AnimatePresence>
 
-          {/* ── Two STT boxes (adaptive layout when coding) ─────────── */}
-          <div className={`flex-1 min-h-0 overflow-hidden ${showCode ? 'flex flex-col gap-2' : 'grid grid-rows-2 gap-3'}`}>
+          {/* ── Live voice + accumulated answer ───────────────────────── */}
+          <div className={`min-h-0 flex-1 overflow-hidden ${showCode ? 'flex flex-col gap-2' : 'grid grid-rows-2 gap-3'}`}>
 
-            {/* Box A — Live STT */}
-            <div className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors ${showCode ? 'max-h-24' : ''}`}>
-              <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-200 dark:border-zinc-800">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Mic className="w-3.5 h-3.5" /> Live Voice Text
-                </span>
-                {stt.listening && <span className="text-[10px] font-bold text-red-500 animate-pulse uppercase tracking-wider">● LIVE</span>}
-              </div>
-              <div className="flex-1 overflow-y-auto p-3">
-                {stt.interimText ? (
-                  <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 italic leading-relaxed">{stt.interimText}</p>
-                ) : stt.listening ? (
-                  <p className="text-xs text-zinc-400 font-medium italic">Listening... speak your thought process while coding</p>
-                ) : (
-                  <p className="text-xs text-zinc-400 font-medium italic">Press Speak to start recording voice explanation</p>
+            {/* Live STT */}
+            <section className={`card flex min-h-0 flex-col overflow-hidden ${showCode ? 'max-h-24' : ''}`} aria-label="Live voice text">
+              <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-hairline bg-inset px-3 py-2">
+                <p className="flex items-center gap-1.5 text-2xs font-semibold text-subtle">
+                  <Mic className="h-3.5 w-3.5" aria-hidden /> Live voice text
+                </p>
+                {stt.listening && (
+                  <span className="flex items-center gap-1.5 text-2xs font-semibold text-danger-500">
+                    <span className="status-dot status-dot-off animate-pulse" aria-hidden /> Live
+                  </span>
                 )}
               </div>
-            </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                {stt.interimText ? (
+                  <p className="text-sm italic leading-relaxed text-muted">{stt.interimText}</p>
+                ) : stt.listening ? (
+                  <p className="text-xs italic text-faint">Listening — speak your thought process while you code.</p>
+                ) : (
+                  <p className="text-xs italic text-faint">Press “Start speaking” to record your answer by voice.</p>
+                )}
+              </div>
+            </section>
 
-            {/* Box B — Accumulated Answer */}
-            <div className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors min-h-0">
-              <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-200 dark:border-zinc-800">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Your Spoken Answer & Notes
-                </span>
+            {/* Accumulated answer */}
+            <section className="card flex min-h-0 flex-1 flex-col overflow-hidden" aria-label="Your answer">
+              <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-hairline bg-inset px-3 py-2">
+                <p className="flex items-center gap-1.5 text-2xs font-semibold text-subtle">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Your answer so far
+                </p>
                 {(stt.transcript || userAnswer) && (() => {
                   const words = (stt.transcript || userAnswer).trim().split(/\s+/).filter(Boolean).length
+                  const ready = words >= 25
                   return (
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border transition-colors ${
-                      words >= 25
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30'
-                        : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
-                    }`}>
-                      {words}/25 words {words >= 25 ? '✓ ready' : ''}
+                    <span className={`num text-2xs font-semibold ${ready ? 'text-success-500' : 'text-subtle'}`}>
+                      {words}/25 words{ready ? ' · ready' : ''}
                     </span>
                   )
                 })()}
               </div>
-              <div className="flex-1 overflow-y-auto p-3">
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
                 {stt.transcript || userAnswer ? (
-                  <p className="text-[14px] font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+                  <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-ink">
                     {stt.transcript || userAnswer}
                   </p>
                 ) : (
-                  <p className="text-xs text-zinc-400 font-medium italic">Your spoken explanation and notes will build up here...</p>
+                  <p className="text-xs italic text-faint">Your spoken explanation and typed notes build up here.</p>
                 )}
               </div>
               <textarea
-                placeholder="Or type additional notes here..."
+                aria-label="Add typed notes to your answer"
+                placeholder="Or type additional notes…"
                 value={userAnswer}
                 onChange={e => setUserAnswer(e.target.value)}
-                className="flex-shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 text-xs font-medium text-zinc-700 dark:text-zinc-300 outline-none resize-none px-3 py-2 placeholder-zinc-400 dark:placeholder-zinc-600 focus:bg-white dark:focus:bg-zinc-900 transition-colors"
+                className="flex-shrink-0 resize-none border-t border-hairline bg-transparent px-3 py-2 text-xs font-medium text-ink outline-none placeholder:text-faint focus:bg-accent-soft/30"
                 rows={showCode ? 1 : 2}
               />
-            </div>
+            </section>
 
           </div>
 
-          {/* Feedback banner */}
+          {/* Live feedback */}
           <AnimatePresence>
             {shortFeedback && (
               <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="flex-shrink-0 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-600/30 rounded-xl p-4 shadow-sm"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: prefersReducedMotion() ? 0 : 0.22 }}
+                className="card flex-shrink-0 border-ai/25 p-4"
+                role="status"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-500" /> AI Feedback
-                  </span>
-                  <div className="flex gap-2 items-center">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${shortFeedback.score >= 7 ? 'text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-500/10 dark:border-green-500/30' : shortFeedback.score >= 5 ? 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/30' : 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/30'}`}>
-                      Score: {shortFeedback.score}/10
-                    </span>
-                    <button onClick={skipFeedbackWait} className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
-                      Next →
-                    </button>
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-ink">
+                    <Sparkles className="h-3.5 w-3.5 text-ai" aria-hidden /> Immediate feedback
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <ScorePill score={shortFeedback.score} />
+                    <Button variant="ghost" size="xs" onClick={skipFeedbackWait}>Next question</Button>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-300 font-medium">
-                    <span className="text-green-500 font-bold mr-1.5">✓</span>{shortFeedback.shortFeedback}
-                  </p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">
-                    <span className="text-red-400 font-bold mr-1.5">✗</span>{shortFeedback.brutalFeedback}
-                  </p>
-                </div>
+                <ul className="space-y-1.5">
+                  <li className="flex items-start gap-2 text-sm text-muted">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-500" aria-hidden />
+                    <span>{shortFeedback.shortFeedback}</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-muted">
+                    <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger-500" aria-hidden />
+                    <span>{shortFeedback.brutalFeedback}</span>
+                  </li>
+                </ul>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Action buttons */}
-          <div className="flex-shrink-0 flex items-center gap-3 flex-wrap">
-            <button
+          {/* Controls */}
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+            <Button
+              variant={stt.listening ? 'danger' : 'secondary'}
+              size="md"
               onClick={stt.listening ? stt.stop : stt.start}
               disabled={processingState || tts.speaking}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all shadow-sm ${
-                stt.listening
-                  ? 'border-red-500/50 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20'
-                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:border-blue-500/40 hover:text-blue-600 dark:hover:text-blue-400'
-              } disabled:opacity-50`}
+              icon={stt.listening ? <MicOff className="h-4 w-4" aria-hidden /> : <Mic className="h-4 w-4" aria-hidden />}
             >
-              {stt.listening ? <><MicOff className="w-4 h-4" /> Stop Recording</> : <><Mic className="w-4 h-4" /> Start Speaking</>}
-            </button>
+              {stt.listening ? 'Stop recording' : 'Start speaking'}
+            </Button>
 
-            <button onClick={handleRepeat} disabled={processingState}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm font-semibold transition-all shadow-sm disabled:opacity-50">
-              <RotateCcw className="w-4 h-4" /> Repeat
-            </button>
+            <Button variant="ghost" size="md" onClick={handleRepeat} disabled={processingState}
+              icon={<RotateCcw className="h-4 w-4" aria-hidden />}>
+              Repeat
+            </Button>
 
-            <button onClick={handleRequestHint} disabled={processingState}
-              title="Get a helpful hint from the AI interviewer"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/40 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:border-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-500/20 text-sm font-semibold transition-all shadow-sm disabled:opacity-50">
-              <Lightbulb className="w-4 h-4 text-amber-500" /> Hint
-            </button>
+            <Button variant="ghost" size="md" onClick={handleRequestHint} disabled={processingState}
+              title="Ask the interviewer for a hint"
+              icon={<Lightbulb className="h-4 w-4" aria-hidden />}>
+              Hint
+            </Button>
 
-            <button onClick={() => setShowCode(p => !p)} disabled={processingState}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-all shadow-sm disabled:opacity-50 ${
-                showCode ? 'border-blue-200 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10' : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100'
-              }`}>
-              <Code2 className="w-4 h-4" /> {showCode ? 'Hide Code' : 'Show Code Editor'}
-            </button>
-
-            {/* Skip button — unlimited skips allowed */}
-            <button
-              onClick={handleSkip}
+            <Button
+              variant={showCode ? 'secondary' : 'ghost'}
+              size="md"
+              onClick={() => setShowCode(p => !p)}
               disabled={processingState}
-              title="Skip this question (will receive 0 for this question)"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-amber-200 dark:hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-500 text-sm font-semibold transition-all shadow-sm ml-auto mr-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={showCode ? 'text-accent ring-1 ring-accent/30' : ''}
+              icon={<Code2 className="h-4 w-4" aria-hidden />}
             >
-              <SkipForward className="w-4 h-4" />
-              Skip
-            </button>
+              {showCode ? 'Hide editor' : 'Code editor'}
+            </Button>
 
-            <button
-              onClick={() => handleSubmitAnswer()}
-              disabled={processingState || tts.speaking}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" /> {showCode ? 'Submit Code & Answer' : 'Submit Answer'}
-            </button>
+            <div className="ml-auto flex items-center gap-2 max-sm:w-full">
+              <Button variant="ghost" size="md" onClick={handleSkip} disabled={processingState}
+                title="Skip this question — it scores zero"
+                className="max-sm:flex-1"
+                icon={<SkipForward className="h-4 w-4" aria-hidden />}>
+                Skip
+              </Button>
 
+              <Button
+                size="md"
+                onClick={() => handleSubmitAnswer()}
+                disabled={processingState || tts.speaking}
+                className="max-sm:flex-1"
+                icon={<Send className="h-4 w-4" aria-hidden />}
+              >
+                {showCode ? 'Submit code & answer' : 'Submit answer'}
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* ── Right panel — Camera + Voice + Transcript ──────────── */}
-        <div className="w-72 xl:w-80 flex-shrink-0 flex flex-col gap-3 p-4 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/30 min-h-0 overflow-hidden transition-colors">
+        {/* ── Right rail: camera, voice state, transcript ───────────── */}
+        <aside
+          aria-label="Camera and transcript"
+          className={`${railOpen ? 'fixed inset-x-0 bottom-0 z-40 flex max-h-[72vh] overflow-y-auto rounded-t-2xl border-t border-hairline bg-surface p-3 shadow-4' : 'hidden'} min-h-0 flex-col gap-3 lg:static lg:z-auto lg:flex lg:max-h-none lg:w-72 lg:flex-shrink-0 lg:overflow-hidden lg:rounded-none lg:border-l lg:border-t-0 lg:bg-canvas-inset lg:p-4 lg:shadow-none xl:w-80`}
+        >
+          <button
+            onClick={() => setRailOpen(false)}
+            className="btn btn-ghost btn-sm w-full justify-between lg:hidden"
+          >
+            <span className="text-xs font-semibold">Camera &amp; transcript</span>
+            <X className="h-4 w-4" aria-hidden />
+          </button>
 
           {/* Webcam */}
-          <div className="flex-shrink-0 relative">
-            <div className="aspect-video bg-zinc-900 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-              <video ref={proctoring.videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+          <div className="relative flex-shrink-0">
+            <div className="aspect-video overflow-hidden rounded-lg border border-hairline bg-canvas-inset">
+              <video ref={proctoring.videoRef} autoPlay muted playsInline className="h-full w-full object-cover" aria-label="Your camera preview" />
               {!proctoring.cameraReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-                  <div className="text-center">
-                    <Camera className="w-6 h-6 text-zinc-600 mx-auto mb-1.5" />
-                    <p className="text-[11px] uppercase tracking-wider font-semibold text-zinc-500">
-                      {proctoring.cameraError || 'Initializing...'}
+                <div className="absolute inset-0 grid place-items-center bg-canvas-inset">
+                  <div className="px-3 text-center">
+                    <Camera className="mx-auto mb-1.5 h-5 w-5 text-faint" aria-hidden />
+                    <p className="text-2xs font-medium text-subtle">
+                      {proctoring.cameraError || 'Starting camera…'}
                     </p>
                   </div>
                 </div>
               )}
             </div>
-            <div className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ring-2 ring-zinc-900 ${
-              proctoring.faceStatus === 'ok' ? 'bg-green-500' :
-              proctoring.faceStatus === 'no_face' ? 'bg-red-500 animate-pulse' : 'bg-amber-500 animate-pulse'
-            }`} />
+            <span
+              className={`absolute right-2 top-2 h-2.5 w-2.5 rounded-full ring-2 ring-surface ${
+                proctoring.faceStatus === 'ok' ? 'bg-success-500' :
+                proctoring.faceStatus === 'no_face' ? 'animate-pulse bg-danger-500' : 'animate-pulse bg-warning-500'
+              }`}
+              title={{ ok: 'Face detected', no_face: 'No face detected' }[proctoring.faceStatus] || 'Checking camera'}
+            />
+            <p className="sr-only" role="status">
+              {proctoring.faceStatus === 'ok' ? 'Face detected' : proctoring.faceStatus === 'no_face' ? 'No face detected' : 'Checking camera'}
+            </p>
           </div>
 
           {/* Voice state */}
-          <div className="flex-shrink-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex items-center gap-3 shadow-sm transition-colors">
+          <div className="flex flex-shrink-0 items-center gap-3 rounded-lg border border-hairline bg-surface p-3">
             <VoiceWave active={stt.listening} speaking={tts.speaking} thinking={processingState} size="md" />
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-500">
-              {processingState ? '🤔 Thinking...' : tts.speaking ? '🔊 AI Speaking...' : stt.listening ? '🎙️ Listening...' : '🔇 Mic off'}
+            <p className="text-xs font-medium text-muted">
+              {processingState ? 'Evaluating' : tts.speaking ? 'AI speaking' : stt.listening ? 'Listening' : 'Microphone off'}
             </p>
           </div>
 
           {/* Proctoring alert */}
           {violationCount > 0 && (
-            <div className="flex-shrink-0 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-xl p-3 shadow-sm">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-500">{violationCount}/{maxViolations} violations</span>
-              </div>
+            <div className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-warning-500/30 bg-warning-bg p-3">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-warning-500" aria-hidden />
+              <p className="num text-xs font-medium text-warning-500">
+                {violationCount} of {maxViolations} proctoring flags used
+              </p>
             </div>
           )}
 
           {/* Interview metadata */}
           {interview && (
-            <div className="flex-shrink-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-[11px] font-bold uppercase tracking-wider text-zinc-500 shadow-sm transition-colors">
-              <span className="text-zinc-400 dark:text-zinc-600">Role: </span><span className="text-zinc-700 dark:text-zinc-300">{interview.role}</span>
-              <span className="text-zinc-300 dark:text-zinc-700 mx-2">|</span>
-              <span className="text-zinc-700 dark:text-zinc-300">{interview.interviewType?.replace('_', ' ')}</span>
-            </div>
+            <dl className="flex flex-shrink-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-hairline bg-surface p-3 text-xs">
+              <dt className="sr-only">Role</dt>
+              <dd className="font-medium text-ink">{interview.role}</dd>
+              <span className="text-faint" aria-hidden>·</span>
+              <dt className="sr-only">Type</dt>
+              <dd className="text-subtle">{interview.interviewType?.replace('_', ' ')}</dd>
+            </dl>
           )}
 
-          {/* Transcript Panel — scrollable */}
-          <div className="flex-1 min-h-0 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-sm transition-colors">
-            <div className="flex-shrink-0 bg-zinc-50 dark:bg-zinc-800/30 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" /> Full Transcript
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Transcript */}
+          <section className="card flex min-h-40 flex-1 flex-col overflow-hidden lg:min-h-0">
+            <header className="flex flex-shrink-0 items-center gap-1.5 border-b border-hairline bg-inset px-3 py-2 text-2xs font-semibold text-subtle">
+              <ScrollText className="h-3.5 w-3.5" aria-hidden /> Full transcript
+            </header>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
               {transcript.length === 0 && (
-                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 text-center mt-4">Transcript will appear here...</p>
+                <p className="pt-2 text-center text-xs text-faint">Everything said in this session lands here.</p>
               )}
               {transcript.map((msg, i) => (
                 <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 mb-1.5">{msg.role === 'user' ? 'You' : 'AI'}</span>
-                  <div className={`px-3 py-2 rounded-xl text-[13px] font-medium max-w-[95%] whitespace-pre-wrap leading-relaxed shadow-sm ${
+                  <span className="mb-1 text-3xs font-medium text-faint">{msg.role === 'user' ? 'You' : 'Interviewer'}</span>
+                  <p className={`max-w-[95%] whitespace-pre-wrap rounded-lg px-3 py-2 text-[0.8125rem] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-blue-50 text-blue-900 border border-blue-100 rounded-tr-none dark:bg-blue-600/10 dark:text-blue-100 dark:border-blue-600/20'
-                      : 'bg-zinc-100 text-zinc-800 border border-zinc-200 rounded-tl-none dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
+                      ? 'border border-accent/20 bg-accent-soft/60 text-ink'
+                      : 'border border-hairline bg-inset text-muted'
                   }`}>
                     {msg.content}
-                  </div>
+                  </p>
                 </div>
               ))}
               <div ref={transcriptEndRef} />
             </div>
-          </div>
+          </section>
 
-        </div>
+        </aside>
       </div>
     </div>
   )

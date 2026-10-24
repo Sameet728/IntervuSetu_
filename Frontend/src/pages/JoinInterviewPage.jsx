@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { getTemplateInfo } from '../api/orgAPI'
 import api from '../api/axios'
+import { Button, Spinner } from '../components/ui/index'
+import BrandLogo from '../components/brand/BrandLogo'
+import { usePageEnter } from '../motion/index'
 import {
-  Building2, Clock, Hash, Shield, Calendar, Code2, Mic,
-  CheckCircle2, AlertTriangle, XCircle, ArrowRight, Loader2, LogIn, UserPlus
+  Building2, Clock, Hash, ShieldCheck, Calendar, Code2,
+  CheckCircle2, AlertTriangle, XCircle, ArrowRight, LogIn, UserPlus
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -70,176 +72,167 @@ export default function JoinInterviewPage() {
     }
   }
 
+  const enterRef = usePageEnter([loading, error, templateData])
+
   // ── Loading ─────────────────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-violet/30 border-t-violet rounded-full animate-spin" />
+    <div ref={enterRef} className="page-shell flex min-h-dvh flex-col items-center justify-center gap-5 px-4 text-center">
+      <BrandLogo to="/" size="sm" />
+      <Spinner size="lg" />
+      <div>
+        <p className="t-h3 text-ink">Loading your invitation…</p>
+        <p className="t-sm mt-1">Verifying the interview link</p>
+      </div>
     </div>
   )
 
-  // ── Error / Expired ─────────────────────────────────────────────────────
-  if (error) return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="max-w-sm w-full bg-card border border-rose/20 rounded-2xl p-8 text-center">
-        <div className="w-14 h-14 bg-rose/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <XCircle className="w-7 h-7 text-rose" />
+  // ── Error / Invalid link / Expired ──────────────────────────────────────
+  if (error) {
+    const Icon = error.expired ? Calendar : XCircle
+    return (
+      <div ref={enterRef} className="page-shell flex min-h-dvh items-center justify-center p-4">
+        <div data-enter className="card w-full max-w-md p-8 text-center">
+          <div className="mb-5 flex justify-center"><BrandLogo to="/" size="xs" /></div>
+          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-danger-bg text-danger-500" aria-hidden>
+            <Icon className="h-7 w-7" />
+          </span>
+          <h1 className="t-h2 mb-2">{error.expired ? 'This interview has closed' : 'Interview unavailable'}</h1>
+          {/* Message is exactly what the server returned — never fabricated */}
+          <p className="t-body mb-6">{error.message}</p>
+          <Link to="/" className="btn btn-secondary btn-lg w-full">
+            <ArrowRight className="h-4 w-4" aria-hidden /> Go to homepage
+          </Link>
         </div>
-        <h2 className="font-display font-bold text-xl text-zinc-900 dark:text-white mb-2">Interview Unavailable</h2>
-        <p className="text-slate-400 font-body text-sm mb-6">{error.message}</p>
-        <Link to="/" className="block w-full py-3 bg-surface border border-border rounded-xl text-sm text-slate-300 hover:bg-card transition-all font-body">
-          ← Go to Homepage
-        </Link>
-      </motion.div>
-    </div>
-  )
+      </div>
+    )
+  }
 
   const t = templateData
   const org = t.organization
   const deadlineDate = t.deadline ? new Date(t.deadline) : null
   const isExpiring = deadlineDate && (deadlineDate - new Date()) < 24 * 60 * 60 * 1000 // less than 24h
 
-  return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-violet/8 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-cyan/5 rounded-full blur-[100px]" />
-      </div>
+  const details = [
+    { Icon: Code2, label: 'Format',   value: TYPE_LABELS[t.interviewType] || t.interviewType },
+    { Icon: Hash,  label: 'Questions', value: `${t.questionCount} questions` },
+    { Icon: Clock, label: 'Duration',  value: `~${t.duration} minutes` },
+    { Icon: ShieldCheck, label: 'Proctoring', value: t.proctoringEnabled ? 'Enabled (camera required)' : 'Disabled' },
+  ]
 
-      {/* Nav */}
-      <nav className="border-b border-border bg-surface/30 backdrop-blur-sm relative z-10">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-tr from-violet to-cyan rounded-lg flex items-center justify-center">
-              <Mic className="w-3.5 h-3.5 text-void" strokeWidth={3} />
-            </div>
-            <span className="font-display font-bold text-zinc-900 dark:text-white text-sm">IntervuSetu</span>
-          </Link>
+  return (
+    <div ref={enterRef} className="page-shell flex min-h-dvh flex-col text-ink">
+      {/* Header */}
+      <header className="relative z-10 border-b border-hairline bg-surface">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
+          <BrandLogo to="/" size="xs" />
           {user ? (
-            <span className="text-xs font-mono text-slate-500">Signed in as <span className="text-slate-300">{user.name}</span></span>
+            <span className="t-xs">
+              Signed in as <span className="font-medium text-ink">{user.name}</span>
+            </span>
           ) : (
             <div className="flex items-center gap-2">
-              <Link to="/login" className="text-xs text-slate-400 hover:text-zinc-900 dark:text-white font-body transition-colors">Sign In</Link>
-              <Link to="/register" className="text-xs bg-violet/10 border border-violet/30 text-violet px-3 py-1.5 rounded-lg font-body hover:bg-violet/20 transition-all">Register</Link>
+              <Link to="/login" className="btn btn-ghost btn-sm">Sign in</Link>
+              <Link to="/register" className="btn btn-secondary btn-sm">Register</Link>
             </div>
           )}
         </div>
-      </nav>
+      </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-lg"
-        >
-          {/* Org header */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-surface border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
+      {/* Content */}
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 py-10">
+        <div data-enter className="w-full max-w-lg">
+          {/* Organization */}
+          <div className="mb-5 flex items-center gap-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-hairline bg-inset text-subtle">
               {org?.logo
-                ? <img src={org.logo} alt={org.name} className="w-full h-full object-cover" />
-                : <Building2 className="w-5 h-5 text-slate-600" />}
-            </div>
-            <div>
-              <p className="font-display font-bold text-zinc-900 dark:text-white">{org?.name || 'Organization'}</p>
-              <p className="text-[10px] font-mono text-slate-500 capitalize">{org?.type} · Official Interview Invitation</p>
+                ? <img src={org.logo} alt={`${org.name} logo`} className="h-full w-full object-cover" />
+                : <Building2 className="h-5 w-5" aria-hidden />}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{org?.name || 'Organization'}</p>
+              <p className="eyebrow truncate">Official interview invitation</p>
             </div>
           </div>
 
-          {/* Main card */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            {/* Header bar */}
-            <div className="bg-gradient-to-r from-violet/20 to-cyan/10 border-b border-border px-6 py-4">
-              <h1 className="font-display font-bold text-xl text-zinc-900 dark:text-white mb-1">{t.title}</h1>
-              <p className="text-sm text-slate-400 font-body">You have been invited to interview for <span className="text-cyan">{t.role}</span></p>
+          {/* Invitation card */}
+          <section className="card overflow-hidden">
+            <div className="hairline-b bg-inset px-6 py-5">
+              <p className="eyebrow mb-1.5">You&apos;re invited</p>
+              <h1 className="t-h2 mb-1">{t.title}</h1>
+              <p className="t-body">
+                Interviewing for <span className="font-medium text-ink">{t.role}</span>
+              </p>
             </div>
 
-            {/* Details grid */}
             <div className="p-6">
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                {[
-                  { icon: <Code2 className="w-4 h-4 text-violet" />, label: 'Type', val: TYPE_LABELS[t.interviewType] || t.interviewType },
-                  { icon: <Hash className="w-4 h-4 text-cyan" />, label: 'Questions', val: `${t.questionCount} questions` },
-                  { icon: <Clock className="w-4 h-4 text-amber" />, label: 'Duration', val: `~${t.duration} minutes` },
-                  { icon: <Shield className="w-4 h-4 text-emerald" />, label: 'Proctoring', val: t.proctoringEnabled ? 'Enabled (camera required)' : 'Disabled' },
-                ].map((item, i) => (
-                  <div key={i} className="bg-surface rounded-xl p-3 flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5">{item.icon}</div>
-                    <div>
-                      <p className="text-[10px] font-mono text-slate-500">{item.label}</p>
-                      <p className="text-xs font-body text-slate-200">{item.val}</p>
+              <dl className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {details.map(({ Icon, label, value }) => (
+                  <div key={label} className="flex items-start gap-2.5 rounded-lg border border-hairline bg-inset p-3">
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                    <div className="min-w-0">
+                      <dt className="text-2xs uppercase tracking-wide text-subtle">{label}</dt>
+                      <dd className="num mt-0.5 text-sm text-ink">{value}</dd>
                     </div>
                   </div>
                 ))}
-              </div>
+              </dl>
 
-              {/* Tech stack */}
               {t.techStack?.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-[10px] font-mono text-slate-500 mb-2">TECH STACK</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {t.techStack.map((tech) => (
-                      <span key={tech} className="text-[11px] font-mono bg-violet/10 text-violet border border-violet/20 px-2 py-0.5 rounded-full">{tech}</span>
-                    ))}
-                  </div>
+                  <p className="eyebrow mb-2">Tech stack</p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {t.techStack.map((tech) => <li key={tech} className="chip">{tech}</li>)}
+                  </ul>
                 </div>
               )}
 
-              {/* Instructions */}
               {t.instructions && (
-                <div className="bg-surface/50 border border-border rounded-xl p-3 mb-4">
-                  <p className="text-[10px] font-mono text-slate-500 mb-1">INSTRUCTIONS</p>
-                  <p className="text-xs font-body text-slate-300 leading-relaxed">{t.instructions}</p>
+                <div className="card-inset mb-4 p-3.5">
+                  <p className="eyebrow mb-1.5">Instructions</p>
+                  <p className="t-sm">{t.instructions}</p>
                 </div>
               )}
 
-              {/* Deadline warning */}
               {deadlineDate && (
-                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 mb-4 text-xs font-body ${
-                  isExpiring ? 'bg-rose/10 border border-rose/20 text-rose' : 'bg-amber/5 border border-amber/20 text-amber'
+                <div className={`mb-4 flex items-center gap-2 rounded-lg border p-3 text-sm ${
+                  isExpiring ? 'border-warning-500/30 bg-warning-bg text-warning-500' : 'border-hairline bg-inset text-muted'
                 }`}>
-                  {isExpiring ? <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> : <Calendar className="w-3.5 h-3.5 flex-shrink-0" />}
-                  <span>{isExpiring ? '⚠️ Closing soon! ' : ''}Deadline: {fmtDate(t.deadline)}</span>
+                  {isExpiring
+                    ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+                    : <Calendar className="h-4 w-4 shrink-0" aria-hidden />}
+                  <span>
+                    {isExpiring ? 'Closing soon — ' : 'Deadline: '}
+                    <span className="num">{fmtDate(t.deadline)}</span>
+                  </span>
                 </div>
               )}
 
-              {/* Attempts info */}
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-600 mb-5">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Max {t.maxAttempts} attempt{t.maxAttempts !== 1 ? 's' : ''} per candidate</span>
-              </div>
+              <p className="mb-5 flex items-center gap-1.5 t-xs">
+                <CheckCircle2 className="h-3.5 w-3.5 text-subtle" aria-hidden />
+                Max <span className="num">{t.maxAttempts}</span> attempt{t.maxAttempts !== 1 ? 's' : ''} per candidate
+              </p>
 
-              {/* CTA */}
               {!user ? (
-                <div className="space-y-2">
-                  <p className="text-center text-xs text-slate-500 font-body mb-3">Sign in or create an account to begin</p>
-                  <Link to={`/login`} state={{ from: location.pathname }}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-violet to-cyan text-void font-display font-bold rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all text-sm">
-                    <LogIn className="w-4 h-4" />Sign In to Start Interview
+                <div className="flex flex-col gap-2">
+                  <p className="t-sm mb-1 text-center">Sign in or create an account to begin</p>
+                  <Link to="/login" state={{ from: location.pathname }} className="btn btn-primary btn-lg w-full">
+                    <LogIn className="h-4 w-4" aria-hidden /> Sign in to start interview
                   </Link>
-                  <Link to={`/register`} state={{ from: location.pathname }}
-                    className="flex items-center justify-center gap-2 w-full py-3 border border-border text-slate-300 rounded-xl hover:border-violet/30 hover:text-violet transition-all text-sm font-body">
-                    <UserPlus className="w-4 h-4" />Create Account
+                  <Link to="/register" state={{ from: location.pathname }} className="btn btn-secondary btn-lg w-full">
+                    <UserPlus className="h-4 w-4" aria-hidden /> Create account
                   </Link>
                 </div>
               ) : (
-                <button onClick={handleJoin} disabled={joining}
-                  className="w-full py-3.5 bg-gradient-to-r from-violet to-cyan text-void font-display font-bold rounded-xl hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
-                  {joining
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />Preparing your interview...</>
-                    : <><ArrowRight className="w-4 h-4" />Start Interview Now</>}
-                </button>
+                <Button type="button" onClick={handleJoin} disabled={joining} loading={joining} variant="primary" size="lg" block icon={<ArrowRight className="h-4 w-4" aria-hidden />}>
+                  {joining ? 'Preparing your interview…' : 'Start interview now'}
+                </Button>
               )}
             </div>
-          </div>
+          </section>
 
-          <p className="text-center text-[10px] text-slate-600 mt-4 font-mono">
-            AI-powered interview platform · Secure & proctored
-          </p>
-        </motion.div>
-      </div>
+          <p className="mt-4 text-center t-xs">AI-powered interview platform · Secure &amp; proctored</p>
+        </div>
+      </main>
     </div>
   )
 }

@@ -1,93 +1,100 @@
 import { motion } from 'framer-motion'
 import { useMicVolume } from '../../hooks/useMicVolume'
+import { prefersReducedMotion } from '../../motion/index'
 
 /**
- * Animated voice waveform component
- * States: listening (cyan waves), speaking (violet waves), thinking (amber pulse)
+ * Live mic / TTS meter. Height still tracks real microphone volume; only the
+ * motion is gated, so reduced-motion users get an accurate static level bar
+ * instead of a frozen one.
+ * States: listening (accent waves), speaking (ai waves), thinking (warning dots).
  */
-export default function VoiceWave({ active = false, speaking = false, thinking = false, size = 'md' }) {
-  const sizes = {
-    sm: { height: 'h-6',  bars: 7,  gap: 'gap-[3px]', barW: 'w-[3px]' },
-    md: { height: 'h-10', bars: 11, gap: 'gap-1',      barW: 'w-1' },
-    lg: { height: 'h-14', bars: 15, gap: 'gap-1',      barW: 'w-1' },
-  }
-  const s = sizes[size] || sizes.md
 
-  // Only measure mic volume if user is 'active' (listening)
+const SIZES = {
+  sm: { height: 'h-6', bars: 7, gap: 'gap-[3px]', barW: 'w-[3px]' },
+  md: { height: 'h-10', bars: 11, gap: 'gap-1', barW: 'w-1' },
+  lg: { height: 'h-14', bars: 15, gap: 'gap-1', barW: 'w-1' },
+}
+
+const WAVE_SHAPE = [0.3, 0.5, 0.75, 0.9, 1, 0.9, 0.7, 0.9, 1, 0.9, 0.75, 0.5, 0.3, 0.5, 0.4]
+
+export default function VoiceWave({ active = false, speaking = false, thinking = false, size = 'md' }) {
+  const s = SIZES[size] || SIZES.md
+  const reduced = prefersReducedMotion()
   const volume = useMicVolume(active)
 
-  // Determine color and animation based on state
-  let barColor = 'bg-slate-700'
-  let animated = false
-
+  let barColor = 'bg-ink-faint'
+  let role = 'img'
+  let label = 'Microphone idle'
   if (thinking) {
-    barColor = 'bg-amber'
-    animated = true
+    barColor = 'bg-warning-500'
+    role = 'status'
+    label = 'Preparing the next question'
   } else if (speaking) {
-    barColor = 'bg-violet'
-    animated = true
+    barColor = 'bg-ai'
+    role = 'status'
+    label = 'Interviewer is speaking'
   } else if (active) {
-    barColor = 'bg-cyan'
-    animated = true
+    barColor = 'bg-accent'
+    role = 'status'
+    label = 'Listening — speak now'
   }
 
-  // Wave heights for a natural waveform shape
-  const waveShape = [0.3, 0.5, 0.75, 0.9, 1, 0.9, 0.7, 0.9, 1, 0.9, 0.75, 0.5, 0.3, 0.5, 0.4]
-
   if (thinking) {
-    // Thinking state: three bouncing dots
     return (
-      <div className="flex items-center gap-1.5">
-        {[0, 1, 2].map(i => (
-          <motion.div
+      <span
+        role={role}
+        aria-label={label}
+        className="flex items-center gap-1.5"
+      >
+        {[0, 1, 2].map((i) => (
+          <motion.span
             key={i}
-            className={`w-2 h-2 rounded-full ${barColor}`}
-            animate={{ y: [0, -8, 0], opacity: [0.4, 1, 0.4] }}
-            transition={{ duration: 1.4, delay: i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+            className="h-2 w-2 rounded-full bg-warning-500"
+            animate={reduced ? { opacity: 0.8 } : { y: [0, -8, 0], opacity: [0.4, 1, 0.4] }}
+            transition={reduced ? { duration: 0.01 } : { duration: 1.4, delay: i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
-      </div>
+      </span>
     )
   }
 
+  const levelOf = (baseH) => {
+    if (speaking) return baseH
+    if (active) return Math.max(0.15, Math.min(1, 0.15 + (volume / 100) * baseH))
+    return 0.15
+  }
+
   return (
-    <div className={`flex items-center ${s.gap} ${s.height}`}>
+    <span
+      role={role}
+      aria-label={label}
+      className={`flex items-center ${s.gap} ${s.height}`}
+    >
       {Array.from({ length: s.bars }).map((_, i) => {
-        const baseH    = waveShape[i % waveShape.length] || 0.5
-        const delay    = (i / s.bars) * 0.8
+        const baseH = WAVE_SHAPE[i % WAVE_SHAPE.length] || 0.5
+        const delay = (i / s.bars) * 0.8
         const duration = 0.8 + (i % 3) * 0.15
-        
-        let scaleVal = 0.15
-        if (speaking) {
-           // AI speaking
-           scaleVal = baseH
-        } else if (active) {
-           // User speaking - map mic volume!
-           const dynH = 0.15 + (volume / 100) * baseH
-           scaleVal = Math.max(0.15, Math.min(1, dynH))
-        }
+        const level = levelOf(baseH)
 
         return (
-          <motion.div
+          <motion.span
             key={i}
-            className={`${s.barW} ${barColor} rounded-full transition-colors duration-300`}
-            style={{ height: `${baseH * 100}%` }}
-            animate={speaking ? {
-              scaleY: [baseH, 1, baseH * 0.4, 1, baseH],
-              opacity: [0.6, 1, 0.7, 1, 0.6],
-            } : {
-              scaleY: scaleVal,
-              opacity: active ? (volume > 5 ? 1 : 0.5) : 0.3,
-            }}
-            transition={speaking ? {
-              duration,
-              delay,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            } : { duration: 0.1 }}
+            aria-hidden
+            className={`${s.barW} ${barColor} rounded-full`}
+            style={{ height: `${baseH * 100}%`, transformOrigin: 'center' }}
+            animate={
+              speaking && !reduced
+                ? { scaleY: [baseH, 1, baseH * 0.4, 1, baseH], opacity: [0.6, 1, 0.7, 1, 0.6] }
+                : { scaleY: level, opacity: active ? (volume > 5 ? 1 : 0.55) : 0.3 }
+            }
+            transition={
+              speaking && !reduced
+                ? { duration, delay, repeat: Infinity, ease: 'easeInOut' }
+                : { duration: reduced ? 0 : 0.1 }
+            }
           />
         )
       })}
-    </div>
+    </span>
   )
 }

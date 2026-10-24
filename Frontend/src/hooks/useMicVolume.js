@@ -7,12 +7,21 @@ export function useMicVolume(active = false) {
   const analyserRef = useRef(null)
   const frameRef = useRef(null)
 
+  const teardown = () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+    const ctx = audioCtxRef.current
+    // The !active branch and the effect cleanup can both run; closing twice
+    // throws "Cannot close a closed AudioContext" in Chromium.
+    if (ctx && ctx.state !== 'closed') ctx.close().catch(() => {})
+    streamRef.current = null
+    audioCtxRef.current = null
+  }
+
   useEffect(() => {
     if (!active) {
       setVolume(0)
-      if (frameRef.current) cancelAnimationFrame(frameRef.current)
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-      if (audioCtxRef.current) audioCtxRef.current.close()
+      teardown()
       return
     }
 
@@ -56,9 +65,7 @@ export function useMicVolume(active = false) {
 
     return () => {
       mounted = false
-      if (frameRef.current) cancelAnimationFrame(frameRef.current)
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-      if (audioCtxRef.current) audioCtxRef.current.close()
+      teardown()
     }
   }, [active])
 

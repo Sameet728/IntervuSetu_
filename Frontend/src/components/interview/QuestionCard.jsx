@@ -1,48 +1,55 @@
 import { motion } from 'framer-motion'
 import { Badge } from '../ui/index'
-import { Sparkles, Code2, Brain, Users } from 'lucide-react'
+import { Sparkles, Code2, Brain, Users, CornerUpLeft } from 'lucide-react'
+import { prefersReducedMotion } from '../../motion/index'
 
-const typeConfig = {
-  code:          { color: 'cyan',    icon: <Code2 className="w-3.5 h-3.5" />,     label: 'Code' },
-  theory:        { color: 'violet',  icon: <Brain className="w-3.5 h-3.5" />,     label: 'Theory' },
-  hr:            { color: 'emerald', icon: <Users className="w-3.5 h-3.5" />,     label: 'HR' },
-  behavioral:    { color: 'amber',   icon: <Users className="w-3.5 h-3.5" />,     label: 'Behavioral' },
-  system_design: { color: 'rose',    icon: <Sparkles className="w-3.5 h-3.5" />,  label: 'System Design' },
+const TYPE_CONFIG = {
+  code: { color: 'cyan', icon: <Code2 className="h-3 w-3" aria-hidden />, label: 'Code' },
+  theory: { color: 'violet', icon: <Brain className="h-3 w-3" aria-hidden />, label: 'Theory' },
+  hr: { color: 'emerald', icon: <Users className="h-3 w-3" aria-hidden />, label: 'HR' },
+  behavioral: { color: 'amber', icon: <Users className="h-3 w-3" aria-hidden />, label: 'Behavioral' },
+  system_design: { color: 'rose', icon: <Sparkles className="h-3 w-3" aria-hidden />, label: 'System Design' },
 }
 
-const diffColor = { easy: 'emerald', medium: 'amber', hard: 'rose' }
+const DIFFICULTY_COLOR = { easy: 'emerald', medium: 'amber', hard: 'rose' }
 
 export default function QuestionCard({ question, index, total, followupCount = 0, isFollowup = false }) {
   if (!question) return null
-  const cfg = typeConfig[question.questionType] || typeConfig.theory
+  const cfg = TYPE_CONFIG[question.questionType] || TYPE_CONFIG.theory
+  const reduced = prefersReducedMotion()
 
   return (
     <motion.div
       key={question.questionId}
-      initial={{ opacity: 0, x: 20 }}
+      initial={reduced ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-      className="bg-card border border-border rounded-2xl p-5 shadow-card"
+      exit={reduced ? { opacity: 1 } : { opacity: 0, x: -8 }}
+      transition={{ duration: reduced ? 0 : 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="card"
     >
-      {/* Header row */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         {isFollowup ? (
-          <Badge color="amber">↩ Follow-up #{followupCount}</Badge>
+          <Badge color="amber">
+            <CornerUpLeft className="h-3 w-3" aria-hidden />
+            Follow-up #{followupCount}
+          </Badge>
         ) : (
-          <Badge color="slate">Q {index + 1} / {total}</Badge>
+          <Badge color="slate">
+            <span>Question</span>
+            <span className="num">{index + 1}/{total}</span>
+          </Badge>
         )}
-        <Badge color={cfg.color}>{cfg.icon}{cfg.label}</Badge>
-        <Badge color={diffColor[question.difficulty] || 'slate'}>{question.difficulty}</Badge>
-        {question.topic && (
-          <Badge color="slate">{question.topic}</Badge>
-        )}
+        <Badge color={cfg.color}>
+          {cfg.icon}
+          {cfg.label}
+        </Badge>
+        <Badge color={DIFFICULTY_COLOR[question.difficulty] || 'slate'}>
+          {question.difficulty || 'unspecified'}
+        </Badge>
+        {question.topic && <Badge color="slate">{question.topic}</Badge>}
       </div>
 
-      {/* Question text */}
-      <p className="text-slate-100 font-body text-base sm:text-lg leading-relaxed">
-        {question.question || question}
-      </p>
+      <p className="t-body text-ink">{question.question || question}</p>
     </motion.div>
   )
 }

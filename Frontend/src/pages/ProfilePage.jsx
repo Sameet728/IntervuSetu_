@@ -1,15 +1,16 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
-import { Card, Button, Input, Select } from '../components/ui/index'
+import { Card, Button, Input, Select, StatusBadge } from '../components/ui/index'
 import { useAuth } from '../context/AuthContext'
 import { updateProfile, testGroqKey } from '../api/authAPI'
+import { usePageEnter } from '../motion/index'
 import toast from 'react-hot-toast'
 import {
   User, Briefcase, GraduationCap, Code2, Target, Upload,
-  Plus, X, Save, ArrowLeft, FileText, CheckCircle2, CreditCard,
-  Cpu, Key, ExternalLink, Zap, Check, AlertCircle, Eye, EyeOff
+  X, Save, ArrowLeft, FileText, CheckCircle2, CreditCard,
+  Cpu, Key, ExternalLink, Zap, Check, AlertCircle, Eye, EyeOff,
+  Plus, Sparkles,
 } from 'lucide-react'
 
 const SKILL_SUGGESTIONS = [
@@ -28,6 +29,44 @@ const EXP_LEVELS = [
   { value: 'senior',  label: 'Senior (5-8 yrs)' },
   { value: 'lead',    label: 'Lead (8+ yrs)' },
 ]
+
+const SECTION_TONE = {
+  accent:  'bg-accent-soft text-accent',
+  ai:      'bg-ai-soft text-ai',
+  success: 'bg-success-soft text-success-500',
+  warning: 'bg-warning-soft text-warning-500',
+  neutral: 'bg-inset text-muted',
+}
+
+const SECTIONS = [
+  { id: 'profile-basic',   label: 'Basic info',   Icon: User },
+  { id: 'profile-status',  label: 'Status',       Icon: Briefcase },
+  { id: 'profile-goals',   label: 'Career goals', Icon: Target },
+  { id: 'profile-skills',  label: 'Skills',       Icon: Code2 },
+  { id: 'profile-resume',  label: 'Resume',       Icon: FileText },
+  { id: 'profile-billing', label: 'Transactions', Icon: CreditCard },
+  { id: 'profile-ai',      label: 'AI engine',    Icon: Cpu },
+]
+
+function Section({ id, icon: Icon, tone = 'accent', title, description, action, children }) {
+  return (
+    <Card id={id} className="scroll-mt-28 overflow-hidden">
+      <header className="flex items-start justify-between gap-3 border-b border-hairline px-5 py-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${SECTION_TONE[tone] || SECTION_TONE.accent}`}>
+            <Icon className="h-4 w-4" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="t-h3 leading-tight">{title}</h2>
+            {description && <p className="t-xs mt-1">{description}</p>}
+          </div>
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </header>
+      <div className="p-5">{children}</div>
+    </Card>
+  )
+}
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -57,6 +96,8 @@ export default function ProfilePage() {
   const [testingGroq, setTestingGroq] = useState(false)
   const [groqStatus, setGroqStatus] = useState(null)
   const [showGroqKey, setShowGroqKey] = useState(false)
+
+  const enterRef = usePageEnter([])
 
   const handleTestGroq = async () => {
     if (!form.groqApiKey.trim()) {
@@ -130,77 +171,149 @@ export default function ProfilePage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" style={{ fontFamily: 'Inter, system-ui' }}>
-      <Navbar />
-      <div className="max-w-3xl mx-auto px-4 pt-24 pb-16">
+  const isGroq = form.preferredAIEngine === 'groq'
+  const isStudent = form.userType === 'student'
+  const resumeState = resumeFile ? resumeFile.name : user?.resumeUrl ? (user.resumeOriginalName || 'Resume on file') : 'Not uploaded'
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <div className="mb-8">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 text-sm font-medium mb-5 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-            </button>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-zinc-900 dark:text-white text-xl font-bold font-display" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                {user?.name?.[0]?.toUpperCase() || 'U'}
-              </div>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50" style={{ fontFamily: 'Poppins, sans-serif' }}>My Profile</h1>
-                  {user?.plan === 'pro' ? (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-800">PRO</span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-wider border border-zinc-200 dark:border-zinc-700">FREE</span>
-                  )}
+  const metaChips = [
+    isStudent
+      ? { Icon: GraduationCap, text: form.college ? `${form.college}${form.year ? ` · ${form.year}` : ''}` : 'Student' }
+      : { Icon: Briefcase, text: form.company || 'Professional' },
+    form.targetRole && { Icon: Target, text: form.targetRole },
+    { Icon: isGroq ? Zap : Cpu, text: isGroq ? 'Groq engine' : 'Local Qwen' },
+  ].filter(Boolean)
+
+  const saveLabel = saved ? 'Saved successfully' : 'Save profile settings'
+
+  return (
+    <div className="page-shell text-ink">
+      <Navbar />
+
+      <main ref={enterRef} className="container-page max-w-6xl pb-24 pt-[calc(var(--nav-h)+1.5rem)]">
+        {/* ── Back ───────────────────────────────────────────────── */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="btn btn-ghost btn-sm -ml-2"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Back to dashboard
+          </button>
+        </div>
+
+        {/* ── Profile hero ───────────────────────────────────────── */}
+        <header
+          data-enter
+          className="relative mb-5 overflow-hidden rounded-2xl border border-hairline bg-gradient-to-br from-surface via-surface to-ai-soft/35 p-5 sm:p-7"
+        >
+          <div aria-hidden className="line-grid pointer-events-none absolute inset-0 opacity-55 [mask-image:radial-gradient(80%_90%_at_90%_0%,black,transparent)]" />
+          <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-20 left-1/4 h-40 w-40 rounded-full bg-ai/10 blur-3xl" />
+
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-accent to-ai text-2xl font-semibold text-white shadow-2" aria-hidden>
+                {form.name?.[0]?.toUpperCase() || 'U'}
+              </span>
+              <div className="min-w-0">
+                <p className="eyebrow mb-1">My profile</p>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="t-h1 break-words">{form.name.trim() || 'Your profile'}</h1>
+                  <span className={user?.plan === 'pro' ? 'badge badge-accent' : 'badge'}>
+                    {user?.plan === 'pro' ? 'Pro plan' : 'Free plan'}
+                  </span>
                 </div>
-                <p className="text-zinc-500 text-sm mt-0.5">{user?.email}</p>
+                <p className="t-sm mt-0.5 truncate">{user?.email}</p>
               </div>
             </div>
+
+            <ul className="flex flex-wrap gap-1.5 sm:max-w-xs sm:justify-end">
+              {metaChips.map(({ Icon, text }, i) => (
+                <li key={`${text}-${i}`} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-hairline bg-surface/80 px-2.5 py-1.5 text-2xs font-medium text-muted shadow-1 backdrop-blur">
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+                  <span className="truncate">{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
+        </header>
 
-          <form onSubmit={handleSave} className="space-y-6">
+        <nav aria-label="Jump to profile section" className="mb-4 lg:hidden">
+          <ul className="flex gap-1.5 overflow-x-auto pb-1">
+            {SECTIONS.map(({ id, label, Icon }) => (
+              <li key={id} className="shrink-0">
+                <a
+                  href={`#${id}`}
+                  className="chip gap-1.5 whitespace-nowrap text-2xs transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                >
+                  <Icon className="h-3 w-3 text-faint" aria-hidden />
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-            {/* ── Basic Info ─────────────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <User className="w-4 h-4 text-blue-600 dark:text-blue-500" />Basic Information
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Full Name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Smith" />
-                <Input label="Phone Number" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+91 98765 43210" />
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          {/* ── Settings form ──────────────────────────────────────── */}
+          <form id="profile-form" onSubmit={handleSave} className="min-w-0 space-y-4">
+            <Section
+              id="profile-basic"
+              icon={User}
+              title="Basic information"
+              description="How we address you and reach you."
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input label="Full name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Smith" autoComplete="name" />
+                <Input label="Phone number" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+91 98765 43210" autoComplete="tel" />
               </div>
-            </Card>
+            </Section>
 
-            {/* ── Background ─────────────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-500" />Current Status
-              </h2>
-              <div className="grid grid-cols-2 gap-3 mb-5">
+            <Section
+              id="profile-status"
+              icon={Briefcase}
+              title="Current status"
+              description="This sets the default context for generated rounds."
+              tone="ai"
+            >
+              <div role="group" aria-label="Are you a student or a professional" className="mb-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {[
-                  { val: 'student',      icon: <GraduationCap className="w-4 h-4" />, label: 'Student' },
-                  { val: 'professional', icon: <Briefcase     className="w-4 h-4" />, label: 'Professional' },
-                ].map(({ val, icon, label }) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => set('userType', val)}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                      form.userType === val
-                        ? 'border-blue-600/50 bg-blue-600/10 text-blue-400'
-                        : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900/50'
-                    }`}
-                  >
-                    {icon}{label}
-                  </button>
-                ))}
+                  { val: 'student',      Icon: GraduationCap, label: 'Student',      desc: 'Projects, internships and placements' },
+                  { val: 'professional', Icon: Briefcase,     label: 'Professional', desc: 'Full-time roles and career moves' },
+                ].map(({ val, Icon, label, desc }) => {
+                  const active = form.userType === val
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => set('userType', val)}
+                      className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-fast ${
+                        active
+                          ? 'border-accent/45 bg-accent-soft/50 shadow-1'
+                          : 'border-hairline bg-inset hover:border-hairline-strong'
+                      }`}
+                    >
+                      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${active ? 'bg-accent-soft text-accent' : 'bg-canvas text-faint'}`}>
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-ink">{label}</span>
+                          {active && (
+                            <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent text-accent-on" aria-hidden>
+                              <Check className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                        </span>
+                        <span className="mt-0.5 block text-2xs text-subtle">{desc}</span>
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
 
-              {form.userType === 'student' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {isStudent ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="sm:col-span-3">
                     <Input label="College / University" value={form.college} onChange={e => set('college', e.target.value)} placeholder="MIT, IIT Bombay, etc." />
                   </div>
@@ -208,15 +321,18 @@ export default function ProfilePage() {
                     <Input label="Branch / Major" value={form.branch} onChange={e => set('branch', e.target.value)} placeholder="Computer Science" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400 block mb-1.5">Year</label>
-                    <div className="grid grid-cols-4 gap-1">
+                    <span className="field-label mb-1.5 block">Year</span>
+                    <div role="group" aria-label="Academic year" className="grid grid-cols-4 gap-1">
                       {YEARS.map(y => (
                         <button
                           key={y}
                           type="button"
+                          aria-pressed={form.year === y}
                           onClick={() => set('year', y)}
-                          className={`py-2 text-xs font-medium rounded border transition-all ${
-                            form.year === y ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-800'
+                          className={`rounded-lg border py-2.5 text-xs font-medium transition-all duration-fast ${
+                            form.year === y
+                              ? 'border-accent/45 bg-accent-soft/60 text-accent'
+                              : 'border-hairline bg-inset text-muted hover:border-hairline-strong hover:text-ink'
                           }`}
                         >
                           {y}
@@ -226,102 +342,112 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Company" value={form.company} onChange={e => set('company', e.target.value)} placeholder="Current Employer" />
-                  <div>
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400 block mb-1.5">Years of Experience</label>
-                    <input
-                      type="number"
-                      min={0} max={40}
-                      value={form.yearsOfExperience}
-                      onChange={e => set('yearsOfExperience', parseInt(e.target.value))}
-                      className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 transition-all outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Input label="Company" value={form.company} onChange={e => set('company', e.target.value)} placeholder="Current Employer" autoComplete="organization" />
+                  <Input
+                    label="Years of experience"
+                    type="number"
+                    min={0}
+                    max={40}
+                    value={form.yearsOfExperience}
+                    onChange={e => set('yearsOfExperience', parseInt(e.target.value))}
+                  />
                 </div>
               )}
-            </Card>
+            </Section>
 
-            {/* ── Career Goals ───────────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <Target className="w-4 h-4 text-blue-600 dark:text-blue-500" />Career Goals
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Target Role" value={form.targetRole} onChange={e => set('targetRole', e.target.value)} placeholder="Senior Software Engineer" />
-                <Select label="Target Level" value={form.experienceLevel} onChange={e => set('experienceLevel', e.target.value)}>
-                  <option value="">Select level...</option>
+            <Section
+              id="profile-goals"
+              icon={Target}
+              title="Career goals"
+              description="Where the next role should take you."
+              tone="warning"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input label="Target role" value={form.targetRole} onChange={e => set('targetRole', e.target.value)} placeholder="Senior Software Engineer" />
+                <Select label="Target level" value={form.experienceLevel} onChange={e => set('experienceLevel', e.target.value)}>
+                  <option value="">Select level…</option>
                   {EXP_LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                 </Select>
               </div>
-            </Card>
+            </Section>
 
-            {/* ── Skills ─────────────────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-blue-600 dark:text-blue-500" />Technical Skills
-              </h2>
-
-              <div className="flex gap-2 mb-3">
+            <Section
+              id="profile-skills"
+              icon={Code2}
+              title="Technical skills"
+              description="The generator anchors technical questions to these."
+              action={<span className="num text-2xs text-subtle">{skills.length}/15</span>}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   value={skillInput}
                   onChange={e => setSkillInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(skillInput) } }}
-                  placeholder="Type skill and press Enter..."
-                  className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-600 transition-all outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                  placeholder="Type a skill and press Enter"
+                  aria-label="Add a skill"
+                  className="input min-w-0 flex-1"
                 />
-                <Button type="button" variant="secondary" onClick={() => addSkill(skillInput)}>
+                <Button type="button" variant="secondary" onClick={() => addSkill(skillInput)} icon={<Plus className="h-4 w-4" aria-hidden />}>
                   Add
                 </Button>
               </div>
 
-              {skills.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
+              {skills.length > 0 ? (
+                <ul className="mt-3 flex flex-wrap gap-1.5">
                   {skills.map(s => (
-                    <motion.span
-                      key={s}
-                      initial={{ scale: 0.95, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-md px-2.5 py-1 text-xs"
-                    >
+                    <li key={s} className="inline-flex items-center gap-1.5 rounded-md border border-accent/25 bg-accent-soft/40 px-2.5 py-1 text-xs text-ink">
                       {s}
-                      <button type="button" onClick={() => removeSkill(s)} className="hover:text-red-500 dark:hover:text-red-400 mt-0.5 transition-colors">
-                        <X className="w-3 h-3" />
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(s)}
+                        aria-label={`Remove ${s}`}
+                        className="-mr-1 grid h-5 w-5 place-items-center rounded text-subtle transition-colors duration-fast hover:bg-danger-soft hover:text-danger-500"
+                      >
+                        <X className="h-3 w-3" aria-hidden />
                       </button>
-                    </motion.span>
+                    </li>
                   ))}
-                </div>
+                </ul>
+              ) : (
+                <p className="mt-3 rounded-lg border border-dashed border-hairline-strong bg-inset px-3 py-2.5 text-2xs text-subtle">
+                  No skills yet — add at least three for sharper, stack-specific questions.
+                </p>
               )}
 
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">Suggested skills:</p>
+              <div className="mt-4">
+                <p className="t-xs mb-2">Suggested skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {SKILL_SUGGESTIONS.filter(s => !skills.includes(s)).slice(0, 15).map(s => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => addSkill(s)}
-                      className="text-[11px] px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
+                      className="chip text-2xs transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
                     >
-                      + {s}
+                      <Plus className="h-3 w-3 text-faint" aria-hidden /> {s}
                     </button>
                   ))}
                 </div>
               </div>
-            </Card>
+            </Section>
 
-            {/* ── Resume ─────────────────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600 dark:text-blue-500" />Resume
-              </h2>
-
+            <Section
+              id="profile-resume"
+              icon={FileText}
+              title="Resume"
+              description="Used for resume-aware follow-ups and role matching."
+              tone="success"
+              action={user?.resumeUrl ? <StatusBadge tone="live">On file</StatusBadge> : null}
+            >
               {user?.resumeUrl && !resumeFile && (
-                <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-3 mb-4">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-800 dark:text-zinc-200">Current Resume Active</p>
-                    <p className="text-xs text-zinc-500 truncate mt-0.5">{user.resumeOriginalName || 'resume.pdf'}</p>
+                <div className="mb-3 flex items-center gap-3 rounded-lg border border-hairline bg-inset px-4 py-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-success-soft text-success-500">
+                    <CheckCircle2 className="h-4 w-4" aria-hidden />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-ink">Current resume active</p>
+                    <p className="mt-0.5 truncate text-xs text-subtle">{user.resumeOriginalName || 'resume.pdf'}</p>
                   </div>
                   <Button type="button" variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
                     Replace
@@ -330,163 +456,183 @@ export default function ProfilePage() {
               )}
 
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload a new resume"
                 onClick={() => fileInputRef.current?.click()}
-                className="border border-dashed border-zinc-700 rounded-lg p-6 text-center cursor-pointer hover:border-zinc-500 hover:bg-zinc-900/50 transition-all group"
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } }}
+                className="group cursor-pointer rounded-xl border border-dashed border-hairline-strong bg-inset p-6 text-center transition-colors duration-fast hover:border-accent/50 hover:bg-accent-soft/20"
               >
-                <Upload className="w-6 h-6 text-zinc-500 group-hover:text-zinc-600 dark:text-zinc-400 mx-auto mb-2 transition-colors" />
+                <span className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-xl bg-canvas text-subtle transition-colors group-hover:text-accent">
+                  <Upload className="h-5 w-5" aria-hidden />
+                </span>
                 {resumeFile ? (
                   <>
-                    <p className="text-sm font-medium text-green-400">{resumeFile.name}</p>
-                    <p className="text-xs text-zinc-500 mt-1">{(resumeFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-medium text-success-500">{resumeFile.name}</p>
+                    <p className="num mt-1 text-xs text-subtle">{(resumeFile.size / 1024 / 1024).toFixed(2)} MB · ready to upload</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300">Click to upload new resume</p>
-                    <p className="text-xs text-zinc-600 mt-1">PDF Only · Max 5MB</p>
+                    <p className="text-sm text-muted">Click to upload a new resume</p>
+                    <p className="t-xs mt-1">PDF only · Max 5 MB</p>
                   </>
                 )}
               </div>
               <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
-            </Card>
+            </Section>
 
-            {/* ── Transaction History ────────────────────────────────────── */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-500" />Transaction History
-              </h2>
+            <Section
+              id="profile-billing"
+              icon={CreditCard}
+              title="Transaction history"
+              description="Plan and payment records for this account."
+              tone="neutral"
+              action={<span className={user?.plan === 'pro' ? 'badge badge-accent' : 'badge'}>{user?.plan === 'pro' ? 'Pro' : 'Free'}</span>}
+            >
               {(!user?.transactions || user.transactions.length === 0) ? (
-                <div className="text-sm text-zinc-500 text-center py-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                  No past transactions.
+                <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-hairline-strong bg-inset px-4 py-5 text-center">
+                  <CreditCard className="h-5 w-5 text-faint" aria-hidden />
+                  <p className="mt-1 text-sm text-muted">No past transactions</p>
+                  <p className="text-2xs text-subtle">Purchases and plan changes will appear here.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {user.transactions.map((t, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800">
-                      <div>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-0.5">
-                          Order: <span className="font-mono text-xs">{t.orderId}</span>
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          {new Date(t.date).toLocaleDateString()} at {new Date(t.date).toLocaleTimeString()}
-                        </p>
+                <ul className="space-y-2">
+                  {user.transactions.map((tx, i) => (
+                    <li key={i} className="flex flex-col items-start justify-between gap-2 rounded-lg border border-hairline bg-inset p-3.5 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-canvas text-subtle">
+                          <CreditCard className="h-4 w-4" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="mb-0.5 text-sm font-medium text-ink">
+                            Order <span className="num text-xs text-subtle">{tx.orderId}</span>
+                          </p>
+                          <p className="num text-xs text-subtle">
+                            {new Date(tx.date).toLocaleDateString()} · {new Date(tx.date).toLocaleTimeString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="mt-2 sm:mt-0 text-right">
-                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                          {t.currency === 'INR' ? '₹' : t.currency} {t.amount}
+                      <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+                        <p className="num text-sm font-semibold text-ink">
+                          {tx.currency === 'INR' ? '₹' : `${tx.currency} `}{tx.amount}
                         </p>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider ${t.status === 'success' ? 'text-green-500' : 'text-amber-500'}`}>
-                          {t.status}
-                        </p>
+                        <span className={`badge ${tx.status === 'success' ? 'badge-success' : 'badge-warning'}`}>
+                          {tx.status}
+                        </span>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
-            </Card>
+            </Section>
 
-            {/* ── AI Model Engine & API Settings ────────────────────────── */}
-            <Card className="p-5 sm:p-6 border-blue-500/20 bg-blue-500/5">
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-blue-500" />
-                    AI Model Engine (Questions & Final Report)
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Choose which AI model generates the 1st interview questions and synthesizes the final report. In-between turns continue using real-time CPU engine.
-                  </p>
-                </div>
-                <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                  {form.preferredAIEngine === 'groq' ? '⚡ Groq LPU' : '💻 Local Qwen'}
+            <Section
+              id="profile-ai"
+              icon={Cpu}
+              title="AI model engine"
+              description="Choose which model generates questions and synthesises the final report."
+              tone="ai"
+              action={
+                <span className={`badge ${isGroq ? 'badge-accent' : 'badge-ai'}`}>
+                  {isGroq ? <Zap className="h-3 w-3" aria-hidden /> : <Cpu className="h-3 w-3" aria-hidden />}
+                  {isGroq ? 'Groq LPU' : 'Local Qwen'}
                 </span>
-              </div>
-
-              {/* Toggle Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              }
+            >
+              <div role="group" aria-label="AI model engine" className="mb-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <button
                   type="button"
+                  aria-pressed={isGroq}
                   onClick={() => set('preferredAIEngine', 'groq')}
-                  className={`p-4 rounded-xl border text-left transition-all relative ${
-                    form.preferredAIEngine === 'groq'
-                      ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-950/40 shadow-sm'
-                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+                  className={`rounded-xl border p-4 text-left transition-all duration-fast ${
+                    isGroq ? 'border-accent/45 bg-accent-soft/50 shadow-1' : 'border-hairline bg-inset hover:border-hairline-strong'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Zap className={`w-4 h-4 ${form.preferredAIEngine === 'groq' ? 'text-blue-500' : 'text-zinc-400'}`} />
-                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Groq AI (Cloud LPU)</span>
+                      <span className={`grid h-8 w-8 place-items-center rounded-lg ${isGroq ? 'bg-accent-soft text-accent' : 'bg-canvas text-faint'}`}>
+                        <Zap className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold text-ink">Groq cloud</span>
+                        <span className="block text-2xs text-subtle">Llama 3.3 70B &amp; 3.1 8B</span>
+                      </span>
                     </div>
-                    {form.preferredAIEngine === 'groq' && (
-                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">
-                        <Check className="w-3 h-3" />
+                    {isGroq && (
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-accent-on" aria-hidden>
+                        <Check className="h-3 w-3" />
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    Llama 3.3 70B & 3.1 8B. Ultra-fast question synthesis and deep evaluation reasoning.
-                  </p>
+                  <p className="mt-2 text-2xs leading-relaxed text-subtle">Ultra-fast question synthesis and deep evaluation reasoning.</p>
                 </button>
 
                 <button
                   type="button"
+                  aria-pressed={!isGroq}
                   onClick={() => set('preferredAIEngine', 'qwen_local')}
-                  className={`p-4 rounded-xl border text-left transition-all relative ${
-                    form.preferredAIEngine === 'qwen_local'
-                      ? 'border-cyan-500 bg-cyan-500/10 dark:bg-cyan-950/40 shadow-sm'
-                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+                  className={`rounded-xl border p-4 text-left transition-all duration-fast ${
+                    !isGroq ? 'border-ai/45 bg-ai-soft/50 shadow-1' : 'border-hairline bg-inset hover:border-hairline-strong'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Cpu className={`w-4 h-4 ${form.preferredAIEngine === 'qwen_local' ? 'text-cyan-500' : 'text-zinc-400'}`} />
-                      <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Local Qwen 2.5 (Offline)</span>
+                      <span className={`grid h-8 w-8 place-items-center rounded-lg ${!isGroq ? 'bg-ai-soft text-ai' : 'bg-canvas text-faint'}`}>
+                        <Cpu className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-semibold text-ink">Local Qwen</span>
+                        <span className="block text-2xs text-subtle">Qwen 2.5 · on-device</span>
+                      </span>
                     </div>
-                    {form.preferredAIEngine === 'qwen_local' && (
-                      <span className="w-5 h-5 rounded-full bg-cyan-500 text-white flex items-center justify-center text-xs">
-                        <Check className="w-3 h-3" />
+                    {!isGroq && (
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ai text-white" aria-hidden>
+                        <Check className="h-3 w-3" />
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    100% On-Device (468.6 MB). Zero cloud API tokens, $0 cost, unlimited interviews.
-                  </p>
+                  <p className="mt-2 text-2xs leading-relaxed text-subtle">Runs on this machine — no cloud tokens, works offline.</p>
                 </button>
               </div>
 
-              {/* Groq API Key Input (visible if Groq selected) */}
-              {form.preferredAIEngine === 'groq' ? (
-                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-blue-500" />
-                      Groq API Key
+              {isGroq ? (
+                <div className="space-y-3 rounded-xl border border-hairline bg-inset p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label htmlFor="groq-key" className="field-label flex items-center gap-1.5">
+                      <Key className="h-3.5 w-3.5 text-accent" aria-hidden />
+                      Groq API key
                     </label>
                     <a
                       href="https://console.groq.com/keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-blue-500 hover:underline flex items-center gap-1"
+                      className="t-xs flex shrink-0 items-center gap-1 font-medium text-accent transition-colors duration-fast hover:text-accent-hover"
                     >
-                      Get free Groq key <ExternalLink className="w-3 h-3" />
+                      Get free key <ExternalLink className="h-3 w-3" aria-hidden />
                     </a>
                   </div>
 
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="relative min-w-0 flex-1">
                       <input
+                        id="groq-key"
                         type={showGroqKey ? 'text' : 'password'}
                         value={form.groqApiKey}
                         onChange={(e) => set('groqApiKey', e.target.value)}
                         placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                        className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pr-9 focus:outline-none focus:border-blue-500"
+                        autoComplete="off"
+                        aria-label="Groq API key"
+                        className="input num pr-11 text-xs"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowGroqKey(!showGroqKey)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                        onClick={() => setShowGroqKey(p => !p)}
+                        aria-label={showGroqKey ? 'Hide API key' : 'Show API key'}
+                        className="absolute right-1 top-1/2 -translate-y-1/2"
                       >
-                        {showGroqKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <span className="btn-icon h-8 w-8">
+                          {showGroqKey ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+                        </span>
                       </button>
                     </div>
 
@@ -497,64 +643,148 @@ export default function ProfilePage() {
                       loading={testingGroq}
                       disabled={testingGroq || !form.groqApiKey.trim()}
                       onClick={handleTestGroq}
-                      className="text-xs shrink-0"
+                      className="shrink-0"
                     >
-                      Test Key
+                      Test key
                     </Button>
                   </div>
 
                   {groqStatus && (
-                    <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                    <div className={`flex items-center gap-2 rounded-lg border p-2.5 text-sm ${
                       groqStatus.success
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                        ? 'border-success-500/25 bg-success-soft text-success-500'
+                        : 'border-danger-500/25 bg-danger-soft text-danger-500'
                     }`}>
-                      {groqStatus.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                      {groqStatus.success
+                        ? <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+                        : <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />}
                       <span>{groqStatus.message}</span>
                     </div>
                   )}
 
-                  <p className="text-[11px] text-zinc-400">
-                    Your API key is securely saved with your account and will be used to generate questions and reports via Groq Llama 3.3.
+                  <p className="t-xs">
+                    Your API key is saved with your account and used to generate questions and reports via Groq Llama 3.3.
                   </p>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <div>
-                      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                        Local Qwen 2.5 0.5B Activated
-                      </p>
-                      <p className="text-[11px] text-zinc-500">
-                        Questions and final reports will run completely on-device without cloud API calls.
-                      </p>
-                    </div>
+                <div className="flex flex-col gap-3 rounded-xl border border-ai/25 bg-ai-soft/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <StatusBadge tone="live">On-device engine activated</StatusBadge>
+                    <p className="t-xs mt-2">Questions and final reports run completely on-device, without cloud API calls.</p>
                   </div>
-                  <a
-                    href="/offline-ai"
-                    className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                  <Link
+                    to="/offline-ai"
+                    className="t-xs flex shrink-0 items-center gap-1 font-medium text-ai transition-colors duration-fast hover:underline"
                   >
-                    Manage Model Hub <ExternalLink className="w-3 h-3" />
-                  </a>
+                    Manage Model Hub <ExternalLink className="h-3 w-3" aria-hidden />
+                  </Link>
                 </div>
               )}
+            </Section>
+
+            <p aria-live="polite" className="sr-only">
+              {saving ? 'Saving your profile…' : saved ? 'Profile saved' : ''}
+            </p>
+
+            <div className="pt-1 lg:hidden">
+              <Button type="submit" loading={saving} disabled={saving} size="lg" block variant={saved ? 'secondary' : 'primary'}>
+                {saved
+                  ? <><CheckCircle2 className="h-4 w-4" aria-hidden /> Saved successfully</>
+                  : <><Save className="h-4 w-4" aria-hidden /> Save profile settings</>}
+              </Button>
+            </div>
+          </form>
+
+          {/* ── Sticky account rail ─────────────────────────────────── */}
+          <aside className="hidden min-w-0 space-y-4 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:block">
+            <Card className="overflow-hidden">
+              <div className="hairline-b bg-gradient-to-br from-surface to-accent-soft/35 px-4 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-ai text-sm font-semibold text-white" aria-hidden>
+                    {form.name?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-ink">{form.name.trim() || 'Your profile'}</p>
+                    <p className="truncate text-2xs text-subtle">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <span className={user?.plan === 'pro' ? 'badge badge-accent' : 'badge'}>
+                    {user?.plan === 'pro' ? 'Pro plan' : 'Free plan'}
+                  </span>
+                  <span className="badge capitalize">{isStudent ? 'Student' : 'Professional'}</span>
+                </div>
+              </div>
+
+              <div className="p-4">
+                <dl className="space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="flex items-center gap-1.5 text-subtle"><Target className="h-3.5 w-3.5 text-faint" aria-hidden /> Target role</dt>
+                    <dd className="truncate text-right font-medium text-ink">{form.targetRole || 'Not set'}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="flex items-center gap-1.5 text-subtle"><Code2 className="h-3.5 w-3.5 text-faint" aria-hidden /> Skills</dt>
+                    <dd className="num font-medium text-ink">{skills.length} added</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="flex items-center gap-1.5 text-subtle"><FileText className="h-3.5 w-3.5 text-faint" aria-hidden /> Resume</dt>
+                    <dd className="max-w-[9rem] truncate text-right font-medium text-ink">{resumeState}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="flex items-center gap-1.5 text-subtle"><Cpu className="h-3.5 w-3.5 text-faint" aria-hidden /> AI engine</dt>
+                    <dd className="font-medium text-ink">{isGroq ? 'Groq LPU' : 'Local Qwen'}</dd>
+                  </div>
+                </dl>
+
+                <Button
+                  type="submit"
+                  form="profile-form"
+                  className="mt-4 hidden w-full lg:inline-flex"
+                  size="lg"
+                  loading={saving}
+                  disabled={saving}
+                  variant={saved ? 'secondary' : 'primary'}
+                  icon={saved ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
+                >
+                  {saveLabel}
+                </Button>
+                <p className="mt-2 hidden text-center text-2xs text-subtle lg:block">
+                  Changes apply to your next generated round.
+                </p>
+              </div>
             </Card>
 
-            {/* ── Save ───────────────────────────────────────────────────── */}
-            <Button
-              type="submit"
-              loading={saving}
-              disabled={saving}
-              size="lg"
-              className={`w-full py-3 ${saved ? '!bg-green-600 hover:!bg-green-700' : ''}`}
-            >
-              {saved ? <><CheckCircle2 className="w-4 h-4" />Saved Successfully</> : <><Save className="w-4 h-4" />Save Profile Settings</>}
-            </Button>
+            <Card className="p-4">
+              <p className="eyebrow mb-2.5">On this page</p>
+              <nav aria-label="Profile sections">
+                <ul className="grid grid-cols-2 gap-1 lg:grid-cols-1">
+                  {SECTIONS.map(({ id, label, Icon }) => (
+                    <li key={id}>
+                      <a
+                        href={`#${id}`}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted transition-colors duration-fast hover:bg-inset hover:text-ink"
+                      >
+                        <Icon className="h-3.5 w-3.5 text-faint" aria-hidden />
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </Card>
 
-          </form>
-        </motion.div>
-      </div>
+            <div className="rounded-xl border border-dashed border-hairline-strong bg-inset/60 p-4">
+              <p className="flex items-center gap-1.5 text-2xs font-semibold text-ink">
+                <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden />
+                Better inputs, sharper rounds
+              </p>
+              <p className="mt-1.5 text-2xs leading-relaxed text-subtle">
+                Your role, level, skills and resume shape the generated questions — keep them current.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
   )
 }

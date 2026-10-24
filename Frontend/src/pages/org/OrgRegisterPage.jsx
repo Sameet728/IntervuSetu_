@@ -1,10 +1,13 @@
 import { useState, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { useOrgAuth } from '../../context/OrgAuthContext'
 import { orgRegister } from '../../api/orgAPI'
 import { Input, Button } from '../../components/ui/index'
-import { Mic, Building2, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, XCircle, Upload, Globe, FileText } from 'lucide-react'
+import AuthShell from '../../components/layout/AuthShell'
+import {
+  Building2, GraduationCap, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2,
+  XCircle, Upload, Globe, Layers, Users, ShieldCheck,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 function getPasswordStrength(pw) {
@@ -16,14 +19,37 @@ function getPasswordStrength(pw) {
   }
   const score = Object.values(checks).filter(Boolean).length
   const levels = [
-    { label: 'Too short', color: '#ef4444', pct: '0%' },
-    { label: 'Weak',      color: '#ef4444', pct: '25%' },
-    { label: 'Fair',      color: '#f59e0b', pct: '50%' },
-    { label: 'Good',      color: '#f59e0b', pct: '75%' },
-    { label: 'Strong',    color: '#22c55e', pct: '100%' },
+    { label: 'Too short', token: '--danger-400',  pct: '0%' },
+    { label: 'Weak',      token: '--danger-400',  pct: '25%' },
+    { label: 'Fair',      token: '--warning-400', pct: '50%' },
+    { label: 'Good',      token: '--warning-400', pct: '75%' },
+    { label: 'Strong',    token: '--success-400', pct: '100%' },
   ]
   return { ...levels[score], checks }
 }
+
+const ORG_TYPES = [
+  { value: 'company', label: 'Company', Icon: Building2 },
+  { value: 'college', label: 'College', Icon: GraduationCap },
+]
+
+const FEATURES = [
+  {
+    icon: Layers,
+    label: 'Reusable interview rounds',
+    detail: 'Generate a template once and invite every candidate to the same bar.',
+  },
+  {
+    icon: Users,
+    label: 'Live candidate tracking',
+    detail: 'See attempts, completion and scores as they land.',
+  },
+  {
+    icon: ShieldCheck,
+    label: 'Proctoring and aptitude',
+    detail: 'Record violations and screen reasoning in one console.',
+  },
+]
 
 export default function OrgRegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', type: 'company', description: '', website: '' })
@@ -35,12 +61,13 @@ export default function OrgRegisterPage() {
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
-  
+
   const { orgVerifyOtp } = useOrgAuth()
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
 
   const pw = useMemo(() => getPasswordStrength(form.password), [form.password])
+  const strengthColor = `rgb(var(${pw.token}))`
 
   const validate = () => {
     const e = {}
@@ -98,235 +125,252 @@ export default function OrgRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex" style={{ fontFamily: 'Inter, system-ui' }}>
-      {/* ── Left brand panel ─────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between w-96 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 p-10">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
-          <span className="text-[10px] font-mono bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full ml-1">For Organizations</span>
-        </Link>
-
-        <div>
-          <p className="text-xs font-semibold text-blue-600 dark:text-blue-500 uppercase tracking-wider mb-2">Hire Top Talent</p>
-          <h2 className="text-2xl font-bold text-zinc-50 mb-3 leading-snug" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Scale your hiring process with AI.
-          </h2>
-          <p className="text-sm text-zinc-500 leading-relaxed">
-            Create custom interview templates, invite candidates, and get detailed AI-generated performance reports.
-          </p>
-        </div>
-
-        <ul className="flex flex-col gap-3">
-          {['Custom interview templates', 'Anti-cheat proctoring', 'In-depth AI analysis', 'Mass candidate invites'].map(f => (
-            <li key={f} className="flex items-center gap-2.5 text-sm text-zinc-600 dark:text-zinc-400">
-              <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" strokeWidth={1.5} />
-              {f}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* ── Right form panel ─────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12 overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="w-full max-w-md my-auto"
-        >
-          {/* Mobile logo */}
-          <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Mic className="w-3.5 h-3.5 text-zinc-900 dark:text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>IntervuSetu</span>
-            <span className="text-[10px] font-mono bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full ml-1">Organizations</span>
+    <AuthShell
+      variant="org"
+      eyebrow="Create organization account"
+      headline="Run a hiring round without the admin."
+      description="Create one template, share a link, and review structured interviews and aptitude screens in a single console."
+      features={FEATURES}
+      maxWidth="max-w-[31rem]"
+      footer={step === 1 ? (
+        <p className="t-xs">
+          Are you a candidate?{' '}
+          <Link to="/register" className="font-medium text-muted transition-colors duration-fast hover:text-ink">
+            Register here
           </Link>
-
-          {step === 1 ? (
-            <>
-              <h1 className="text-xl font-bold text-zinc-50 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Register your Organization
-              </h1>
-              <p className="text-sm text-zinc-500 mb-8">
+        </p>
+      ) : null}
+    >
+      {step === 1 ? (
+        <>
+          <div className="mb-6 flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ai-soft text-ai">
+              <Building2 className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow mb-1.5">New organization</p>
+              <h1 className="t-h2">Register your organization</h1>
+              <p className="t-sm mt-1">
                 Already registered?{' '}
-                <Link to="/org/login" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                <Link to="/org/login" className="font-medium text-accent transition-colors duration-fast hover:text-accent-hover">
                   Sign in
                 </Link>
               </p>
+            </div>
+          </div>
 
-              <form onSubmit={handleRegister} className="flex flex-col gap-4">
-                {/* Logo & Type Selection */}
-                <div className="flex items-center gap-4 mb-2">
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-16 h-16 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
-                  >
-                    {logoPreview
-                      ? <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-                      : <div className="flex flex-col items-center"><Upload className="w-4 h-4 text-zinc-400" /><span className="text-[9px] text-zinc-500 mt-1">Logo</span></div>}
-                  </div>
-                  <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleLogo} />
-                  
-                  <div className="flex-1 grid grid-cols-2 gap-2 h-16">
-                    {['company', 'college'].map((t) => (
-                      <button key={t} type="button" onClick={() => setForm((p) => ({ ...p, type: t }))}
-                        className={`rounded-lg border text-sm font-medium capitalize transition-all flex items-center justify-center gap-2 ${
-                          form.type === t
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                            : 'border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:border-zinc-300 dark:hover:border-zinc-700'
-                        }`}>
-                        {t === 'company' ? <Building2 className="w-4 h-4" /> : '🎓'} {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <form onSubmit={handleRegister} className="flex flex-col gap-4">
+            {/* Logo & type selection */}
+            <div className="mb-1 flex flex-wrap items-center gap-4">
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload organization logo"
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() }
+                }}
+                className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-hairline-strong bg-inset transition-colors duration-fast hover:border-accent/50"
+              >
+                {logoPreview
+                  ? <img src={logoPreview} alt="Organization logo preview" className="h-full w-full object-cover" />
+                  : <span className="flex flex-col items-center gap-1 text-faint"><Upload className="h-4 w-4" aria-hidden /><span className="text-3xs">Logo</span></span>}
+              </div>
+              <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleLogo} aria-label="Organization logo" />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Organization name"
-                    type="text"
-                    placeholder="Acme Corp"
-                    value={form.name}
-                    onChange={set('name')}
-                    error={errors.name}
-                    icon={<Building2 className="w-3.5 h-3.5" />}
-                  />
-                  <Input
-                    label="Official email"
-                    type="email"
-                    placeholder="hr@acme.com"
-                    value={form.email}
-                    onChange={set('email')}
-                    error={errors.email}
-                    icon={<Mail className="w-3.5 h-3.5" />}
-                  />
-                </div>
-
-                <Input
-                  label="Website (optional)"
-                  type="text"
-                  placeholder="https://acme.com"
-                  value={form.website}
-                  onChange={set('website')}
-                  icon={<Globe className="w-3.5 h-3.5" />}
-                />
-
-                {/* Password */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Password</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
-                      <Lock className="w-3.5 h-3.5" />
-                    </span>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      placeholder="Min. 6 characters"
-                      value={form.password}
-                      onChange={set('password')}
-                      className={`w-full rounded-lg border bg-white dark:bg-zinc-900 pl-9 pr-9 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-600
-                        transition-all duration-150 outline-none
-                        ${errors.password ? 'border-red-500/70' : 'border-zinc-200 dark:border-zinc-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20'}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw(p => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-600 dark:text-zinc-400 transition-colors"
-                    >
-                      {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-xs text-red-400">{errors.password}</p>}
-                </div>
-
-                {/* Terms checkbox */}
-                <div className="flex items-start gap-2.5 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => { setAgreed(p => !p); setErrors(p => ({ ...p, terms: '' })) }}
-                    className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                      agreed ? 'bg-blue-600 border-blue-600' : 'border-zinc-700 hover:border-zinc-500'
-                    }`}
-                  >
-                    {agreed && <CheckCircle2 className="w-2.5 h-2.5 text-zinc-900 dark:text-white" />}
+              <div className="grid h-16 min-w-[11rem] flex-1 grid-cols-2 gap-2">
+                {ORG_TYPES.map(({ value: t, label, Icon }) => (
+                  <button key={t} type="button" aria-pressed={form.type === t}
+                    onClick={() => setForm((p) => ({ ...p, type: t }))}
+                    className={`flex items-center justify-center gap-2 rounded-lg border text-sm font-medium capitalize transition-all duration-fast ${
+                      form.type === t
+                        ? 'border-accent/45 bg-accent-soft/60 text-accent shadow-1'
+                        : 'border-hairline bg-surface text-muted hover:border-hairline-strong hover:text-ink'
+                    }`}>
+                    <Icon className="h-4 w-4" aria-hidden /> {label}
                   </button>
-                  <label
-                    className="text-xs text-zinc-500 cursor-pointer leading-relaxed"
-                    onClick={() => setAgreed(p => !p)}
-                  >
-                    We agree to use the platform for valid hiring purposes and abide by the terms of service.
-                  </label>
-                </div>
-                {errors.terms && <p className="text-xs text-red-400 -mt-2">{errors.terms}</p>}
+                ))}
+              </div>
+            </div>
 
-                <Button
-                  type="submit"
-                  loading={loading}
-                  variant="primary"
-                  size="lg"
-                  className="w-full mt-2"
-                >
-                  Create Organization Account <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </form>
-            </>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <h1 className="text-xl font-bold text-zinc-50 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Check your email
-              </h1>
-              <p className="text-sm text-zinc-500 mb-8">
-                We sent a 6-digit verification code to <span className="font-medium text-zinc-300">{form.email}</span>.
-              </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Organization name"
+                type="text"
+                placeholder="Acme Corp"
+                value={form.name}
+                onChange={set('name')}
+                error={errors.name}
+                icon={<Building2 className="h-3.5 w-3.5" aria-hidden />}
+              />
+              <Input
+                label="Official email"
+                type="email"
+                placeholder="hr@acme.com"
+                value={form.email}
+                onChange={set('email')}
+                error={errors.email}
+                icon={<Mail className="h-3.5 w-3.5" aria-hidden />}
+              />
+            </div>
 
-              <form onSubmit={handleVerify} className="flex flex-col gap-4">
-                <Input
-                  label="Verification Code"
-                  type="text"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => {
-                    setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
-                    setErrors({ ...errors, otp: '' })
-                  }}
-                  error={errors.otp}
-                  className="text-center text-lg tracking-widest font-mono"
-                  autoComplete="one-time-code"
+            <Input
+              label="Website (optional)"
+              type="text"
+              placeholder="https://acme.com"
+              value={form.website}
+              onChange={set('website')}
+              icon={<Globe className="h-3.5 w-3.5" aria-hidden />}
+            />
+
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="org-reg-password" className="field-label">Password</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint" aria-hidden>
+                  <Lock className="h-3.5 w-3.5" />
+                </span>
+                <input
+                  id="org-reg-password"
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Min. 6 characters"
+                  value={form.password}
+                  onChange={set('password')}
+                  aria-invalid={errors.password ? true : undefined}
+                  className={`input pl-9 pr-11 ${errors.password ? 'input-error' : ''}`}
                 />
-
-                <Button
-                  type="submit"
-                  loading={loading}
-                  variant="primary"
-                  size="lg"
-                  className="w-full mt-2"
+                <button
+                  type="button"
+                  onClick={() => setShowPw(p => !p)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2"
                 >
-                  Verify & Continue <CheckCircle2 className="w-4 h-4 ml-1" />
-                </Button>
+                  <span className="btn-icon h-8 w-8">
+                    {showPw ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+                  </span>
+                </button>
+              </div>
+              {errors.password && <p role="alert" className="text-xs text-danger-500">{errors.password}</p>}
 
-                <p className="mt-4 text-center text-xs text-zinc-500">
-                  Didn't receive the email? <button type="button" onClick={handleRegister} className="text-blue-400 hover:underline">Resend code</button>
-                </p>
-              </form>
-            </motion.div>
-          )}
+              {form.password && (
+                <div className="mt-0.5">
+                  <p className="mb-1 text-2xs font-medium" style={{ color: strengthColor }}>
+                    <span className="sr-only">Password strength: </span>{pw.label}
+                  </p>
+                  <div
+                    className="h-1 overflow-hidden rounded-full bg-inset"
+                    role="progressbar"
+                    aria-valuenow={pw.pct === '0%' ? 0 : parseInt(pw.pct, 10)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Password strength"
+                  >
+                    <div className="h-full rounded-full transition-all duration-300" style={{ width: pw.pct, backgroundColor: strengthColor }} />
+                  </div>
+                  <ul className="mt-1.5 flex flex-wrap gap-3">
+                    {[['length', '6+ chars'], ['uppercase', 'Uppercase'], ['number', 'Number']].map(([k, label]) => (
+                      <li
+                        key={k}
+                        className={`flex items-center gap-0.5 text-2xs ${pw.checks[k] ? 'text-success-500' : 'text-subtle'}`}
+                      >
+                        {pw.checks[k]
+                          ? <CheckCircle2 className="h-2.5 w-2.5" aria-hidden />
+                          : <XCircle className="h-2.5 w-2.5" aria-hidden />}
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
 
-          {step === 1 && (
-            <p className="mt-8 text-center text-xs text-zinc-600">
-              Are you a candidate?{' '}
-              <Link to="/register" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 transition-colors">
-                Register here →
-              </Link>
+            {/* Terms checkbox */}
+            <div className="mt-1 flex items-start gap-2.5">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={agreed}
+                aria-labelledby="org-reg-terms"
+                onClick={() => { setAgreed(p => !p); setErrors(p => ({ ...p, terms: '' })) }}
+                className={`tap-hit mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border transition-colors duration-fast ${
+                  agreed ? 'border-accent bg-accent text-accent-on' : 'border-hairline-strong bg-surface hover:border-accent/50'
+                }`}
+              >
+                {agreed && <CheckCircle2 className="h-2.5 w-2.5" aria-hidden />}
+              </button>
+              <label
+                id="org-reg-terms"
+                className="t-xs cursor-pointer leading-relaxed"
+                onClick={() => setAgreed(p => !p)}
+              >
+                We agree to use the platform for valid hiring purposes and abide by the terms of service.
+              </label>
+            </div>
+            {errors.terms && <p role="alert" className="-mt-2 text-xs text-danger-500">{errors.terms}</p>}
+
+            <Button
+              type="submit"
+              loading={loading}
+              variant="primary"
+              size="lg"
+              block
+              className="mt-2"
+            >
+              Create organization account <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Button>
+          </form>
+        </>
+      ) : (
+        <>
+          <div className="mb-6 flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ai-soft text-ai">
+              <Mail className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow mb-1.5">Verify email</p>
+              <h1 className="t-h2">Check your email</h1>
+              <p className="t-sm mt-1">
+                We sent a 6-digit code to <span className="font-medium text-ink">{form.email}</span>.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleVerify} className="flex flex-col gap-4">
+            <Input
+              label="Verification code"
+              type="text"
+              inputMode="numeric"
+              placeholder="123456"
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                setErrors({ ...errors, otp: '' })
+              }}
+              error={errors.otp}
+              className="num text-center text-lg tracking-[0.35em]"
+              autoComplete="one-time-code"
+            />
+
+            <Button
+              type="submit"
+              loading={loading}
+              variant="primary"
+              size="lg"
+              block
+              className="mt-2"
+            >
+              Verify &amp; continue <CheckCircle2 className="h-4 w-4" aria-hidden />
+            </Button>
+
+            <p className="t-xs mt-4 text-center">
+              Didn&apos;t receive the email?{' '}
+              <button type="button" onClick={handleRegister} className="font-medium text-accent transition-colors duration-fast hover:underline">
+                Resend code
+              </button>
             </p>
-          )}
-        </motion.div>
-      </div>
-    </div>
+          </form>
+        </>
+      )}
+    </AuthShell>
   )
 }

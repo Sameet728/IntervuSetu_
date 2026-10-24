@@ -1,10 +1,32 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
-import { Button, Card, Badge, Spinner, ScoreRing } from '../components/ui/index'
+import { Button, Card, Spinner, EmptyState, SectionHeading } from '../components/ui/index'
 import { getAptitudeHistory } from '../api/aptitudeAPI'
-import { Brain, ExternalLink, Plus, Calendar, Target } from 'lucide-react'
+import { usePageEnter, useScrollReveal } from '../motion/index'
+import {
+  Brain, ArrowUpRight, Plus, Calendar, Target, TrendingUp, Award,
+  ListChecks, ArrowRight, Timer, ShieldCheck,
+} from 'lucide-react'
+
+/* Static tone lookups — never interpolate Tailwind class names. */
+const ACC_TONE = {
+  high: 'badge badge-success',
+  mid:  'badge badge-warning',
+  low:  'badge badge-danger',
+}
+const ACC_BAR = {
+  high: 'bg-success-500',
+  mid:  'bg-warning-500',
+  low:  'bg-danger-500',
+}
+const accuracyTone = (a) => (a >= 70 ? 'high' : a >= 40 ? 'mid' : 'low')
+
+const formatDate = (d) => new Date(d).toLocaleDateString(undefined, {
+  month: 'short', day: 'numeric', year: 'numeric',
+})
+
+const SECTIONS = ['Numerical', 'Verbal', 'Logical', 'Situational']
 
 export default function AptitudeDashboardPage() {
   const [history, setHistory] = useState([])
@@ -25,72 +47,237 @@ export default function AptitudeDashboardPage() {
     fetchHistory()
   }, [])
 
+  const enterRef = usePageEnter([loading])
+  const revealRef = useScrollReveal([loading, history])
+
+  const scored = history.filter((a) => Number.isFinite(a.accuracy))
+  const bestAccuracy = scored.length ? Math.max(...scored.map((a) => a.accuracy)) : null
+  const avgAccuracy = scored.length
+    ? scored.reduce((sum, a) => sum + a.accuracy, 0) / scored.length
+    : null
+  const totalQuestions = history.reduce((sum, a) => sum + (a.answers?.length || 0), 0)
+  const totalCorrect = history.reduce((sum, a) => sum + (a.totalScore || 0), 0)
+
+  const stats = history.length > 0 ? [
+    {
+      label: 'Tests completed',
+      value: history.length,
+      sub: 'All attempts on this account',
+      Icon: ListChecks,
+      tone: 'bg-accent-soft text-accent',
+    },
+    {
+      label: 'Average accuracy',
+      value: avgAccuracy != null ? `${Math.round(avgAccuracy)}%` : '—',
+      sub: `${totalCorrect} of ${totalQuestions} answers correct`,
+      Icon: Target,
+      tone: 'bg-success-bg text-success-500',
+    },
+    {
+      label: 'Best accuracy',
+      value: bestAccuracy != null ? `${Math.round(bestAccuracy)}%` : '—',
+      sub: 'Your strongest attempt so far',
+      Icon: Award,
+      tone: 'bg-warning-bg text-warning-500',
+    },
+    {
+      label: 'Answer trend',
+      value: avgAccuracy != null ? (avgAccuracy >= 70 ? 'Strong' : avgAccuracy >= 40 ? 'Building' : 'Needs work') : '—',
+      sub: 'Based on your recorded accuracy',
+      Icon: TrendingUp,
+      tone: 'bg-ai-soft text-ai',
+    },
+  ] : []
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
+    <div className="page-shell text-ink">
       <Navbar />
-      <div className="max-w-5xl mx-auto px-4 pt-24 pb-16">
-        
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-          <div>
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 mb-3">
-              <Brain className="w-6 h-6" />
-            </div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 font-[Poppins]">
-              Aptitude Dashboard
-            </h1>
-            <p className="text-sm text-zinc-500 mt-1">Review your past performance and start new tests</p>
+
+      <main className="container-page max-w-5xl pb-24 pt-[calc(var(--nav-h)+1.5rem)]">
+        {/* ── Hero ────────────────────────────────────────────────────── */}
+        <header
+          ref={enterRef}
+          className="ambient relative mb-8 overflow-hidden rounded-3xl border border-hairline bg-surface p-6 shadow-2 sm:p-8"
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 line-grid opacity-40" style={{ maskImage: 'radial-gradient(ellipse 70% 80% at 80% 0%, black, transparent 72%)' }} />
           </div>
-          <Link to="/aptitude/setup">
-            <Button variant="primary" className="shadow-lg shadow-blue-500/20">
-              <Plus className="w-4 h-4" /> Start New Test
-            </Button>
-          </Link>
-        </div>
 
-        <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200">Recent Tests</h2>
+          <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+            <div data-enter className="min-w-0">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-soft px-3 py-1 text-2xs font-semibold uppercase tracking-[0.12em] text-accent">
+                <Brain className="h-3.5 w-3.5" aria-hidden />
+                Aptitude lab
+              </span>
+              <h1 className="t-h1">Aptitude dashboard</h1>
+              <p className="t-body mt-2 max-w-xl">
+                Review every attempt, see where accuracy is trending, and start a fresh placement simulation.
+              </p>
+              <ul className="mt-5 flex flex-wrap gap-1.5">
+                {SECTIONS.map((section) => (
+                  <li key={section} className="badge">{section}</li>
+                ))}
+                <li className="badge badge-warning"><Timer className="h-3 w-3" aria-hidden /> Timed</li>
+                <li className="badge badge-danger"><ShieldCheck className="h-3 w-3" aria-hidden /> Proctored</li>
+              </ul>
+            </div>
 
-        {loading ? (
-          <div className="flex justify-center p-12"><Spinner /></div>
-        ) : history.length === 0 ? (
-          <Card className="p-12 text-center text-zinc-500">
-            <Brain className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="mb-4">You haven't taken any aptitude tests yet.</p>
-            <Link to="/aptitude/setup"><Button variant="outline">Take your first test</Button></Link>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {history.map((attempt) => (
-              <Card 
-                key={attempt._id} 
-                className="p-5 flex flex-col hover:border-blue-300 dark:hover:border-blue-800 transition-colors cursor-pointer group"
-                onClick={() => navigate(`/aptitude/${attempt._id}/report`)}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {new Date(attempt.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
-                  <Badge color={attempt.accuracy >= 70 ? 'green' : attempt.accuracy >= 40 ? 'amber' : 'red'}>
-                    {Math.round(attempt.accuracy)}% Accuracy
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                      Score: {attempt.totalScore}/{attempt.answers?.length}
+            <div data-enter className="flex shrink-0 flex-wrap gap-2">
+              <Link to="/aptitude/setup">
+                <Button size="lg" icon={<Plus className="h-4 w-4" aria-hidden />}>Start new test</Button>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div ref={revealRef} className="space-y-8">
+          {/* ── Real, derived summary ────────────────────────────────── */}
+          {!loading && history.length > 0 && (
+            <section data-reveal aria-label="Performance summary" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {stats.map(({ label, value, sub, Icon, tone }) => (
+                <Card key={label} className="p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="eyebrow">{label}</p>
+                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}>
+                      <Icon className="h-3.5 w-3.5" aria-hidden />
                     </span>
                   </div>
-                  <div className="text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ExternalLink className="w-5 h-5" />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  <p className="num-lg text-ink">{value}</p>
+                  <p className="t-xs mt-1 text-subtle">{sub}</p>
+                </Card>
+              ))}
+            </section>
+          )}
+
+          {/* ── History ──────────────────────────────────────────────── */}
+          <section aria-labelledby="apt-recent-heading" className="space-y-4">
+            <div data-reveal>
+              <SectionHeading
+                eyebrow="History"
+                title="Recent tests"
+                description={loading ? undefined : history.length > 0
+                  ? `${history.length} attempt${history.length === 1 ? '' : 's'} recorded · open any card for the full report`
+                  : undefined}
+              />
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Spinner size="lg" />
+              </div>
+            ) : history.length === 0 ? (
+              <div data-reveal className="space-y-4">
+                <Card>
+                  <EmptyState
+                    icon={<Brain className="h-5 w-5" aria-hidden />}
+                    title="No aptitude tests yet"
+                    description="Your first attempt sets a baseline. Choose a mode, answer timed sections, and get a question-by-question report."
+                    action={
+                      <Link to="/aptitude/setup">
+                        <Button variant="outline" icon={<Plus className="h-4 w-4" aria-hidden />}>Take your first test</Button>
+                      </Link>
+                    }
+                  />
+                </Card>
+
+                <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { step: '01', title: 'Pick a mode', copy: 'Beginner, standard, advanced, or a custom question count.' },
+                    { step: '02', title: 'Answer under a timer', copy: 'Numerical, verbal, logical and situational sections.' },
+                    { step: '03', title: 'Review every answer', copy: 'See the correct option, your choice, and the full solution.' },
+                  ].map((item) => (
+                    <li key={item.step} className="card-inset p-4">
+                      <p className="num text-2xs font-semibold text-accent">{item.step}</p>
+                      <p className="mt-1.5 text-sm font-semibold text-ink">{item.title}</p>
+                      <p className="t-xs mt-1">{item.copy}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {history.map((attempt) => {
+                  const tone = accuracyTone(attempt.accuracy)
+                  const total = attempt.answers?.length || 0
+                  const pct = Math.max(0, Math.min(100, Math.round(attempt.accuracy)))
+                  return (
+                    <Card
+                      key={attempt._id}
+                      data-reveal
+                      interactive
+                      className="flex flex-col p-5"
+                      onClick={() => navigate(`/aptitude/${attempt._id}/report`)}
+                      role="link"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          navigate(`/aptitude/${attempt._id}/report`)
+                        }
+                      }}
+                      aria-label={`View aptitude report from ${formatDate(attempt.completedAt)}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+                            <Brain className="h-4 w-4" aria-hidden />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">Aptitude test</p>
+                            <p className="num mt-0.5 flex items-center gap-1.5 text-2xs text-subtle">
+                              <Calendar className="h-3 w-3" aria-hidden />
+                              {formatDate(attempt.completedAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`${ACC_TONE[tone]} num shrink-0`}>{pct}%</span>
+                      </div>
+
+                      <div className="mt-5">
+                        <div className="mb-1.5 flex items-center justify-between gap-2 text-2xs">
+                          <span className="text-subtle">Correct answers</span>
+                          <span className="num font-semibold text-ink">
+                            {attempt.totalScore}<span className="text-subtle"> / {total}</span>
+                          </span>
+                        </div>
+                        <div
+                          className="h-1.5 overflow-hidden rounded-full bg-inset"
+                          role="meter"
+                          aria-valuenow={pct}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${pct} percent accuracy`}
+                        >
+                          <div className={`h-full rounded-full ${ACC_BAR[tone]}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+
+                      <div className="mt-auto flex items-center justify-between gap-3 border-t border-hairline pt-4">
+                        <span className="text-xs font-medium text-muted">View full report</span>
+                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-inset text-accent" aria-hidden>
+                          <ArrowUpRight className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+
+          {!loading && history.length > 0 && (
+            <div data-reveal className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-hairline bg-inset p-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-sm font-semibold text-ink">Ready for another round?</p>
+                <p className="t-xs mt-0.5">Pick the same mode to compare, or change the filters for a new challenge.</p>
+              </div>
+              <Link to="/aptitude/setup" className="shrink-0">
+                <Button variant="secondary" icon={<ArrowRight className="h-4 w-4" aria-hidden />}>New test</Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

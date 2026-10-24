@@ -1,14 +1,47 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { prefersReducedMotion } from '../../motion/setup'
+import BrandLogo from '../brand/BrandLogo'
 import {
-  Mic, LayoutDashboard, Plus, Sun, Moon, Monitor,
-  User, LogOut, ChevronDown, Cpu, HardDrive
+  Mic, LayoutDashboard, Plus, Sun, Moon, Monitor, User, LogOut,
+  ChevronDown, Cpu, HardDrive, Brain, Menu, X, Sparkles
 } from 'lucide-react'
 
-const THEME_ICONS = { dark: Moon, light: Sun, system: Monitor }
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', Icon: Sun },
+  { value: 'system', label: 'System', Icon: Monitor },
+  { value: 'dark', label: 'Dark', Icon: Moon },
+]
+
+/* On-device AI labs live in the menu rather than the bar: they are real
+   destinations, but not the primary task for someone here to practise. */
+const LAB_ITEMS = [
+  { to: '/offline-ai', label: 'Offline AI Pack', hint: 'Unlimited on-device', Icon: HardDrive, tone: 'text-success-500' },
+  { to: '/qwen-test', label: 'Qwen AI Lab', hint: 'Local 0.5B model', Icon: Cpu, tone: 'text-ai' },
+  { to: '/voice-test', label: 'Voice Lab', hint: 'STT / TTS bench', Icon: Mic, tone: 'text-accent-500' },
+]
+
+function useDismiss(onDismiss) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const onPointer = (e) => { if (ref.current && !ref.current.contains(e.target)) onDismiss() }
+    const onKey = (e) => { if (e.key === 'Escape') onDismiss() }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onDismiss])
+  return ref
+}
+
+function Wordmark({ to }) {
+  return <BrandLogo to={to} size="sm" className="py-1 pr-2" />
+}
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -16,208 +49,172 @@ export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const menuRef = useDismiss(() => setMenuOpen(false))
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4)
+    const onScroll = () => setScrolled(window.scrollY > 6)
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Route changes should never leave a stale menu open behind them.
+  useEffect(() => { setMenuOpen(false); setMobileOpen(false) }, [location.pathname])
+
   useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setDropdownOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    if (!mobileOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [mobileOpen])
 
-  const handleLogout = () => { logout(); navigate('/'); setDropdownOpen(false) }
+  const handleLogout = () => { logout(); navigate('/') }
 
-  const cycleTheme = () => {
-    const order = ['system', 'dark', 'light']
-    setTheme(order[(order.indexOf(theme) + 1) % order.length])
-  }
-
-  const ThemeIcon = THEME_ICONS[theme] || Monitor
   const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?'
+
+  const navLink = (active) =>
+    `relative flex items-center gap-1.5 rounded-md px-2.5 py-2 text-[0.8125rem] font-medium transition-colors duration-fast ${
+      active ? 'bg-accent-soft text-accent-600' : 'text-muted hover:bg-ink/[0.05] hover:text-ink'
+    }`
+
+  const primaryLinks = [
+    { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    { to: '/aptitude', label: 'Aptitude', Icon: Brain },
+    { to: '/interview/create', label: 'New interview', Icon: Plus },
+  ]
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
+      className={`fixed inset-x-0 top-0 z-50 h-nav transition-[background-color,box-shadow,border-color] duration-base ease-out ${
         scrolled
-          ? 'bg-white dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800'
-          : 'bg-white/80 dark:bg-white dark:bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-200 dark:border-zinc-900'
+          ? 'glass border-b border-hairline shadow-1'
+          : 'border-b border-transparent bg-canvas/70 backdrop-blur-[6px]'
       }`}
-      style={{ fontFamily: 'Inter, system-ui' }}
     >
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="container-page flex h-full items-center justify-between gap-3">
 
-        {/* Logo */}
-        <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Mic className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            IntervuSetu
-          </span>
-        </Link>
+        <div className="flex min-w-0 items-center gap-1">
+          <Wordmark to={user ? '/dashboard' : '/'} />
 
-        {/* Right */}
+          {user && (
+            <div className="ml-2 hidden items-center gap-0.5 lg:flex">
+              {primaryLinks.map(({ to, label, Icon }) => {
+                const active = to === '/interview/create'
+                  ? location.pathname === to
+                  : location.pathname === to || location.pathname.startsWith(`${to}/`)
+                return (
+                  <Link key={to} to={to} className={navLink(active)} aria-current={active ? 'page' : undefined}>
+                    <Icon className="h-3.5 w-3.5" aria-hidden />
+                    {label}
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-1.5">
-          {/* Theme toggle */}
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${theme}`}
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          >
-            <ThemeIcon className="w-4 h-4" />
-          </button>
+          {/* Plan marker — real account state, not decoration */}
+          {user && (
+            <span className={`badge hidden sm:inline-flex ${user.plan === 'pro' ? 'badge-accent' : ''}`}>
+              {user.plan === 'pro' ? 'Pro' : 'Free'}
+            </span>
+          )}
 
           {user ? (
             <>
-              {/* Offline AI Hub */}
-              <Link
-                to="/offline-ai"
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-500/10 transition-colors"
-                title="Download on-device models for unlimited offline interviews"
-              >
-                <HardDrive className="w-3.5 h-3.5 text-emerald-500" />Offline AI Pack
+              <Link to="/interview/create" className="btn btn-primary btn-sm hidden md:inline-flex">
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                New interview
               </Link>
 
-              {/* Qwen AI Lab */}
-              <Link
-                to="/qwen-test"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
-                title="Test Local Qwen 2.5 0.5B AI"
-              >
-                <Cpu className="w-3.5 h-3.5" />Qwen AI
-              </Link>
-
-              {/* Voice Lab */}
-              <Link
-                to="/voice-test"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium hover:border-blue-500/50 hover:text-blue-500 transition-colors"
-                title="Test STT and TTS Audio"
-              >
-                <Mic className="w-3.5 h-3.5 text-blue-500" />Voice Lab
-              </Link>
-
-              {/* New Interview */}
-              <Link
-                to="/interview/create"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />New Interview
-              </Link>
-
-              {/* Dashboard */}
-              {location.pathname !== '/dashboard' && (
-                <Link
-                  to="/dashboard"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />Dashboard
-                </Link>
-              )}
-
-              {/* User menu */}
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={menuRef}>
                 <button
-                  onClick={() => setDropdownOpen(p => !p)}
-                  className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                  onClick={() => setMenuOpen((p) => !p)}
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                  aria-controls="account-menu"
+                  aria-label="Account menu"
+                  className="flex min-h-[2.25rem] items-center gap-2 rounded-lg border border-transparent pl-1 pr-2 transition-colors duration-fast hover:border-hairline hover:bg-ink/[0.04]"
                 >
-                  <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-accent-600 text-[0.625rem] font-semibold text-white">
                     {initials}
-                  </div>
-                  <span className="hidden sm:block text-xs font-medium text-zinc-700 dark:text-zinc-300 max-w-[96px] truncate">
+                  </span>
+                  <span className="hidden max-w-[7rem] truncate text-xs font-medium text-ink sm:block">
                     {user.name?.split(' ')[0]}
                   </span>
-                  <ChevronDown className={`w-3 h-3 text-zinc-600 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3 w-3 text-subtle transition-transform duration-fast ${menuOpen ? 'rotate-180' : ''}`} aria-hidden />
                 </button>
 
                 <AnimatePresence>
-                  {dropdownOpen && (
+                  {menuOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                      id="account-menu"
+                      role="menu"
+                      initial={{ opacity: 0, y: prefersReducedMotion() ? 0 : -6, scale: prefersReducedMotion() ? 1 : 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                      transition={{ duration: 0.12 }}
-                      className="absolute right-0 top-full mt-1.5 w-52 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg overflow-hidden z-50"
+                      exit={{ opacity: 0, y: prefersReducedMotion() ? 0 : -6, scale: prefersReducedMotion() ? 1 : 0.98 }}
+                      transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                      className="card absolute right-0 top-full z-50 mt-2 w-64 origin-top-right overflow-hidden p-0 shadow-4"
                     >
-                      {/* User info */}
-                      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{user.name}</p>
-                        <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+                      <div className="border-b border-hairline px-4 py-3.5">
+                        <p className="truncate font-display text-sm font-semibold text-ink">{user.name}</p>
+                        <p className="num mt-0.5 truncate text-2xs text-subtle">{user.email}</p>
                       </div>
 
-                      <div className="py-1">
-                        <button
-                          onClick={() => { navigate('/offline-ai'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors text-left font-medium"
-                        >
-                          <HardDrive className="w-3.5 h-3.5 text-emerald-500" />Offline AI Pack (Free)
-                        </button>
-                        <button
-                          onClick={() => { navigate('/qwen-test'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left font-medium"
-                        >
-                          <Cpu className="w-3.5 h-3.5 text-blue-500" />Qwen AI Lab (0.5B)
-                        </button>
-                        <button
-                          onClick={() => { navigate('/voice-test'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
-                        >
-                          <Mic className="w-3.5 h-3.5 text-blue-500" />Voice Lab (STT/TTS)
-                        </button>
-                        <button
-                          onClick={() => { navigate('/profile'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
-                        >
-                          <User className="w-3.5 h-3.5" />Profile
-                        </button>
-                        <button
-                          onClick={() => { navigate('/dashboard'); setDropdownOpen(false) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-left"
-                        >
-                          <LayoutDashboard className="w-3.5 h-3.5" />Dashboard
-                        </button>
+                      <div className="py-1.5">
+                        <Link role="menuitem" to="/profile" className="flex min-h-[2.75rem] items-center gap-2.5 px-4 text-[0.8125rem] text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink">
+                          <User className="h-4 w-4 text-subtle" aria-hidden />Profile
+                        </Link>
+                        <Link role="menuitem" to="/dashboard" className="flex min-h-[2.75rem] items-center gap-2.5 px-4 text-[0.8125rem] text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink">
+                          <LayoutDashboard className="h-4 w-4 text-subtle" aria-hidden />Dashboard
+                        </Link>
                       </div>
 
-                      {/* Theme */}
-                      <div className="border-t border-zinc-200 dark:border-zinc-800 py-2 px-3">
-                        <p className="text-[10px] text-zinc-500 dark:text-zinc-600 uppercase tracking-wider mb-1.5">Theme</p>
-                        <div className="flex gap-1">
-                          {(['dark', 'light', 'system']).map((t) => {
-                            const Icon = THEME_ICONS[t]
-                            return (
-                              <button
-                                key={t}
-                                onClick={() => setTheme(t)}
-                                className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] transition-all ${
-                                  theme === t
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-600/20 dark:text-blue-400 dark:border-blue-600/30'
-                                    : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                                }`}
-                              >
-                                <Icon className="w-3 h-3" />
-                                {t}
-                              </button>
-                            )
-                          })}
+                      <div className="border-t border-hairline py-1.5">
+                        <p className="eyebrow px-4 pb-1 pt-2">On-device labs</p>
+                        {LAB_ITEMS.map(({ to, label, hint, Icon, tone }) => (
+                          <Link key={to} role="menuitem" to={to} className="flex min-h-[2.75rem] items-center gap-2.5 px-4 text-[0.8125rem] text-muted transition-colors hover:bg-ink/[0.04] hover:text-ink">
+                            <Icon className={`h-4 w-4 ${tone}`} aria-hidden />
+                            <span className="flex-1">{label}</span>
+                            <span className="text-3xs text-faint">{hint}</span>
+                          </Link>
+                        ))}
+                      </div>
+
+                      <div className="border-t border-hairline px-4 py-3">
+                        <p className="eyebrow mb-2">Appearance</p>
+                        <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-lg border border-hairline bg-inset p-1">
+                          {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                            <button
+                              key={value}
+                              role="radio"
+                              aria-checked={theme === value}
+                              onClick={() => setTheme(value)}
+                              className={`flex flex-col items-center gap-1 rounded-md py-2 text-3xs font-medium transition-all duration-fast ${
+                                theme === value
+                                  ? 'bg-surface text-accent-600 shadow-1 ring-1 ring-accent/20'
+                                  : 'text-muted hover:text-ink'
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5" aria-hidden />
+                              {label}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      <div className="border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="border-t border-hairline">
                         <button
+                          role="menuitem"
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-left"
+                          className="flex min-h-[2.75rem] w-full items-center gap-2.5 px-4 text-[0.8125rem] text-danger-500 transition-colors hover:bg-danger-500/[0.07]"
                         >
-                          <LogOut className="w-3.5 h-3.5" />Sign Out
+                          <LogOut className="h-4 w-4" aria-hidden />Sign out
                         </button>
                       </div>
                     </motion.div>
@@ -226,44 +223,94 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/offline-ai"
-                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-500/10 transition-colors"
-              >
-                <HardDrive className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Offline Pack</span>
-              </Link>
-              <Link
-                to="/qwen-test"
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-blue-500/25 bg-blue-500/5 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
-              >
-                <Cpu className="w-3.5 h-3.5" />
-                <span>Qwen AI</span>
-              </Link>
-              <Link
-                to="/voice-test"
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:text-blue-500 transition-colors"
-              >
-                <Mic className="w-3.5 h-3.5" />
-                <span>Voice Lab</span>
-              </Link>
-              <Link
-                to="/login"
-                className="px-3 py-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors"
-              >
-                Get Started
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link to="/login" className="btn btn-ghost btn-sm">Sign in</Link>
+              <Link to="/register" className="btn btn-primary btn-sm">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Get started
               </Link>
             </div>
           )}
+
+          {/* Mobile trigger */}
+          <button
+            onClick={() => setMobileOpen((p) => !p)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+            className="btn-icon lg:hidden"
+          >
+            {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile navigation — full-width sheet, 44px+ targets */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            id="mobile-nav"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: prefersReducedMotion() ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="glass overflow-hidden border-t border-hairline lg:hidden"
+          >
+            <div className="container-page flex flex-col gap-1 py-3 safe-bottom">
+              {user ? (
+                <>
+                  {primaryLinks.map(({ to, label, Icon }) => (
+                    <Link key={to} to={to} className="flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm font-medium text-ink transition-colors hover:bg-ink/[0.05]">
+                      <Icon className="h-4 w-4 text-subtle" aria-hidden />{label}
+                    </Link>
+                  ))}
+                  <Link to="/profile" className="flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm font-medium text-ink transition-colors hover:bg-ink/[0.05]">
+                    <User className="h-4 w-4 text-subtle" aria-hidden />Profile
+                  </Link>
+                  <div className="my-2 hairline-t" />
+                  {LAB_ITEMS.map(({ to, label, Icon, tone }) => (
+                    <Link key={to} to={to} className="flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm text-muted transition-colors hover:bg-ink/[0.05]">
+                      <Icon className={`h-4 w-4 ${tone}`} aria-hidden />{label}
+                    </Link>
+                  ))}
+                  <div className="my-2 hairline-t" />
+                  <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-lg border border-hairline bg-inset p-1">
+                    {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                      <button
+                        key={value}
+                        role="radio"
+                        aria-checked={theme === value}
+                        onClick={() => setTheme(value)}
+                        className={`flex min-h-[2.5rem] items-center justify-center gap-1.5 rounded-md text-2xs font-medium transition-colors ${
+                          theme === value ? 'bg-surface text-accent-600 shadow-1' : 'text-muted'
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden />{label}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={handleLogout} className="mt-1 flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm text-danger-500 transition-colors hover:bg-danger-500/[0.07]">
+                    <LogOut className="h-4 w-4" aria-hidden />Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/offline-ai" className="flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm text-muted">
+                    <HardDrive className="h-4 w-4 text-success-500" aria-hidden />Offline AI Pack
+                  </Link>
+                  <Link to="/voice-test" className="flex min-h-[2.75rem] items-center gap-3 rounded-lg px-3 text-sm text-muted">
+                    <Mic className="h-4 w-4 text-accent-500" aria-hidden />Voice Lab
+                  </Link>
+                  <div className="mt-2 flex gap-2">
+                    <Link to="/login" className="btn btn-secondary btn-md flex-1">Sign in</Link>
+                    <Link to="/register" className="btn btn-primary btn-md flex-1">Get started</Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   )
 }

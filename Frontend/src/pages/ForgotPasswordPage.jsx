@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, KeyRound, Lock, ArrowRight, Loader2, ArrowLeft, ShieldCheck, CheckCircle } from 'lucide-react'
+import AuthShell from '../components/layout/AuthShell'
+import { Input, Button } from '../components/ui/index'
+import {
+  Mail, KeyRound, Lock, ArrowRight, ArrowLeft, ShieldCheck, CheckCircle2, Building2,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import API from '../api/axios'
+
+const STEPS = ['Email', 'Code', 'New password']
 
 export default function ForgotPasswordPage({ isOrg = false }) {
   const navigate = useNavigate()
@@ -20,7 +25,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
   const handleRequestOtp = async (e) => {
     e.preventDefault()
     if (!email) return toast.error('Email is required')
-    
+
     setLoading(true)
     try {
       await API.post(`${apiBase}/forgot-password`, { email })
@@ -36,7 +41,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
   const handleVerifyOtp = async (e) => {
     e.preventDefault()
     if (!otp || otp.length !== 6) return toast.error('Enter a valid 6-digit OTP')
-    
+
     setLoading(true)
     try {
       const res = await API.post(`${apiBase}/verify-otp`, { email, otp })
@@ -53,7 +58,7 @@ export default function ForgotPasswordPage({ isOrg = false }) {
   const handleResetPassword = async (e) => {
     e.preventDefault()
     if (newPassword.length < 6) return toast.error('Password must be at least 6 characters')
-    
+
     setLoading(true)
     try {
       await API.post(`${apiBase}/reset-password`, { resetToken, newPassword })
@@ -66,141 +71,142 @@ export default function ForgotPasswordPage({ isOrg = false }) {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan/20 rounded-full blur-[120px]" />
-      </div>
+  const features = isOrg
+    ? [
+        { icon: Building2, label: 'Your hiring console', detail: 'Candidate data and interview campaigns stay in one place.' },
+        { icon: Mail, label: 'Verified by email', detail: 'A one-time code confirms it is really you.' },
+        { icon: ShieldCheck, label: 'A fresh password', detail: 'Set a new password and sign straight back in.' },
+      ]
+    : [
+        { icon: Lock, label: 'Secure account recovery', detail: 'A one-time code verifies the request before anything changes.' },
+        { icon: Mail, label: 'Sent to your inbox', detail: 'Use the email on your IntervuSetu account.' },
+        { icon: ShieldCheck, label: 'Back to practising', detail: 'Your interview history and reports stay exactly where they were.' },
+      ]
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-surface backdrop-blur-xl border border-border rounded-3xl p-8 z-10 relative shadow-2xl"
+  return (
+    <AuthShell
+      variant={isOrg ? 'org' : 'candidate'}
+      eyebrow={isOrg ? 'Organization recovery' : 'Account recovery'}
+      headline={isOrg ? 'Back to hiring without the wait.' : 'A new password, then back to practice.'}
+      description={isOrg
+        ? 'Reset the password for your organization account and return to your live interview campaigns.'
+        : 'Reset the password on your candidate account and pick your interview practice back up.'}
+      features={features}
+      footer={(
+        <p className="t-xs">
+          Remembered it?{' '}
+          <Link to={loginPath} className="font-medium text-accent transition-colors duration-fast hover:text-accent-hover">
+            Back to sign in
+          </Link>
+        </p>
+      )}
+    >
+      <Link
+        to={loginPath}
+        className="tap-link t-xs mb-5 inline-flex items-center gap-1.5 font-medium text-muted transition-colors duration-fast hover:text-ink"
       >
-        <Link to={loginPath} className="inline-flex items-center text-fg-subtle hover:text-fg transition-colors mb-6 text-sm font-body">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
-        </Link>
-        
-        <div className="mb-8">
-          <div className="w-12 h-12 bg-gradient-to-tr from-violet to-cyan rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-violet/20">
-            <Lock className="w-6 h-6 text-void" strokeWidth={2.5} />
-          </div>
-          <h1 className="text-2xl font-display font-bold text-fg mb-2">
-            Reset Password
-          </h1>
-          <p className="text-fg-muted text-sm font-body">
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to login
+      </Link>
+
+      <div className="mb-6 flex items-start gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+          <Lock className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="eyebrow mb-1.5">Password reset</p>
+          <h1 className="t-h2">Reset password</h1>
+          <p className="t-sm mt-1">
             {step === 1 && "Enter your email address and we'll send you a 6-digit verification code."}
-            {step === 2 && "Enter the 6-digit verification code sent to your email."}
-            {step === 3 && "Create a new, secure password for your account."}
+            {step === 2 && 'Enter the 6-digit verification code sent to your email.'}
+            {step === 3 && 'Create a new, secure password for your account.'}
           </p>
         </div>
+      </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.form 
-              key="step1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              onSubmit={handleRequestOtp} 
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-fg-muted">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full py-3"
+      {/* Progress — real, driven by the actual step state */}
+      <ol className="mb-7 flex items-center gap-2" aria-label="Password reset progress">
+        {STEPS.map((label, i) => {
+          const n = i + 1
+          const done = step > n
+          const current = step === n
+          return (
+            <li key={label} className="flex flex-1 items-center gap-2" aria-current={current ? 'step' : undefined}>
+              <span
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-2xs font-semibold ${
+                  done ? 'bg-success text-white'
+                    : current ? 'bg-accent text-accent-on'
+                      : 'border border-hairline bg-inset text-subtle'
+                }`}
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ArrowRight className="w-5 h-5" /> Send Code</>}
-              </button>
-            </motion.form>
-          )}
+                {done ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> : n}
+              </span>
+              <span className={`hidden text-2xs font-medium sm:block ${current ? 'text-ink' : 'text-subtle'}`}>{label}</span>
+              {n < STEPS.length && <span className="h-px flex-1 bg-hairline" aria-hidden />}
+            </li>
+          )
+        })}
+      </ol>
 
-          {step === 2 && (
-            <motion.form 
-              key="step2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              onSubmit={handleVerifyOtp} 
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-fg-muted">6-Digit Code</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\\D/g, ''))}
-                    placeholder="000000"
-                    className="input pl-10 font-mono tracking-widest text-center text-lg"
-                    required
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading || otp.length !== 6}
-                className="btn-primary w-full py-3"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-5 h-5" /> Verify Code</>}
-              </button>
-            </motion.form>
-          )}
+      {step === 1 && (
+        <form onSubmit={handleRequestOtp} className="flex flex-col gap-4">
+          <Input
+            label="Email address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            icon={<Mail className="h-3.5 w-3.5" aria-hidden />}
+            autoComplete="email"
+            required
+          />
+          <Button type="submit" loading={loading} variant="primary" size="lg" block icon={<ArrowRight className="h-3.5 w-3.5" aria-hidden />}>
+            Send code
+          </Button>
+        </form>
+      )}
 
-          {step === 3 && (
-            <motion.form 
-              key="step3"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              onSubmit={handleResetPassword} 
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <label className="text-sm font-body font-medium text-fg-muted">New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    minLength={6}
-                    className="input pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading || newPassword.length < 6}
-                className="btn-primary w-full py-3"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> Update Password</>}
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
+      {step === 2 && (
+        <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+          <Input
+            label="6-digit code"
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            icon={<KeyRound className="h-3.5 w-3.5" aria-hidden />}
+            autoComplete="one-time-code"
+            className="num text-center text-lg tracking-[0.35em]"
+            required
+          />
+          <Button type="submit" loading={loading} disabled={otp.length !== 6} variant="primary" size="lg" block icon={<ShieldCheck className="h-3.5 w-3.5" aria-hidden />}>
+            Verify code
+          </Button>
+        </form>
+      )}
 
-      </motion.div>
-    </div>
+      {step === 3 && (
+        <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
+          <Input
+            label="New password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Enter new password"
+            icon={<Lock className="h-3.5 w-3.5" aria-hidden />}
+            autoComplete="new-password"
+            minLength={6}
+            hint="At least 6 characters."
+            required
+          />
+          <Button type="submit" loading={loading} disabled={newPassword.length < 6} variant="primary" size="lg" block icon={<CheckCircle2 className="h-3.5 w-3.5" aria-hidden />}>
+            Update password
+          </Button>
+        </form>
+      )}
+
+      <p aria-live="polite" className="sr-only">{loading ? 'Submitting your request…' : ''}</p>
+    </AuthShell>
   )
 }

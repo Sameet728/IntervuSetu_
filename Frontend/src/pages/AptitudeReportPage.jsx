@@ -2,10 +2,25 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
-import { Button, Card, ScoreRing, Badge, Spinner } from '../components/ui/index'
+import { Button, Card, ScoreRing, Badge, Spinner, EmptyState, SectionHeading } from '../components/ui/index'
 import { getAptitudeReport, downloadAptitudePDF } from '../api/aptitudeAPI'
+import { usePageEnter, useScrollReveal, prefersReducedMotion } from '../motion/index'
 import toast from 'react-hot-toast'
-import { Award, Target, Clock, AlertTriangle, LayoutDashboard, Zap, Brain, Code2, Users, PieChart, Printer, CheckCircle } from 'lucide-react'
+import {
+  Award, Target, Clock, AlertTriangle, LayoutDashboard, Code2, PieChart,
+  Printer, CheckCircle2, XCircle, ChevronDown, ChevronUp,
+} from 'lucide-react'
+
+const cx = (...p) => p.filter(Boolean).join(' ')
+
+/* Static class maps — no interpolated Tailwind names. */
+const CAT_BAR = { success: 'bg-success-500', warning: 'bg-warning-500', danger: 'bg-danger-500' }
+const catTone = (pct) => (pct >= 70 ? 'success' : pct >= 40 ? 'warning' : 'danger')
+const OPT_STYLE = {
+  correct: 'border-success-500 bg-success-bg text-success-500',
+  wrong:   'border-danger-500 bg-danger-bg text-danger-500',
+  neutral: 'border-hairline bg-inset text-muted',
+}
 
 export default function AptitudeReportPage() {
   const { attemptId } = useParams()
@@ -32,8 +47,33 @@ export default function AptitudeReportPage() {
     fetchReport()
   }, [attemptId])
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Spinner size="lg" /></div>
-  if (!report) return <div className="min-h-screen flex items-center justify-center">Report not found.</div>
+  const enterRef = usePageEnter([loading])
+  const revealRef = useScrollReveal([loading, report])
+
+  if (loading) {
+    return (
+      <div className="page-shell grid min-h-dvh place-items-center text-ink">
+        <Spinner size="lg" />
+        <span className="sr-only" role="status">Loading report…</span>
+      </div>
+    )
+  }
+
+  if (!report) {
+    return (
+      <div className="page-shell text-ink">
+        <Navbar />
+        <div className="grid min-h-dvh place-items-center px-4">
+          <EmptyState
+            icon={<XCircle className="h-5 w-5" aria-hidden />}
+            title="Report not available"
+            description="We couldn't load this aptitude report."
+            action={<Link to="/aptitude"><Button variant="secondary">Back to dashboard</Button></Link>}
+          />
+        </div>
+      </div>
+    )
+  }
 
   const { totalScore, accuracy, categoryScores, answers, violations } = report
   const totalQuestions = answers.length
@@ -53,185 +93,191 @@ export default function AptitudeReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
+    <div className="page-shell text-ink">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
-        
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 font-[Poppins]">
-              Aptitude Score Report
-            </h1>
-            <p className="text-zinc-500 text-sm mt-1">Detailed breakdown of your performance</p>
+
+      <main className="container-page max-w-4xl pb-24 pt-[calc(var(--nav-h)+1.5rem)]">
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <header ref={enterRef} className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div data-enter>
+            <p className="eyebrow mb-1">Aptitude</p>
+            <h1 className="t-h1">Score report</h1>
+            <p className="t-sm mt-1">Detailed breakdown of your performance</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDownloadPDF} loading={downloading}>
-              <Printer className="w-4 h-4 mr-1" /> {downloading ? 'Downloading...' : 'Download PDF'}
+          <div data-enter className="flex gap-2">
+            <Button variant="secondary" onClick={handleDownloadPDF} loading={downloading} icon={!downloading && <Printer className="h-4 w-4" aria-hidden />}>
+              {downloading ? 'Downloading…' : 'Download PDF'}
             </Button>
             <Link to="/aptitude">
-              <Button variant="secondary"><LayoutDashboard className="w-4 h-4" /> Dashboard</Button>
+              <Button variant="ghost" icon={<LayoutDashboard className="h-4 w-4" aria-hidden />}>Dashboard</Button>
             </Link>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="p-6 flex flex-col items-center justify-center text-center">
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-4">Total Score</p>
-            <ScoreRing score={totalScore} size={100} strokeWidth={8} />
-            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Out of {totalQuestions} questions</p>
-          </Card>
+        <div ref={revealRef} className="space-y-8">
+          {/* ── Summary cards ─────────────────────────────────────────── */}
+          <section data-reveal aria-label="Summary" className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Card className="flex flex-col items-center justify-center p-6 text-center">
+              <p className="eyebrow mb-4">Total score</p>
+              <ScoreRing score={totalScore} size={100} strokeWidth={8} label="score" />
+              <p className="t-sm mt-4">Out of <span className="num">{totalQuestions}</span> questions</p>
+            </Card>
 
-          <Card className="p-6 flex flex-col justify-center gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600">
-                <Target className="w-6 h-6" />
+            <Card className="flex flex-col justify-center gap-5 p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                  <Target className="h-5 w-5" aria-hidden />
+                </span>
+                <div>
+                  <p className="eyebrow">Accuracy</p>
+                  <p className="num text-2xl font-semibold text-ink">{Math.round(accuracy)}%</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Accuracy</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                  {Math.round(accuracy)}%
-                </p>
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warning-bg text-warning-500">
+                  <AlertTriangle className="h-5 w-5" aria-hidden />
+                </span>
+                <div>
+                  <p className="eyebrow">Violations</p>
+                  <p className="num text-2xl font-semibold text-ink">{violations?.length || 0}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center text-amber-600">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Violations</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                  {violations?.length || 0}
-                </p>
-              </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-6 bg-blue-600 border-transparent text-white relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-               <Award className="w-32 h-32" />
-             </div>
-             <div className="relative z-10 h-full flex flex-col justify-center">
-               <h3 className="text-lg font-bold font-[Poppins] mb-2">Verdict</h3>
-               <p className="text-sm text-blue-100 mb-4 leading-relaxed">
-                 {accuracy >= 80 ? 'Excellent performance! You have a strong grasp of reasoning concepts.'
-                  : accuracy >= 50 ? 'Good effort! Focus on your weak areas to improve.'
-                  : 'Needs improvement. Recommend practicing more aptitude questions.'}
-               </p>
-             </div>
-          </Card>
-        </div>
+            <Card className="flex flex-col justify-center p-6">
+              <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <Award className="h-5 w-5" aria-hidden />
+              </span>
+              <p className="eyebrow mb-1.5">Verdict</p>
+              <p className="t-body">
+                {accuracy >= 80 ? 'Excellent performance — a strong grasp of the reasoning concepts.'
+                  : accuracy >= 50 ? 'Good effort — focus on your weak areas to improve.'
+                  : 'Needs improvement — more aptitude practice is recommended.'}
+              </p>
+            </Card>
+          </section>
 
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-[Poppins] mb-4 flex items-center gap-2">
-          <PieChart className="w-5 h-5 text-blue-500" /> Category Breakdown
-        </h2>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-          {categories.map(c => {
-             const stat = categoryScores[c]
-             const pct = stat.total > 0 ? (stat.score / stat.total) * 100 : 0
-             return (
-               <Card key={c} className="p-5 break-inside-avoid">
-                 <div className="flex justify-between items-center mb-2">
-                   <h3 className="capitalize font-semibold text-zinc-800 dark:text-zinc-200">{c} Reasoning</h3>
-                   <span className="text-xs font-mono font-bold text-zinc-500">{stat.score} / {stat.total}</span>
-                 </div>
-                 <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
-                   <div 
-                     className={`h-2.5 rounded-full ${pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
-                     style={{ width: `${pct}%` }}
-                   ></div>
-                 </div>
-               </Card>
-             )
-          })}
-        </div>
-
-        <div className="mt-12">
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-[Poppins] mb-6 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-blue-500" /> Answer Analysis
-          </h2>
-          
-          <div className="space-y-6">
-            {answers.map((ans, idx) => {
-              const q = ans.questionId
-              if (!q) return null // safety check
-              return (
-                <Card key={idx} className="p-6 break-inside-avoid shadow-sm border-zinc-200 dark:border-zinc-800">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-md">
-                      Q{idx + 1} • {q.category}
-                    </span>
-                    <Badge color={ans.isCorrect ? 'green' : 'red'}>
-                      {ans.isCorrect ? 'Correct' : 'Incorrect'}
-                    </Badge>
-                  </div>
-                  <p className="text-base text-zinc-800 dark:text-zinc-200 font-medium mb-3 whitespace-pre-wrap">{q.question}</p>
-                  
-                  <div className="mb-4 text-xs font-medium text-zinc-500 bg-zinc-100 dark:bg-zinc-800 inline-block px-3 py-1.5 rounded-md">
-                    <Clock className="w-3 h-3 inline mr-1 -mt-0.5" /> Time Spent: {ans.timeTaken || 0}s
-                  </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    {q.options.map((opt) => {
-                      const isSelected = ans.selectedOptionId === opt._id
-                      const isOptionCorrect = opt.isCorrect
-                      
-                      let borderClass = 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900'
-                      let textColor = 'text-zinc-700 dark:text-zinc-300'
-                      
-                      if (isOptionCorrect) {
-                        borderClass = 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        textColor = 'text-green-800 dark:text-green-300 font-medium'
-                      } else if (isSelected && !isOptionCorrect) {
-                        borderClass = 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                        textColor = 'text-red-800 dark:text-red-300'
-                      }
-
-                      return (
-                        <div key={opt._id} className={`p-3 rounded-lg border ${borderClass} flex items-start gap-3`}>
-                          <div className={`w-5 h-5 rounded-full border flex flex-shrink-0 items-center justify-center mt-0.5 ${isOptionCorrect ? 'border-green-500 text-green-500' : isSelected ? 'border-red-500 text-red-500' : 'border-zinc-300 dark:border-zinc-600'}`}>
-                            {isSelected && <div className={`w-2.5 h-2.5 rounded-full ${isOptionCorrect ? 'bg-green-500' : 'bg-red-500'}`} />}
-                          </div>
-                          <span className={`${textColor}`}>{opt.text}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {q.detailedSolution && (
-                    <div className="mt-4 border-t border-zinc-100 dark:border-zinc-800 pt-4">
-                      <button 
-                        onClick={() => toggleSolution(idx)}
-                        className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          {/* ── Category breakdown ────────────────────────────────────── */}
+          <section data-reveal aria-labelledby="cat-heading">
+            <SectionHeading eyebrow="Coverage" title="Category breakdown" />
+            {categories.length === 0 ? (
+              <p className="t-sm mt-3">No category data returned for this attempt.</p>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {categories.map(c => {
+                  const stat = categoryScores[c]
+                  const pct = stat.total > 0 ? (stat.score / stat.total) * 100 : 0
+                  return (
+                    <Card key={c} className="p-5">
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold capitalize text-ink">{c} reasoning</h3>
+                        <span className="num text-xs text-subtle">{stat.score} / {stat.total}</span>
+                      </div>
+                      <div
+                        className="h-2 overflow-hidden rounded-full bg-inset"
+                        role="meter"
+                        aria-valuenow={Math.round(pct)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${c}: ${Math.round(pct)} percent`}
                       >
-                        <Code2 className="w-4 h-4" />
-                        {expandedSolutions[idx] ? 'Hide Detailed Solution' : 'View Detailed Solution'}
-                      </button>
-                      
-                      <AnimatePresence>
-                        {expandedSolutions[idx] && (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }} 
-                            animate={{ opacity: 1, height: 'auto', marginTop: 12 }} 
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="bg-zinc-50 dark:bg-zinc-900/80 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-sans leading-relaxed shadow-inner">
-                              {q.detailedSolution}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        <div className={`h-full rounded-full ${CAT_BAR[catTone(pct)]}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* ── Answer analysis ───────────────────────────────────────── */}
+          <section data-reveal aria-labelledby="answers-heading">
+            <SectionHeading eyebrow="Review" title="Answer analysis" />
+
+            <div className="mt-4 space-y-4">
+              {answers.map((ans, idx) => {
+                const q = ans.questionId
+                if (!q) return null // safety check
+                const isOpen = !!expandedSolutions[idx]
+                const panelId = `solution-panel-${idx}`
+
+                return (
+                  <Card key={idx} className="p-6">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <span className="num rounded-md bg-inset px-2 py-1 text-xs font-semibold uppercase tracking-wide text-subtle">
+                        Q{idx + 1} • <span className="capitalize">{q.category}</span>
+                      </span>
+                      <Badge color={ans.isCorrect ? 'success' : 'danger'}>
+                        {ans.isCorrect
+                          ? <><CheckCircle2 className="h-3 w-3" aria-hidden /> Correct</>
+                          : <><XCircle className="h-3 w-3" aria-hidden /> Incorrect</>}
+                      </Badge>
                     </div>
-                  )}
 
-                </Card>
-              )
-            })}
-          </div>
+                    <p className="mb-3 text-base font-medium whitespace-pre-wrap text-ink">{q.question}</p>
+
+                    <div className="num mb-4 inline-flex items-center gap-1.5 rounded-md bg-inset px-3 py-1.5 text-xs text-subtle">
+                      <Clock className="h-3 w-3" aria-hidden /> Time spent: {ans.timeTaken || 0}s
+                    </div>
+
+                    <div className="space-y-2">
+                      {q.options.map((opt, oi) => {
+                        const isSelected = ans.selectedOptionId === opt._id
+                        const isOptionCorrect = opt.isCorrect
+                        const variant = isOptionCorrect ? 'correct' : isSelected ? 'wrong' : 'neutral'
+                        const letter = String.fromCharCode(65 + oi)
+                        return (
+                          <div key={opt._id} className={`flex items-start gap-3 rounded-lg border p-3 ${OPT_STYLE[variant]}`}>
+                            <span className="num mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-2xs font-semibold" aria-hidden>
+                              {letter}
+                            </span>
+                            <span className="flex-1 text-sm">{opt.text}</span>
+                            {isOptionCorrect && <span className="flex shrink-0 items-center gap-1 text-2xs font-semibold"><CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Correct</span>}
+                            {isSelected && !isOptionCorrect && <span className="shrink-0 text-2xs font-semibold">Your answer</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {q.detailedSolution && (
+                      <div className="mt-4 border-t border-hairline pt-4">
+                        <button
+                          type="button"
+                          onClick={() => toggleSolution(idx)}
+                          aria-expanded={isOpen}
+                          aria-controls={panelId}
+                          className="flex items-center gap-2 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+                        >
+                          <Code2 className="h-4 w-4" aria-hidden />
+                          {isOpen ? 'Hide detailed solution' : 'View detailed solution'}
+                          {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden /> : <ChevronDown className="h-4 w-4" aria-hidden />}
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              id={panelId}
+                              initial={prefersReducedMotion() ? false : { height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.28, ease: 'easeOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="card-inset mt-3 p-5 text-sm leading-relaxed whitespace-pre-wrap text-muted">
+                                {q.detailedSolution}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </Card>
+                )
+              })}
+            </div>
+          </section>
         </div>
-
-      </div>
+      </main>
     </div>
   )
 }

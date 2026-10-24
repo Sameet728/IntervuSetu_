@@ -1,26 +1,23 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useOrgAuth } from '../../context/OrgAuthContext'
 import { createTemplate } from '../../api/orgAPI'
 import OrgNavbar from '../../components/layout/OrgNavbar'
 import {
-  ArrowLeft, Mic, Wand2, Clock, Hash, Shield, Calendar,
-  ChevronRight, Loader2, Copy, CheckCircle2, AlertTriangle, Building2, Users
+  ArrowLeft, Wand2, Clock, Hash, Shield, Calendar,
+  Copy, CheckCircle2, AlertTriangle, Users, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Input, Button } from '../../components/ui/index'
+import { Input, Button, IconButton, Textarea } from '../../components/ui/index'
+import { usePageEnter, useScrollReveal } from '../../motion/index'
+
+const cx = (...parts) => parts.filter(Boolean).join(' ')
 
 const TYPES = ['technical', 'hr', 'behavioral', 'system_design', 'mixed']
 const DIFFICULTIES = ['easy', 'medium', 'hard', 'adaptive']
 
-function FieldLabel({ children, required }) {
-  return (
-    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 uppercase tracking-wider">
-      {children}{required && <span className="text-red-500 ml-0.5">*</span>}
-    </label>
-  )
-}
+const STEP_BADGE = 'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-2xs font-semibold'
 
 export default function OrgCreateInterviewPage() {
   const navigate = useNavigate()
@@ -85,61 +82,61 @@ export default function OrgCreateInterviewPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const enterRef = usePageEnter([])
+  const revealRef = useScrollReveal([])
+
   // Success state
   if (created) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4" style={{ fontFamily: 'Inter, system-ui' }}>
+      <div ref={enterRef} className="page-shell flex min-h-dvh flex-col items-center justify-center p-4 text-ink">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 text-center shadow-lg">
-          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
+          data-enter className="card w-full max-w-lg p-6 text-center shadow-3 sm:p-8">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-success/30 bg-success-bg">
+            <CheckCircle2 className="h-7 w-7 text-success-500" aria-hidden />
           </div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Interview Created!</h2>
-          <p className="text-zinc-500 text-sm mb-6">
-            AI has generated {created.questions?.length} questions. Share the link with candidates.
+          <h1 className="t-h2 mb-2 text-ink">Interview created</h1>
+          <p className="t-sm mb-6">
+            AI has generated <span className="num font-medium text-ink">{created.questions?.length}</span> questions. Share the link with candidates.
           </p>
 
           {/* Share link */}
-          <div className="bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-4">
-            <p className="text-[10px] font-semibold text-zinc-500 mb-2 text-left uppercase tracking-wider">JOIN LINK</p>
+          <div className="card-inset mb-4 p-4 text-left">
+            <p className="eyebrow mb-2">Join link</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs text-blue-600 dark:text-blue-400 font-mono break-all text-left bg-blue-50 dark:bg-blue-500/10 px-2 py-1.5 rounded">{created.joinUrl}</code>
-              <button onClick={copyLink}
-                className={`flex-shrink-0 p-2 rounded-lg border transition-all ${copied ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400' : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-blue-200 hover:text-blue-600 dark:hover:border-blue-500/30 dark:hover:text-blue-400'}`}>
-                {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
+              <code className="num flex-1 break-all rounded bg-accent-soft px-2 py-1.5 text-xs text-accent">{created.joinUrl}</code>
+              <IconButton label={copied ? 'Join link copied' : 'Copy join link'} onClick={copyLink}
+                className={cx('shrink-0', copied && 'text-success-500')}>
+                {copied ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+              </IconButton>
             </div>
           </div>
 
           {/* Questions preview */}
-          <div className="bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-6 text-left">
-            <p className="text-[10px] font-semibold text-zinc-500 mb-3 uppercase tracking-wider">GENERATED QUESTIONS ({created.questions?.length})</p>
-            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+          <div className="card-inset mb-6 p-4 text-left">
+            <p className="eyebrow mb-3">
+              Generated questions <span className="num">({created.questions?.length})</span>
+            </p>
+            <ol className="max-h-40 space-y-2 overflow-y-auto pr-1">
               {created.questions?.map((q, i) => (
-                <div key={q.questionId} className="flex items-start gap-2">
-                  <span className="text-[10px] font-mono text-zinc-400 mt-0.5 flex-shrink-0">Q{i + 1}</span>
-                  <div>
-                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded mr-1 ${
-                      q.questionType === 'code' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' :
-                      q.questionType === 'system_design' ? 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400' :
-                      'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
-                    }`}>{q.questionType}</span>
-                    <span className="text-xs text-zinc-700 dark:text-zinc-300">{q.question.slice(0, 80)}...</span>
+                <li key={q.questionId} className="flex items-start gap-2">
+                  <span className="num mt-0.5 shrink-0 text-3xs text-faint">Q{i + 1}</span>
+                  <div className="min-w-0">
+                    <BadgeType type={q.questionType} />
+                    <span className="text-xs text-muted">{q.question.slice(0, 80)}...</span>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
 
-          <div className="flex gap-3">
-            <button onClick={() => navigate('/org/dashboard')}
-              className="flex-1 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-              ← Dashboard
-            </button>
-            <button onClick={() => navigate(`/org/interview/${created.templateId || created.joinUrl?.split('/').slice(-2)[0]?.replace('?', '')}/leaderboard`)}
-              className="flex-1 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-              View Leaderboard
-            </button>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="secondary" onClick={() => navigate('/org/dashboard')} className="flex-1">
+              Dashboard
+            </Button>
+            <Button variant="primary" className="flex-1"
+              onClick={() => navigate(`/org/interview/${created.templateId || created.joinUrl?.split('/').slice(-2)[0]?.replace('?', '')}/leaderboard`)}>
+              View leaderboard
+            </Button>
           </div>
         </motion.div>
       </div>
@@ -147,197 +144,198 @@ export default function OrgCreateInterviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col" style={{ fontFamily: 'Inter, system-ui' }}>
+    <div className="page-shell text-ink">
       <OrgNavbar />
 
-      <div className="max-w-4xl mx-auto px-4 py-8 pt-24 w-full flex-1">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/org/dashboard')} className="p-2 -ml-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>Create New Interview</h1>
-              <p className="text-sm text-zinc-500">Configure parameters and let AI generate the questions</p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            AI generates questions upon submission
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="grid lg:grid-cols-3 gap-6">
-
-            {/* Left — main fields */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-5 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <span className="w-6 h-6 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md flex items-center justify-center text-[11px] font-bold">1</span>
-                  Basic Info
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <FieldLabel required>Interview Title</FieldLabel>
-                    <input value={form.title} onChange={(e) => set('title', e.target.value)}
-                      placeholder="e.g., SDE Hiring Round 1 — Batch 2025"
-                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all"
-                      required />
-                  </div>
-                  <div>
-                    <FieldLabel required>Target Role</FieldLabel>
-                    <input value={form.role} onChange={(e) => set('role', e.target.value)}
-                      placeholder="e.g., Software Development Engineer"
-                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all"
-                      required />
-                  </div>
-                  <div>
-                    <FieldLabel>Instructions for Candidates</FieldLabel>
-                    <textarea value={form.instructions} onChange={(e) => set('instructions', e.target.value)}
-                      placeholder="e.g., This is a 45-minute AI interview. Keep your camera on and speak clearly..."
-                      rows={3}
-                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all resize-none" />
-                  </div>
-                </div>
+      <main className="container-page max-w-6xl pb-24 pt-[calc(var(--nav-h)+1.5rem)]">
+        <div className="mx-auto max-w-5xl">
+          {/* Header */}
+          <header ref={enterRef} className="mb-8 flex flex-wrap items-center justify-between gap-3">
+            <div data-enter className="flex min-w-0 items-center gap-3">
+              <IconButton label="Back to dashboard" onClick={() => navigate('/org/dashboard')} className="-ml-1.5 shrink-0">
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+              </IconButton>
+              <div className="min-w-0">
+                <h1 className="t-h1 text-ink">Create new interview</h1>
+                <p className="t-sm">
+                  Configure the parameters for {org?.name || 'your organization'} and let AI generate the questions.
+                </p>
               </div>
+            </div>
+            <span data-enter className="badge badge-warning">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+              AI generates questions on submit
+            </span>
+          </header>
 
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-5 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <span className="w-6 h-6 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md flex items-center justify-center text-[11px] font-bold">2</span>
-                  Interview Format
-                </h2>
-                <div className="space-y-6">
-                  {/* Type */}
-                  <div>
-                    <FieldLabel>Interview Type</FieldLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {TYPES.map((t) => (
-                        <button key={t} type="button" onClick={() => set('interviewType', t)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
-                            form.interviewType === t
-                              ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400'
-                              : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                          }`}>{t.replace('_', ' ')}</button>
-                      ))}
-                    </div>
+          <form onSubmit={handleSubmit}>
+            <div ref={revealRef} className="grid gap-5 lg:grid-cols-3">
+
+              {/* Left — main fields */}
+              <div className="space-y-5 lg:col-span-2">
+                <section data-reveal aria-labelledby="org-basic-heading" className="card p-5 sm:p-6">
+                  <h2 id="org-basic-heading" className="t-h3 mb-5 flex items-center gap-2 text-ink">
+                    <span className={cx(STEP_BADGE, 'bg-accent-soft text-accent')}>1</span>
+                    Basic info
+                  </h2>
+                  <div className="space-y-4">
+                    <Input label="Interview title" required value={form.title}
+                      onChange={(e) => set('title', e.target.value)}
+                      placeholder="e.g., SDE Hiring Round 1 — Batch 2025" />
+                    <Input label="Target role" required value={form.role}
+                      onChange={(e) => set('role', e.target.value)}
+                      placeholder="e.g., Software Development Engineer" />
+                    <Textarea label="Instructions for candidates" rows={3} value={form.instructions}
+                      onChange={(e) => set('instructions', e.target.value)}
+                      placeholder="e.g., This is a 45-minute AI interview. Keep your camera on and speak clearly..."
+                      hint="Shown to the candidate on the pre-join screen." />
                   </div>
+                </section>
 
-                  {/* Difficulty */}
-                  <div>
-                    <FieldLabel>Difficulty</FieldLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {DIFFICULTIES.map((d) => (
-                        <button key={d} type="button" onClick={() => set('difficulty', d)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all border ${
-                            form.difficulty === d
-                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-400'
-                              : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                          }`}>{d}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tech Stack */}
-                  <div>
-                    <FieldLabel>Tech Stack Required</FieldLabel>
-                    <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {form.techStack.map((t) => (
-                          <span key={t} className="flex items-center gap-1 text-[11px] font-mono bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 rounded-md shadow-sm">
-                            {t}
-                            <button type="button" onClick={() => removeTech(t)} className="text-zinc-400 hover:text-red-500 ml-0.5">×</button>
-                          </span>
+                <section data-reveal aria-labelledby="org-format-heading" className="card p-5 sm:p-6">
+                  <h2 id="org-format-heading" className="t-h3 mb-5 flex items-center gap-2 text-ink">
+                    <span className={cx(STEP_BADGE, 'bg-accent-soft text-accent')}>2</span>
+                    Interview format
+                  </h2>
+                  <div className="space-y-5">
+                    {/* Type */}
+                    <div>
+                      <p className="field-label mb-2">Interview type</p>
+                      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Interview type">
+                        {TYPES.map((t) => (
+                          <button key={t} type="button" onClick={() => set('interviewType', t)}
+                            aria-pressed={form.interviewType === t}
+                            className="chip capitalize">
+                            {t.replace('_', ' ')}
+                          </button>
                         ))}
                       </div>
-                      <input value={techInput} onChange={(e) => setTechInput(e.target.value)} onKeyDown={addTech}
-                        placeholder="Type a tech and press Enter (e.g. React, Node.js)"
-                        className="w-full bg-transparent text-sm text-zinc-900 dark:text-zinc-100 outline-none placeholder-zinc-400 dark:placeholder-zinc-600" />
                     </div>
-                    <p className="text-[10px] text-zinc-500 mt-1.5">Press Enter or comma to add each technology</p>
+
+                    {/* Difficulty */}
+                    <div>
+                      <p className="field-label mb-2">Difficulty</p>
+                      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Difficulty">
+                        {DIFFICULTIES.map((d) => (
+                          <button key={d} type="button" onClick={() => set('difficulty', d)}
+                            aria-pressed={form.difficulty === d}
+                            className="chip capitalize">
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tech stack */}
+                    <div>
+                      <label htmlFor="org-tech-input" className="field-label mb-2 block">Tech stack required</label>
+                      <div className="rounded-md border border-hairline bg-surface p-3 transition-colors duration-fast focus-within:border-accent/70 focus-within:ring-2 focus-within:ring-accent/25">
+                        {form.techStack.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1.5">
+                            {form.techStack.map((t) => (
+                              <span key={t} className="badge">
+                                <span>{t}</span>
+                                <button type="button" onClick={() => removeTech(t)} aria-label={`Remove ${t}`}
+                                  className="-mr-1 ml-0.5 rounded text-faint transition-colors duration-fast hover:text-danger-500">
+                                  <X className="h-3 w-3" aria-hidden />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <input id="org-tech-input" value={techInput}
+                          onChange={(e) => setTechInput(e.target.value)} onKeyDown={addTech}
+                          placeholder="Type a technology and press Enter (e.g. React, Node.js)"
+                          className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint" />
+                      </div>
+                      <p className="t-xs mt-1.5">Press Enter or comma to add each technology.</p>
+                    </div>
                   </div>
-                </div>
+                </section>
+              </div>
+
+              {/* Right — config panel */}
+              <div className="space-y-4">
+                <section data-reveal aria-labelledby="org-config-heading" className="card space-y-4 p-5 sm:p-6 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
+                  <h2 id="org-config-heading" className="t-h3 flex items-center gap-2 text-ink">
+                    <span className={cx(STEP_BADGE, 'bg-ai-soft text-ai')}>3</span>
+                    Configuration
+                  </h2>
+
+                  <NumberField id="org-duration" label="Duration" icon={<Clock className="h-4 w-4" aria-hidden />}
+                    unit="minutes" value={form.duration} min={10} max={180}
+                    onChange={(e) => set('duration', parseInt(e.target.value))} />
+
+                  <NumberField id="org-question-count" label="Number of questions" icon={<Hash className="h-4 w-4" aria-hidden />}
+                    unit="questions" value={form.questionCount} min={3} max={20}
+                    onChange={(e) => set('questionCount', parseInt(e.target.value))} />
+
+                  <NumberField id="org-max-attempts" label="Max attempts" icon={<Users className="h-4 w-4" aria-hidden />}
+                    unit="attempts" value={form.maxAttempts} min={1} max={5}
+                    onChange={(e) => set('maxAttempts', parseInt(e.target.value))} />
+
+                  <Input id="org-deadline" label="Deadline (optional)" type="datetime-local"
+                    icon={<Calendar className="h-4 w-4" aria-hidden />}
+                    value={form.deadline} onChange={(e) => set('deadline', e.target.value)} className="num" />
+
+                  {/* Proctoring toggle */}
+                  <div className="flex items-center justify-between gap-3 border-t border-hairline pt-4">
+                    <span className="flex items-center gap-2 text-sm font-medium text-ink">
+                      <Shield className="h-4 w-4 text-subtle" aria-hidden />
+                      Proctoring
+                    </span>
+                    <button type="button" role="switch" aria-checked={form.proctoringEnabled}
+                      aria-label="Enable proctoring"
+                      onClick={() => set('proctoringEnabled', !form.proctoringEnabled)}
+                      className={cx(
+                        'relative h-6 w-11 shrink-0 rounded-full transition-colors duration-fast',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2',
+                        form.proctoringEnabled ? 'bg-accent' : 'bg-hairline-strong'
+                      )}>
+                      <span className={cx(
+                        'absolute top-1 h-4 w-4 rounded-full bg-surface shadow-1 ring-1 ring-hairline transition-transform duration-fast',
+                        form.proctoringEnabled ? 'translate-x-6' : 'translate-x-1'
+                      )} />
+                    </button>
+                  </div>
+
+                  <Button type="submit" loading={loading} variant="primary" block
+                    icon={<Wand2 className="h-4 w-4" aria-hidden />}>
+                    {loading ? 'Generating...' : 'Generate & Create'}
+                  </Button>
+
+                  {loading && (
+                    <p className="t-xs text-center">
+                      AI is generating <span className="num">{form.questionCount}</span> questions for {form.role || 'this role'}...
+                    </p>
+                  )}
+                </section>
               </div>
             </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  )
+}
 
-            {/* Right — config panel */}
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5 sticky top-24">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <span className="w-6 h-6 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-md flex items-center justify-center text-[11px] font-bold">3</span>
-                  Configuration
-                </h2>
+function BadgeType({ type }) {
+  return (
+    <span className={cx(
+      'badge mr-1 align-middle',
+      type === 'code' ? 'badge-accent' : type === 'system_design' ? 'badge-ai' : ''
+    )}>{type}</span>
+  )
+}
 
-                <div>
-                  <FieldLabel>Duration (minutes)</FieldLabel>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <input type="number" value={form.duration} onChange={(e) => set('duration', parseInt(e.target.value))}
-                      min={10} max={180}
-                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 font-mono" />
-                    <span className="text-xs text-zinc-500 w-6">min</span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Number of Questions</FieldLabel>
-                  <div className="flex items-center gap-2">
-                    <Hash className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <input type="number" value={form.questionCount} onChange={(e) => set('questionCount', parseInt(e.target.value))}
-                      min={3} max={20}
-                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 font-mono" />
-                    <span className="text-xs text-zinc-500 w-6">Qns</span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Max Attempts</FieldLabel>
-                  <div className="flex items-center gap-2">
-                     <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                     <input type="number" value={form.maxAttempts} onChange={(e) => set('maxAttempts', parseInt(e.target.value))}
-                       min={1} max={5}
-                       className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 font-mono" />
-                     <span className="text-xs text-zinc-500 w-6">x</span>
-                  </div>
-                </div>
-
-                <div>
-                  <FieldLabel>Deadline (optional)</FieldLabel>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                    <input type="datetime-local" value={form.deadline} onChange={(e) => set('deadline', e.target.value)}
-                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 outline-none focus:border-blue-500 font-mono" />
-                  </div>
-                </div>
-
-                {/* Proctoring toggle */}
-                <div className="flex items-center justify-between py-3 border-t border-zinc-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-zinc-500" />
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Proctoring</span>
-                  </div>
-                  <button type="button" onClick={() => set('proctoringEnabled', !form.proctoringEnabled)}
-                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${form.proctoringEnabled ? 'bg-blue-600' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.proctoringEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-
-                <Button type="submit" loading={loading} variant="primary" className="w-full py-2.5 flex items-center justify-center gap-2">
-                  <Wand2 className="w-4 h-4" />
-                  {loading ? 'Generating...' : 'Generate & Create'}
-                </Button>
-
-                {loading && (
-                  <p className="text-[10px] text-zinc-500 text-center font-mono">
-                    AI is generating {form.questionCount} questions for {form.role}...
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
+function NumberField({ id, label, icon, unit, value, min, max, onChange }) {
+  return (
+    <div className="flex items-end gap-2">
+      <div className="min-w-0 flex-1">
+        <Input id={id} label={label} type="number" icon={icon} value={value} min={min} max={max}
+          onChange={onChange} className="num" hint={`Allowed range: ${min}–${max}`} />
       </div>
+      <span className="shrink-0 pb-6 text-xs text-subtle">{unit}</span>
     </div>
   )
 }

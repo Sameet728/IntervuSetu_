@@ -1,39 +1,54 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
-import { Button, Input, Select, Card } from '../components/ui/index'
+import { Badge, Button, Card, Input, Tabs } from '../components/ui/index'
 import { createInterview, getPrebuiltInterviews, startPrebuiltInterview } from '../api/interviewAPI'
 import toast from 'react-hot-toast'
 import {
-  Mic, Plus, X, Sparkles, Code2, Brain,
-  Users, Layers, Zap, Clock, CheckCircle2, ArrowRight, Cpu, Check
+  Plus, X, Sparkles, Code2, Brain, Users, Layers, Zap, Clock,
+  CheckCircle2, ArrowRight, Cpu, Check, ListChecks, SlidersHorizontal, Play,
+  Server, Binary, Gauge, Lock, Timer, Terminal, Wand2, Circle,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import UpgradeModal from '../components/ui/UpgradeModal'
+import { usePageEnter } from '../motion/hooks'
 
 const EXPERIENCE_LEVELS = [
-  { value: 'fresher', label: 'Fresher (0 yrs)' },
-  { value: 'junior',  label: 'Junior (1-2 yrs)' },
-  { value: 'mid',     label: 'Mid (3-5 yrs)' },
-  { value: 'senior',  label: 'Senior (5-8 yrs)' },
-  { value: 'lead',    label: 'Lead (8+ yrs)' },
+  { value: 'fresher', label: 'Fresher', desc: '0 yrs' },
+  { value: 'junior',  label: 'Junior',  desc: '1–2 yrs' },
+  { value: 'mid',     label: 'Mid',     desc: '3–5 yrs' },
+  { value: 'senior',  label: 'Senior',  desc: '5–8 yrs' },
+  { value: 'lead',    label: 'Lead',    desc: '8+ yrs' },
 ]
 
 const INTERVIEW_TYPES = [
-  { value: 'technical',     label: 'Technical',     desc: 'Coding + concepts',   icon: <Code2 className="w-5 h-5" />,    color: 'blue' },
-  { value: 'hr',            label: 'HR Round',      desc: 'Culture + values',    icon: <Users className="w-5 h-5" />,    color: 'violet' },
-  { value: 'behavioral',    label: 'Behavioral',    desc: 'STAR method stories', icon: <Brain className="w-5 h-5" />,    color: 'amber' },
-  { value: 'system_design', label: 'System Design', desc: 'Architecture scale',  icon: <Layers className="w-5 h-5" />,   color: 'emerald' },
-  { value: 'mixed',         label: 'Mixed',         desc: 'All of the above',    icon: <Sparkles className="w-5 h-5" />, color: 'rose' },
+  { value: 'technical',     label: 'Technical',     desc: 'Coding + concepts',   icon: Code2 },
+  { value: 'hr',            label: 'HR Round',      desc: 'Culture + values',    icon: Users },
+  { value: 'behavioral',    label: 'Behavioral',    desc: 'STAR method stories', icon: Brain },
+  { value: 'system_design', label: 'System Design', desc: 'Architecture scale',  icon: Layers },
+  { value: 'mixed',         label: 'Mixed',         desc: 'All of the above',    icon: Sparkles },
 ]
 
 const DIFFICULTIES = [
-  { value: 'easy',     label: 'Easy',     desc: 'Basic concepts' },
-  { value: 'medium',   label: 'Medium',   desc: 'Industry standard' },
-  { value: 'hard',     label: 'Hard',     desc: 'Senior level' },
-  { value: 'adaptive', label: 'Adaptive', desc: 'Adjusts to you' },
+  { value: 'easy',     label: 'Easy',     desc: 'Basic concepts',    bars: 1, tone: 'success' },
+  { value: 'medium',   label: 'Medium',   desc: 'Industry standard', bars: 2, tone: 'accent' },
+  { value: 'hard',     label: 'Hard',     desc: 'Senior level',      bars: 3, tone: 'danger' },
+  { value: 'adaptive', label: 'Adaptive', desc: 'Adjusts to you',    bars: 4, tone: 'ai' },
 ]
+
+const DIFF_PILL = {
+  easy:     'bg-success-soft text-success-500',
+  medium:   'bg-accent-soft text-accent',
+  hard:     'bg-danger-soft text-danger-500',
+  adaptive: 'bg-ai-soft text-ai',
+}
+
+const BAR_TONE = {
+  success: 'bg-success-500',
+  accent:  'bg-accent',
+  danger:  'bg-danger-500',
+  ai:      'bg-ai',
+}
 
 const DURATIONS = [
   { value: 30, label: '30 min',  qs: 5 },
@@ -62,7 +77,6 @@ const FALLBACK_PREBUILTS = [
     title: "Frontend React Specialist",
     role: "Frontend Engineer",
     badge: "Most Popular",
-    badgeColor: "cyan",
     difficulty: "medium",
     duration: 30,
     questionCount: 4,
@@ -74,7 +88,6 @@ const FALLBACK_PREBUILTS = [
     title: "Backend & Distributed Systems",
     role: "Backend Engineer",
     badge: "High Demand",
-    badgeColor: "emerald",
     difficulty: "hard",
     duration: 45,
     questionCount: 4,
@@ -86,7 +99,6 @@ const FALLBACK_PREBUILTS = [
     title: "Full Stack Developer (MERN)",
     role: "Full Stack Engineer",
     badge: "Ready to Test",
-    badgeColor: "blue",
     difficulty: "medium",
     duration: 35,
     questionCount: 4,
@@ -98,7 +110,6 @@ const FALLBACK_PREBUILTS = [
     title: "Behavioral & Leadership Round",
     role: "Engineering Lead / Senior SDE",
     badge: "Core STAR Format",
-    badgeColor: "amber",
     difficulty: "medium",
     duration: 30,
     questionCount: 4,
@@ -110,7 +121,6 @@ const FALLBACK_PREBUILTS = [
     title: "DSA & Problem Solving",
     role: "Software Engineer",
     badge: "Coding Focus",
-    badgeColor: "rose",
     difficulty: "hard",
     duration: 40,
     questionCount: 4,
@@ -119,10 +129,116 @@ const FALLBACK_PREBUILTS = [
   },
 ];
 
+const TRACK_META = {
+  'frontend-react':        { Icon: Code2,    wrap: 'bg-accent-soft text-accent',   glow: 'from-accent/[0.16]' },
+  'backend-node':          { Icon: Server,   wrap: 'bg-ai-soft text-ai',           glow: 'from-ai/[0.16]' },
+  'fullstack-mern':        { Icon: Layers,   wrap: 'bg-accent-soft text-accent',   glow: 'from-accent/[0.16]' },
+  'behavioral-leadership': { Icon: Users,    wrap: 'bg-warning-soft text-warning-500', glow: 'from-warning-500/[0.16]' },
+  'dsa-problem-solving':   { Icon: Binary,   wrap: 'bg-ai-soft text-ai',           glow: 'from-ai/[0.16]' },
+}
+
+const DEFAULT_TRACK = { Icon: Sparkles, wrap: 'bg-accent-soft text-accent', glow: 'from-accent/[0.16]' }
+
+const tileClass = (active) => [
+  'rounded-xl border p-3 text-left transition-all duration-fast ease-out',
+  active
+    ? 'border-accent/45 bg-accent-soft/55 text-ink shadow-1'
+    : 'border-hairline bg-inset text-muted hover:border-hairline-strong hover:text-ink',
+].join(' ')
+
+function Step({ index, title, description, action, children }) {
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="num mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-hairline bg-inset text-2xs font-semibold text-subtle">
+            {index}
+          </span>
+          <div className="min-w-0">
+            <h2 className="t-h3 leading-tight">{title}</h2>
+            {description && <p className="t-sm mt-1">{description}</p>}
+          </div>
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+function TrackCard({ item, index, featured, starting, disabled, onStart }) {
+  const meta = TRACK_META[item.id] || DEFAULT_TRACK
+  const Icon = meta.Icon
+  const difficulty = item.difficulty || 'medium'
+
+  return (
+    <Card
+      interactive
+      className={`group relative flex h-full flex-col justify-between gap-5 overflow-hidden p-5 sm:p-6 ${
+        featured ? 'bg-gradient-to-br from-surface via-surface to-accent-soft/45' : ''
+      }`}
+    >
+      {featured && (
+        <>
+          <div aria-hidden className="line-grid pointer-events-none absolute inset-0 opacity-50 [mask-image:radial-gradient(70%_70%_at_90%_10%,black,transparent)]" />
+          <div aria-hidden className={`pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-gradient-to-b ${meta.glow} to-transparent blur-2xl`} />
+        </>
+      )}
+
+      <div className="relative">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <span className={`grid h-10 w-10 place-items-center rounded-xl ${meta.wrap}`}>
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="num text-2xs text-faint">{String(index + 1).padStart(2, '0')}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge color="accent">{(item.badge || 'Ready now').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim()}</Badge>
+            <span className={`badge capitalize ${DIFF_PILL[difficulty] || DIFF_PILL.medium}`}>{difficulty}</span>
+          </div>
+        </div>
+
+        <h3 className={featured ? 't-h2' : 't-h3'}>{item.title}</h3>
+        <p className="mt-1 text-xs font-medium text-subtle">{item.role}</p>
+        <p className="t-sm mt-3 leading-relaxed">{item.description}</p>
+
+        <ul className="mt-4 flex flex-wrap gap-1.5">
+          {item.techStack?.map((tag) => (
+            <li key={tag} className="chip">{tag}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="relative flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
+        <p className="num flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-subtle">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-faint" aria-hidden />{item.duration || 30} min
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ListChecks className="h-3.5 w-3.5 text-faint" aria-hidden />{item.questionCount || 4} questions
+          </span>
+        </p>
+        <Button
+          size="sm"
+          variant={featured ? 'primary' : 'secondary'}
+          loading={starting}
+          disabled={disabled}
+          onClick={onStart}
+          icon={starting ? null : <Play className="h-3.5 w-3.5 fill-current" aria-hidden />}
+        >
+          {starting ? 'Opening room…' : 'Start now'}
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
 export default function CreateInterviewPage() {
   const { user } = useAuth()
   const isFree = user?.plan === 'free' && user?.role !== 'admin'
   const navigate = useNavigate()
+  const root = usePageEnter()
 
   const [activeTab, setActiveTab] = useState('ready-made') // 'ready-made' | 'custom'
   const [prebuilts, setPrebuilts] = useState(FALLBACK_PREBUILTS)
@@ -209,411 +325,517 @@ export default function CreateInterviewPage() {
     } finally { setLoading(false) }
   }
 
-  return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors" style={{ fontFamily: 'Inter, system-ui' }}>
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 pt-24 pb-16">
+  const activeType = INTERVIEW_TYPES.find(t => t.value === form.interviewType) || INTERVIEW_TYPES[4]
+  const activeLevel = EXPERIENCE_LEVELS.find(l => l.value === form.experienceLevel) || EXPERIENCE_LEVELS[2]
+  const activeDiff  = DIFFICULTIES.find(d => d.value === form.difficulty) || DIFFICULTIES[1]
+  const TypeIcon = activeType.icon
+  const isGroq = form.aiEngine === 'groq'
+  const ready = !!form.role.trim() && techStack.length > 0
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          {/* Header */}
-          <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                <Sparkles className="w-3.5 h-3.5" /> Instant Assessment Suite
-              </div>
-              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Start An Interview
-              </h1>
-              <p className="text-zinc-600 dark:text-zinc-400 text-sm">
-                Take a ready-made interview immediately or create custom questions with AI.
+  return (
+    <div ref={root} className="page-shell">
+      <Navbar />
+      <main className="container-page pt-[calc(var(--nav-h)+1.75rem)] pb-20">
+
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <header
+          data-enter
+          className="relative mb-6 overflow-hidden rounded-2xl border border-hairline bg-gradient-to-br from-surface via-surface to-accent-soft/45 p-6 sm:p-8"
+        >
+          <div aria-hidden className="line-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(75%_85%_at_88%_5%,black,transparent)]" />
+          <div aria-hidden className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-24 left-1/3 h-52 w-52 rounded-full bg-ai/10 blur-3xl" />
+
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0">
+              <p className="eyebrow mb-2.5 flex items-center gap-2">
+                <span aria-hidden className="h-1 w-1 rounded-full bg-accent shadow-[0_0_0_3px_rgb(var(--accent)/0.14)]" />
+                Interview setup
               </p>
+              <h1 className="t-h1 text-balance">
+                Start an <span className="gradient-text">interview</span>
+              </h1>
+              <p className="t-body mt-2.5 max-w-xl text-pretty">
+                Jump straight into a curated track, or build a round that adapts to your
+                stack and experience. The room opens with a checklist before the timer starts.
+              </p>
+
+              <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-2xs text-subtle">
+                <li className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success-500" aria-hidden />
+                  Questions anchored to your stack
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-accent" aria-hidden />
+                  Groq or on-device Qwen
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5 text-faint" aria-hidden />
+                  Ready-made tracks open instantly
+                </li>
+              </ul>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex p-1 rounded-xl bg-zinc-200/80 dark:bg-zinc-900 border border-zinc-300/80 dark:border-zinc-800 self-start md:self-auto">
-              <button
-                type="button"
-                onClick={() => setActiveTab('ready-made')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'ready-made'
-                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 text-blue-500" /> Ready-Made (Instant Start)
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('custom')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'custom'
-                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-                }`}
-              >
-                <Brain className="w-3.5 h-3.5 text-purple-500" /> Custom AI Generator
-              </button>
+            <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-end md:gap-2.5">
+              {isFree ? (
+                <Badge color="warning">Free plan · 30 min · 5 questions</Badge>
+              ) : (
+                <Badge color="accent">Pro plan · full length sessions</Badge>
+              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface/80 px-3 py-1.5 text-2xs font-medium text-muted shadow-1 backdrop-blur">
+                <Gauge className="h-3.5 w-3.5 text-ai" aria-hidden />
+                Setup takes about a minute
+              </span>
             </div>
           </div>
+        </header>
 
-          {/* ═════════ TAB 1: READY-MADE INTERVIEWS ═════════ */}
-          {activeTab === 'ready-made' && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {prebuilts.map((item) => {
-                  const isStarting = startingPrebuiltId === item.id
+        {/* ── Source switcher ────────────────────────────────────── */}
+        <div data-enter className="card mb-5 flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-between">
+          <Tabs
+            ariaLabel="Interview source"
+            value={activeTab}
+            onChange={setActiveTab}
+            className="border-b-0"
+            tabs={[
+              { value: 'ready-made', label: 'Ready-made', icon: <Zap className="h-3.5 w-3.5" aria-hidden />, count: prebuilts.length },
+              { value: 'custom',     label: 'Custom with AI', icon: <Wand2 className="h-3.5 w-3.5" aria-hidden /> },
+            ]}
+          />
+          <p className="hidden pb-0.5 text-2xs text-subtle sm:block">
+            {activeTab === 'ready-made' ? 'Curated question sets, no generation wait' : 'Generated for your exact role and stack'}
+          </p>
+        </div>
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 hover:border-blue-500/40 hover:shadow-lg dark:hover:shadow-blue-500/5 transition-all flex flex-col justify-between group"
-                    >
-                      <div>
-                        {/* Badges & Meta */}
-                        <div className="flex items-center justify-between gap-2 mb-3">
-                          <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                            {item.badge || 'Ready to Give'}
-                          </span>
-                          <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{item.duration || 30}m</span>
-                            <span>•</span>
-                            <span>{item.questionCount || 4} Questions</span>
-                          </div>
-                        </div>
-
-                        {/* Title & Role */}
-                        <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {item.title}
-                        </h3>
-                        <p className="text-xs font-semibold text-zinc-500 mb-3">{item.role}</p>
-
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-                          {item.description}
-                        </p>
-
-                        {/* Tech stack tags */}
-                        <div className="flex flex-wrap gap-1.5 mb-5">
-                          {item.techStack?.map((tag, tIdx) => (
-                            <span key={tIdx} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Start button */}
-                      <button
-                        onClick={() => handleStartPrebuilt(item.id)}
-                        disabled={isStarting || startingPrebuiltId !== null}
-                        className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50"
-                      >
-                        {isStarting ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Loading Interview Room...
-                          </>
-                        ) : (
-                          <>
-                            Start Interview Now ⚡
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Helper tip banner */}
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/40 flex items-center justify-between text-xs text-zinc-500">
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  Ready-made interviews have pre-curated high quality questions that start instantly with 0ms AI generation delay.
-                </span>
-                <button
-                  onClick={() => setActiveTab('custom')}
-                  className="text-blue-500 hover:underline font-semibold shrink-0 ml-3"
+        {/* ═════════ READY-MADE ═════════ */}
+        {activeTab === 'ready-made' && (
+          <div role="tabpanel" aria-label="Ready-made interviews" className="animate-slide-up">
+            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {prebuilts.map((item, index) => (
+                <li
+                  key={item.id}
+                  className={`min-w-0 ${index === 0 ? 'md:col-span-2 xl:col-span-1' : ''}`}
                 >
-                  Need a custom role? Switch to AI generator →
-                </button>
+                  <TrackCard
+                    item={item}
+                    index={index}
+                    featured={index === 0}
+                    starting={startingPrebuiltId === item.id}
+                    disabled={startingPrebuiltId !== null}
+                    onStart={() => handleStartPrebuilt(item.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+
+            <div
+              data-enter
+              className="card-inset mt-4 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ai-soft text-ai">
+                  <Wand2 className="h-4 w-4" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-ink">Need a different role or stack?</p>
+                  <p className="t-sm mt-0.5">
+                    Build a custom round — the generator anchors every question to your tech and level.
+                  </p>
+                </div>
               </div>
-            </motion.div>
-          )}
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shrink-0 justify-start sm:justify-center"
+                onClick={() => setActiveTab('custom')}
+                icon={<ArrowRight className="h-3.5 w-3.5" aria-hidden />}
+              >
+                Build a custom role
+              </Button>
+            </div>
+          </div>
+        )}
 
-          {/* ═════════ TAB 2: CUSTOM AI GENERATOR FORM ═════════ */}
-          {activeTab === 'custom' && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-              <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+        {/* ═════════ CUSTOM GENERATOR ═════════ */}
+        {activeTab === 'custom' && (
+          <form
+            id="custom-interview-form"
+            onSubmit={handleSubmit}
+            role="tabpanel"
+            aria-label="Custom AI interview"
+            className="grid animate-slide-up items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]"
+          >
+            <div className="min-w-0 space-y-5">
+              {/* 01 — Type */}
+              <Step
+                index="01"
+                title="Interview type"
+                description="Sets the balance of coding, concept and behavioural questions."
+              >
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5" role="group" aria-label="Interview type">
+                  {INTERVIEW_TYPES.map((t, i) => {
+                    const active = form.interviewType === t.value
+                    const Icon = t.icon
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => set('interviewType', t.value)}
+                        className={`${tileClass(active)} ${i === 4 ? 'col-span-2 sm:col-span-1' : ''}`}
+                      >
+                        <span className="flex items-center justify-between gap-1">
+                          <Icon className={`h-4 w-4 ${active ? 'text-accent' : 'text-faint'}`} aria-hidden />
+                          {active && <Check className="h-3.5 w-3.5 text-accent" aria-hidden />}
+                        </span>
+                        <span className="mt-2 block text-sm font-semibold text-ink">{t.label}</span>
+                        <span className="mt-0.5 block text-2xs text-subtle">{t.desc}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </Step>
 
-                {/* ── Interview Type ─────────────────────────────────────────── */}
-                <Card className="p-5 sm:p-6">
-                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-600 dark:text-blue-500" />Interview Type
-                  </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {INTERVIEW_TYPES.map(t => {
-                      const active = form.interviewType === t.value
-                      return (
+              {/* 02 — Role & experience */}
+              <Step index="02" title="Role & experience" description="The interviewer speaks to this level and function.">
+                <div className="space-y-4">
+                  <div>
+                    <Input
+                      label="Job role"
+                      placeholder="e.g. Backend Developer"
+                      value={form.role}
+                      error={errors.role}
+                      onChange={e => { set('role', e.target.value); setErrors(p => ({ ...p, role: '' })) }}
+                    />
+                    <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Suggested roles">
+                      {SUGGESTED_ROLES.map(r => (
                         <button
-                          key={t.value}
+                          key={r}
                           type="button"
-                          onClick={() => set('interviewType', t.value)}
-                          className={`flex flex-col items-start gap-1 p-3 rounded-lg border transition-all text-left ${
-                            active
-                              ? 'border-blue-600/50 bg-blue-50 text-blue-700 dark:bg-blue-600/10 dark:text-blue-400'
-                              : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                          aria-pressed={form.role === r}
+                          onClick={() => { set('role', r); setErrors(p => ({ ...p, role: '' })) }}
+                          className={`chip transition-colors duration-fast ${
+                            form.role === r ? 'border-accent/40 bg-accent-soft/60 text-accent' : 'hover:border-hairline-strong hover:text-ink'
                           }`}
                         >
-                          <span className={active ? `text-${t.color}-400` : 'text-zinc-500'}>{t.icon}</span>
-                          <span className={`text-sm font-medium mt-1 ${active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300'}`}>{t.label}</span>
-                          <span className={`text-[10px] uppercase tracking-wider ${active ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-500'}`}>{t.desc}</span>
+                          {r}
                         </button>
-                      )
-                    })}
-                  </div>
-                </Card>
-
-                {/* ── Role & Experience ─────────────────────────────────────── */}
-                <Card className="p-5 sm:p-6">
-                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-blue-600 dark:text-blue-500" />Role & Experience
-                  </h2>
-                  <div className="space-y-4">
-                    <div>
-                      <Input
-                        label="Job Role"
-                        placeholder="e.g. Backend Developer"
-                        value={form.role}
-                        error={errors.role}
-                        onChange={e => { set('role', e.target.value); setErrors(p => ({ ...p, role: '' })) }}
-                      />
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {SUGGESTED_ROLES.map(r => (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => { set('role', r); setErrors(p => ({ ...p, role: '' })) }}
-                            className={`px-2.5 py-1 rounded-md text-xs border transition-colors ${
-                              form.role === r
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Experience Level
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                        {EXPERIENCE_LEVELS.map(exp => (
+                  <div>
+                    <p className="field-label" id="exp-label">Experience level</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-labelledby="exp-label">
+                      {EXPERIENCE_LEVELS.map((exp) => {
+                        const active = form.experienceLevel === exp.value
+                        return (
                           <button
                             key={exp.value}
                             type="button"
+                            aria-pressed={active}
                             onClick={() => set('experienceLevel', exp.value)}
-                            className={`py-2 px-3 rounded-lg border text-xs font-medium transition-all ${
-                              form.experienceLevel === exp.value
-                                ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-600/10 dark:text-blue-400 dark:border-blue-500'
-                                : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
-                            }`}
+                            className={`${tileClass(active)} text-center`}
                           >
-                            {exp.label}
+                            <span className="block text-sm font-semibold text-ink">{exp.label}</span>
+                            <span className="num mt-0.5 block text-2xs text-subtle">{exp.desc}</span>
                           </button>
-                        ))}
-                      </div>
+                        )
+                      })}
                     </div>
                   </div>
-                </Card>
+                </div>
+              </Step>
 
-                {/* ── Tech Stack ────────────────────────────────────────────── */}
-                <Card className="p-5 sm:p-6">
-                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-blue-600 dark:text-blue-500" />Tech Stack
-                  </h2>
-
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
+              {/* 03 — Tech stack */}
+              <Step
+                index="03"
+                title="Tech stack"
+                description="The generator anchors questions to these technologies."
+                action={<span className="num text-2xs text-subtle">{techStack.length}/10</span>}
+              >
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="min-w-0 flex-1">
                       <Input
-                        placeholder="Add technology (e.g. Docker, Redis) and press Enter"
+                        label="Add a technology"
+                        placeholder="e.g. Docker, Redis — press Enter"
                         value={techInput}
-                        onChange={e => setTechInput(e.target.value)}
+                        error={errors.techStack}
+                        icon={<Terminal className="h-3.5 w-3.5" />}
+                        onChange={e => { setTechInput(e.target.value); setErrors(p => ({ ...p, techStack: '' })) }}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(techInput) } }}
-                        className="flex-1"
                       />
-                      <Button type="button" variant="outline" onClick={() => addTag(techInput)}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
                     </div>
+                    <Button type="button" variant="secondary" onClick={() => addTag(techInput)} icon={<Plus className="h-4 w-4" aria-hidden />}>
+                      Add
+                    </Button>
+                  </div>
 
-                    {errors.techStack && (
-                      <p className="text-xs text-red-500">{errors.techStack}</p>
-                    )}
-
-                    {techStack.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {techStack.map(tag => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium border border-blue-200 dark:border-blue-800"
-                          >
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => setTechStack(p => p.filter(t => t !== tag))}
-                              className="hover:text-red-500 transition-colors"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="text-xs text-zinc-500 mb-2">Quick Stacks:</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {QUICK_STACKS.map((stack, i) => (
+                  {techStack.length > 0 && (
+                    <ul className="flex flex-wrap gap-1.5 pt-1">
+                      {techStack.map(tag => (
+                        <li key={tag} className="chip gap-1 border-accent/30 bg-accent-soft/50 text-accent">
+                          {tag}
                           <button
-                            key={i}
                             type="button"
-                            onClick={() => setTechStack(stack)}
-                            className="text-xs px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100"
+                            onClick={() => setTechStack(p => p.filter(t => t !== tag))}
+                            aria-label={`Remove ${tag}`}
+                            className="-mr-0.5 grid h-4 w-4 place-items-center rounded text-accent/70 transition-colors hover:bg-accent/15 hover:text-accent"
                           >
-                            {stack.join(' + ')}
+                            <X className="h-3 w-3" aria-hidden />
                           </button>
-                        ))}
-                      </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div>
+                    <p className="text-2xs font-medium text-subtle">Quick stacks</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {QUICK_STACKS.map((stack, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setTechStack(stack)}
+                          className="chip transition-colors duration-fast hover:border-hairline-strong hover:text-ink"
+                        >
+                          {stack.join(' + ')}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </Card>
+                </div>
+              </Step>
 
-                {/* ── Difficulty & Duration ─────────────────────────────────── */}
-                <Card className="p-5 sm:p-6">
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Difficulty
-                      </label>
-                      <Select
-                        value={form.difficulty}
-                        onChange={e => set('difficulty', e.target.value)}
-                      >
-                        {DIFFICULTIES.map(d => (
-                          <option key={d.value} value={d.value}>
-                            {d.label} — {d.desc}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Target Duration
-                      </label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {DURATIONS.map(d => (
+              {/* 04 — Difficulty & length */}
+              <Step index="04" title="Difficulty & length" description="How hard, how long, and how many questions.">
+                <div className="space-y-5">
+                  <div>
+                    <p className="field-label" id="diff-label">Difficulty</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-labelledby="diff-label">
+                      {DIFFICULTIES.map((d) => {
+                        const active = form.difficulty === d.value
+                        return (
                           <button
                             key={d.value}
                             type="button"
+                            aria-pressed={active}
+                            onClick={() => set('difficulty', d.value)}
+                            className={tileClass(active)}
+                          >
+                            <span className="flex gap-1" aria-hidden>
+                              {[1, 2, 3, 4].map(n => (
+                                <span
+                                  key={n}
+                                  className={`h-3 w-1 rounded-full ${
+                                    n <= d.bars ? BAR_TONE[d.tone] : 'bg-ink/10'
+                                  } ${active ? '' : 'opacity-70'}`}
+                                />
+                              ))}
+                            </span>
+                            <span className="mt-2 block text-sm font-semibold text-ink">{d.label}</span>
+                            <span className="mt-0.5 block text-2xs text-subtle">{d.desc}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="field-label" id="dur-label">Target duration</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-labelledby="dur-label">
+                      {DURATIONS.map(d => {
+                        const active = form.targetDuration === d.value
+                        const locked = isFree && d.value > 30
+                        return (
+                          <button
+                            key={d.value}
+                            type="button"
+                            aria-pressed={active}
                             onClick={() => setDuration(d.value)}
-                            className={`py-2 px-2 text-center rounded-lg border text-xs font-medium transition-all ${
-                              form.targetDuration === d.value
-                                ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-600/10 dark:text-blue-400 dark:border-blue-500'
-                                : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                            className={`relative rounded-xl border px-2 py-2.5 text-center transition-all duration-fast ${
+                              active
+                                ? 'border-accent/45 bg-accent-soft/55 text-accent shadow-1'
+                                : 'border-hairline bg-inset text-muted hover:border-hairline-strong hover:text-ink'
                             }`}
                           >
-                            {d.label}
+                            {locked && (
+                              <Lock className="absolute right-2 top-2 h-3 w-3 text-warning-500" aria-hidden />
+                            )}
+                            <span className="num block text-sm font-semibold">{d.label}</span>
+                            <span className="num mt-0.5 flex items-center justify-center gap-1 text-2xs text-subtle">
+                              {locked ? 'Pro' : `${isFree ? Math.min(d.qs, 5) : d.qs} questions`}
+                            </span>
                           </button>
-                        ))}
-                      </div>
+                        )
+                      })}
                     </div>
                   </div>
-                </Card>
 
-                {/* ── Question Generator Engine Selector ────────────────────── */}
-                <Card className="p-4 sm:p-5 border-blue-500/20 bg-blue-500/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-blue-500" />
-                      <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                        AI Model (1st Questions & Final Report)
-                      </span>
+                  <p className="flex items-start gap-1.5 rounded-lg border border-hairline bg-inset px-3 py-2.5 text-2xs text-subtle">
+                    <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-faint" aria-hidden />
+                    <span>
+                      <span className="num text-ink">{form.questionCount}</span> questions across{' '}
+                      <span className="num text-ink">{form.targetDuration}</span> minutes.
+                      {form.difficulty === 'adaptive'
+                        ? ' Difficulty adapts as you answer.'
+                        : ` Difficulty is fixed at ${form.difficulty}.`}
+                    </span>
+                  </p>
+                </div>
+              </Step>
+
+              {/* 05 — Engine */}
+              <Step index="05" title="Question & report model" description="Follow-up turns always run on-device; this sets the generated set and final synthesis.">
+                <div className="grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Question generator model">
+                  {[
+                    { value: 'groq', name: 'Groq cloud', sub: 'Llama 3.3 70B', note: 'Fastest reasoning and the most tailored question set.', Icon: Zap, badge: 'Fastest' },
+                    { value: 'qwen_local', name: 'Qwen 2.5 local', sub: 'On-device', note: 'No token cost and works without internet.', Icon: Cpu, badge: 'Offline' },
+                  ].map((engine) => {
+                    const active = form.aiEngine === engine.value
+                    const Icon = engine.Icon
+                    return (
+                      <button
+                        key={engine.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => set('aiEngine', engine.value)}
+                        className={`${tileClass(active)} relative`}
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="flex items-center gap-2">
+                            <span className={`grid h-8 w-8 place-items-center rounded-lg ${active ? 'bg-ai-soft text-ai' : 'bg-canvas text-faint'}`}>
+                              <Icon className="h-4 w-4" aria-hidden />
+                            </span>
+                            <span>
+                              <span className="block text-sm font-semibold text-ink">{engine.name}</span>
+                              <span className="block text-2xs text-subtle">{engine.sub}</span>
+                            </span>
+                          </span>
+                          <span className={`badge shrink-0 ${active ? 'badge-ai' : ''}`}>{engine.badge}</span>
+                        </span>
+                        <span className="mt-2.5 block text-2xs leading-relaxed text-subtle">{engine.note}</span>
+                        {active && (
+                          <span className="absolute bottom-2.5 right-2.5 grid h-5 w-5 place-items-center rounded-full bg-ai text-white" aria-hidden>
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </Step>
+            </div>
+
+            {/* ── Live blueprint rail ───────────────────────────────── */}
+            <aside className="min-w-0 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
+              <div className="card overflow-hidden">
+                <div className="hairline-b bg-gradient-to-br from-surface to-accent-soft/40 px-5 py-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="eyebrow flex items-center gap-1.5">
+                      <Gauge className="h-3.5 w-3.5 text-accent" aria-hidden />
+                      Session blueprint
+                    </p>
+                    <span className={`badge ${ready ? 'badge-success' : 'badge-warning'}`}>
+                      {ready ? 'Ready' : 'Incomplete'}
+                    </span>
+                  </div>
+                  <p className="t-h3 mt-2">{form.role.trim() || 'Your next round'}</p>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-subtle">
+                    <span className="inline-flex items-center gap-1">
+                      <TypeIcon className="h-3 w-3" aria-hidden />
+                      {activeType.label}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>{activeLevel.label}</span>
+                    <span aria-hidden>·</span>
+                    <span>{activeDiff.label}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-4 px-5 py-4">
+                  <dl className="space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-subtle">Duration</dt>
+                      <dd className="num font-medium text-ink">{form.targetDuration} min</dd>
                     </div>
-                    <span className="text-[11px] font-mono text-zinc-500">
-                      In-between turns run on-device
-                    </span>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-subtle">Questions</dt>
+                      <dd className="num font-medium text-ink">{form.questionCount}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-subtle">Model</dt>
+                      <dd className="flex items-center gap-1.5 font-medium text-ink">
+                        {isGroq ? <Zap className="h-3.5 w-3.5 text-accent" aria-hidden /> : <Cpu className="h-3.5 w-3.5 text-ai" aria-hidden />}
+                        {isGroq ? 'Groq LPU' : 'Local Qwen'}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div>
+                    <p className="eyebrow mb-1.5">Tech stack</p>
+                    {techStack.length > 0 ? (
+                      <ul className="flex flex-wrap gap-1">
+                        {techStack.map(tag => <li key={tag} className="chip text-2xs">{tag}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-2xs text-subtle">Add at least one technology.</p>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => set('aiEngine', 'groq')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        form.aiEngine === 'groq'
-                          ? 'border-blue-500 bg-blue-500/10 dark:bg-blue-950/40 shadow-sm'
-                          : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <Zap className={`w-3.5 h-3.5 ${form.aiEngine === 'groq' ? 'text-blue-500' : 'text-zinc-400'}`} />
-                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Groq AI (Cloud LPU)</span>
-                        </div>
-                        {form.aiEngine === 'groq' && <Check className="w-3.5 h-3.5 text-blue-500" />}
-                      </div>
-                      <p className="text-[11px] text-zinc-500">
-                        Llama 3.3 70B. Fastest reasoning & tailored questions.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => set('aiEngine', 'qwen_local')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        form.aiEngine === 'qwen_local'
-                          ? 'border-cyan-500 bg-cyan-500/10 dark:bg-cyan-950/40 shadow-sm'
-                          : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <Cpu className={`w-3.5 h-3.5 ${form.aiEngine === 'qwen_local' ? 'text-cyan-500' : 'text-zinc-400'}`} />
-                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Local Qwen 2.5 (Offline)</span>
-                        </div>
-                        {form.aiEngine === 'qwen_local' && <Check className="w-3.5 h-3.5 text-cyan-500" />}
-                      </div>
-                      <p className="text-[11px] text-zinc-500">
-                        100% On-Device (468.6 MB). $0.00 token cost & unlimited.
-                      </p>
-                    </button>
+                  <div className="hairline-t pt-3.5">
+                    <ul className="space-y-1.5 text-2xs">
+                      <li className={`flex items-center gap-2 ${form.role.trim() ? 'text-muted' : 'text-subtle'}`}>
+                        {form.role.trim() ? <CheckCircle2 className="h-3.5 w-3.5 text-success-500" aria-hidden /> : <Circle className="h-3.5 w-3.5 text-faint" aria-hidden />}
+                        Role {form.role.trim() ? 'set' : 'needed'}
+                      </li>
+                      <li className={`flex items-center gap-2 ${techStack.length ? 'text-muted' : 'text-subtle'}`}>
+                        {techStack.length ? <CheckCircle2 className="h-3.5 w-3.5 text-success-500" aria-hidden /> : <Circle className="h-3.5 w-3.5 text-faint" aria-hidden />}
+                        Stack {techStack.length ? `set (${techStack.length})` : 'needed'}
+                      </li>
+                      <li className="flex items-center gap-2 text-muted">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success-500" aria-hidden />
+                        {form.targetDuration} min · {form.questionCount} questions
+                      </li>
+                    </ul>
                   </div>
-                </Card>
 
-                <Button type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generating Custom Questions with AI...
-                    </span>
-                  ) : (
-                    'Generate Custom Questions & Start'
-                  )}
-                </Button>
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      type="submit"
+                      form="custom-interview-form"
+                      size="lg"
+                      block
+                      loading={loading}
+                      icon={loading ? null : <SlidersHorizontal className="h-4 w-4" aria-hidden />}
+                    >
+                      {loading ? 'Generating…' : 'Generate & start'}
+                    </Button>
+                    <p className="text-center text-2xs text-subtle">
+                      Review the room checklist before the timer starts.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              </form>
-            </motion.div>
-          )}
-
-        </motion.div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ready-made')}
+                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-2xs font-medium text-subtle transition-colors duration-fast hover:text-ink"
+              >
+                <Clock className="h-3.5 w-3.5" aria-hidden />
+                In a hurry? Open a ready-made track
+              </button>
+            </aside>
+          </form>
+        )}
 
         {showUpgradeModal && (
           <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
         )}
 
-      </div>
+      </main>
     </div>
   )
 }

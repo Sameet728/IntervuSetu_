@@ -33,8 +33,8 @@ import OfflineModelHub      from './pages/OfflineModelHub'
 function OrgProtectedRoute() {
   const { org, orgLoading } = useOrgAuth()
   if (orgLoading) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
+    <div className="grid min-h-dvh place-items-center bg-canvas">
+      <span role="status" aria-label="Loading" className="h-8 w-8 animate-spin rounded-full border-2 border-hairline-strong border-t-accent" />
     </div>
   )
   return org ? <Outlet /> : <Navigate to="/org/login" replace />
@@ -44,8 +44,8 @@ export default function App() {
   const { user, loading } = useAuth()
 
   if (loading) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-cyan/30 border-t-cyan rounded-full animate-spin" />
+    <div className="grid min-h-dvh place-items-center bg-canvas">
+      <span role="status" aria-label="Loading" className="h-8 w-8 animate-spin rounded-full border-2 border-hairline-strong border-t-accent" />
     </div>
   )
 

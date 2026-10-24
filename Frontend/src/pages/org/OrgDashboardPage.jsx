@@ -1,31 +1,30 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useOrgAuth } from '../../context/OrgAuthContext'
-import { getTemplates, getAnalytics, closeTemplate, deleteTemplate, getOrgAptitudeTests, closeOrgAptitudeTest, deleteOrgAptitudeTest } from '../../api/orgAPI'
+import { getTemplates, getOrgAptitudeTests, closeTemplate, deleteTemplate, closeOrgAptitudeTest, deleteOrgAptitudeTest } from '../../api/orgAPI'
 import OrgNavbar from '../../components/layout/OrgNavbar'
 import {
-  Building2, Plus, BarChart3, Users, Settings, LogOut, Copy,
-  ExternalLink, Trash2, XCircle, TrendingUp, Clock, CheckCircle2,
-  AlertTriangle, Mic, ChevronRight, Mail, Brain
+  Building2, Plus, BarChart3, Users, Settings, Copy,
+  Trash2, XCircle, TrendingUp, ExternalLink, Brain, GraduationCap
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Badge } from '../../components/ui/index'
+import { Button, StatusBadge, Tabs, EmptyState, SkeletonList, SectionHeading } from '../../components/ui/index'
+import { usePageEnter } from '../../motion/hooks'
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
-function StatusBadge({ status }) {
-  const styles = {
-    active: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30',
-    closed: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30',
-    draft: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30',
-  }
-  return (
-    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border capitalize ${styles[status] || styles.draft}`}>
-      {status}
-    </span>
-  )
+const STATUS_TONE = {
+  active: 'live',
+  closed: 'off',
+  draft: 'warn',
 }
+
+const TAB_ITEMS = [
+  { value: 'interviews', label: 'Interviews', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden /> },
+  { value: 'aptitude', label: 'Aptitude tests', icon: <Brain className="h-3.5 w-3.5" aria-hidden /> },
+  { value: 'settings', label: 'Settings', icon: <Settings className="h-3.5 w-3.5" aria-hidden /> },
+]
 
 export default function OrgDashboardPage() {
   const { org, orgLogout } = useOrgAuth()
@@ -34,6 +33,8 @@ export default function OrgDashboardPage() {
   const [templates, setTemplates] = useState([])
   const [aptitudeTests, setAptitudeTests] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const root = usePageEnter([])
 
   useEffect(() => {
     loadTemplates()
@@ -106,157 +107,223 @@ export default function OrgDashboardPage() {
     navigate('/org/login')
   }
 
-  // Aggregate stats
+  // Aggregate stats — every value is derived from the organization's own records.
   const totalCandidates = templates.reduce((a, t) => a + (t.stats?.totalAttempts || 0), 0)
-  const avgScore = templates.length
-    ? templates.reduce((a, t) => a + (t.stats?.avgScore || 0), 0) / templates.filter(t => t.stats?.avgScore > 0).length || 0
-    : 0
   const activeCount = templates.filter(t => t.status === 'active').length
+  const activeAptitude = aptitudeTests.filter(t => t.status === 'active').length
+  const scoredCampaigns = templates.filter(t => t.stats?.avgScore > 0)
+  const avgScore = scoredCampaigns.length
+    ? scoredCampaigns.reduce((a, t) => a + t.stats.avgScore, 0) / scoredCampaigns.length
+    : null
+
+  const summary = [
+    {
+      label: 'Interview campaigns',
+      value: templates.length,
+      sub: `${activeCount} currently active`,
+      Icon: BarChart3,
+      tone: 'bg-ai-soft text-ai',
+    },
+    {
+      label: 'Aptitude tests',
+      value: aptitudeTests.length,
+      sub: `${activeAptitude} currently active`,
+      Icon: Brain,
+      tone: 'bg-accent-soft text-accent',
+    },
+    {
+      label: 'Candidates',
+      value: totalCandidates,
+      sub: 'Interview attempts recorded',
+      Icon: Users,
+      tone: 'bg-success-bg text-success-500',
+    },
+    {
+      label: 'Average score',
+      value: avgScore != null ? `${avgScore.toFixed(1)}/10` : '—',
+      sub: scoredCampaigns.length
+        ? `Across ${scoredCampaigns.length} scored campaign${scoredCampaigns.length === 1 ? '' : 's'}`
+        : 'No scored attempts yet',
+      Icon: TrendingUp,
+      tone: 'bg-warning-bg text-warning-500',
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col" style={{ fontFamily: 'Inter, system-ui' }}>
+    <div ref={root} className="page-shell flex flex-col">
       <OrgNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 pt-20 pb-16 w-full flex-1">
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Total Interviews', value: templates.length, icon: <BarChart3 className="w-4 h-4 text-violet-500" />, color: 'violet' },
-            { label: 'Aptitude Tests', value: aptitudeTests.length, icon: <Brain className="w-4 h-4 text-indigo-500" />, color: 'indigo' },
-            { label: 'Total Candidates', value: templates.reduce((a, t) => a + (t.stats?.totalAttempts || 0), 0), icon: <Users className="w-4 h-4 text-cyan-500" />, color: 'cyan' },
-            { label: 'Avg Score', value: (() => { const scored = templates.filter(t => t.stats?.avgScore > 0); return scored.length ? `${(scored.reduce((a,t) => a + t.stats.avgScore, 0) / scored.length).toFixed(1)}/10` : '—' })(), icon: <TrendingUp className="w-4 h-4 text-amber-500" />, color: 'amber' },
-          ].map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">{s.icon}<span className="text-[11px] font-mono text-zinc-500">{s.label}</span></div>
-              <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>{s.value}</p>
+      <main className="container-page flex-1 pb-16 pt-[calc(var(--nav-h)+2rem)]">
+        {/* ── Organization hero ─────────────────────────────────────── */}
+        <header
+          data-enter
+          className="ambient relative mb-6 overflow-hidden rounded-3xl border border-hairline bg-surface p-6 shadow-2 sm:p-8"
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 line-grid opacity-40" style={{ maskImage: 'radial-gradient(ellipse 70% 90% at 85% 0%, black, transparent 70%)' }} />
+          </div>
+
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                {org?.logo
+                  ? <img src={org.logo} alt="" className="h-12 w-12 shrink-0 rounded-2xl border border-hairline object-cover" />
+                  : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-ai-soft text-ai"><Building2 className="h-5 w-5" aria-hidden /></span>}
+                <div className="min-w-0">
+                  <p className="eyebrow">Hiring console</p>
+                  <p className="num mt-0.5 truncate text-2xs text-subtle">{org?.email}</p>
+                </div>
+              </div>
+
+              <h1 className="t-h1 mt-4 break-words">{org?.name || 'Your organization'}</h1>
+              <p className="t-body mt-1.5 max-w-xl">
+                Run structured interview rounds and aptitude screens, then compare candidates in one place.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                <span className="badge badge-accent">{templates.length} interview{templates.length === 1 ? '' : 's'}</span>
+                <span className="badge">{aptitudeTests.length} aptitude test{aptitudeTests.length === 1 ? '' : 's'}</span>
+                {activeCount + activeAptitude > 0 && (
+                  <StatusBadge tone="live" pulse>{activeCount + activeAptitude} live</StatusBadge>
+                )}
+              </div>
+            </div>
+
+            <div data-enter className="flex w-full shrink-0 flex-wrap gap-2 lg:w-auto">
+              <Button className="flex-1 sm:flex-none" onClick={() => navigate('/org/interview/create')} icon={<Plus className="h-4 w-4" aria-hidden />}>
+                New interview
+              </Button>
+              <Button className="flex-1 sm:flex-none" variant="secondary" onClick={() => navigate('/org/aptitude/create')} icon={<Brain className="h-4 w-4" aria-hidden />}>
+                Aptitude test
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Stats row — real, derived values only */}
+        <section aria-label="Campaign summary" className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {summary.map(({ label, value, sub, Icon, tone }, i) => (
+            <motion.div
+              key={label}
+              data-enter
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="card p-4"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="eyebrow">{label}</p>
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}>
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                </span>
+              </div>
+              <p className="num-lg text-ink">{value}</p>
+              <p className="t-xs mt-1 text-subtle">{sub}</p>
             </motion.div>
           ))}
-        </div>
+        </section>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-          {[
-            { id: 'interviews', label: 'Interviews', icon: <BarChart3 className="w-4 h-4" /> },
-            { id: 'aptitude', label: 'Aptitude Tests', icon: <Brain className="w-4 h-4" /> },
-            { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
-          ].map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id 
-                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20' 
-                  : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
-              }`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-
-          {tab === 'interviews' && (
-            <button onClick={() => navigate('/org/interview/create')}
-              className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />Create Interview
-            </button>
-          )}
-          {tab === 'aptitude' && (
-            <button onClick={() => navigate('/org/aptitude/create')}
-              className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white font-semibold text-sm rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />Create Aptitude Test
-            </button>
-          )}
+        <div data-enter className="mb-6">
+          <Tabs ariaLabel="Console section" tabs={TAB_ITEMS} value={tab} onChange={setTab} />
         </div>
 
         {/* Content */}
         {tab === 'interviews' && (
-          <div>
+          <section role="tabpanel" aria-label="Interview campaigns">
             {loading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
+              <SkeletonList rows={3} />
             ) : templates.length === 0 ? (
-              <div className="text-center py-20">
-                <BarChart3 className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-                <p className="text-zinc-500">No interviews yet.</p>
-                <button onClick={() => navigate('/org/interview/create')}
-                  className="mt-4 px-6 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
-                  Create your first interview
-                </button>
+              <div className="card">
+                <EmptyState
+                  icon={<BarChart3 className="h-5 w-5" aria-hidden />}
+                  title="No interviews yet"
+                  description="Create a template, invite candidates and the AI interviewer runs the rounds for you."
+                  action={<Button size="md" onClick={() => navigate('/org/interview/create')} icon={<Plus className="h-4 w-4" aria-hidden />}>Create your first interview</Button>}
+                />
               </div>
             ) : (
               <div className="space-y-3">
                 {templates.map((t) => (
-                  <motion.div key={t._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm hover:border-blue-200 dark:hover:border-blue-500/30 transition-all">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                          <h3 className="font-semibold text-lg text-zinc-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{t.title}</h3>
-                          <StatusBadge status={t.status} />
+                  <motion.article key={t._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+                    className="card relative overflow-hidden p-5 transition-colors duration-fast hover:border-hairline-strong">
+                    {t.status === 'active' && (
+                      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-success-500 via-success-500/40 to-transparent" />
+                    )}
+                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          <h3 className="t-h3 truncate">{t.title}</h3>
+                          <StatusBadge tone={STATUS_TONE[t.status] || 'warn'} pulse={t.status === 'active'}>{t.status}</StatusBadge>
                         </div>
-                        <div className="flex items-center gap-3 text-xs font-mono text-zinc-500 flex-wrap">
-                          <span className="font-medium text-zinc-700 dark:text-zinc-300">{t.role}</span>
-                          <span>•</span>
+                        <p className="t-xs mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="font-medium text-muted">{t.role}</span>
+                          <span aria-hidden>·</span>
                           <span className="capitalize">{t.interviewType}</span>
-                          <span>•</span>
-                          <span>{t.questionCount} Questions</span>
-                          <span>•</span>
-                          <span>{t.duration} min</span>
-                          {t.deadline && <><span>•</span><span>Deadline: {fmtDate(t.deadline)}</span></>}
-                        </div>
+                          <span aria-hidden>·</span>
+                          <span className="num">{t.questionCount} questions</span>
+                          <span aria-hidden>·</span>
+                          <span className="num">{t.duration} min</span>
+                          {t.deadline && (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span>Deadline: <span className="num">{fmtDate(t.deadline)}</span></span>
+                            </>
+                          )}
+                        </p>
                       </div>
 
                       {/* Stats */}
-                      <div className="flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-1 text-center md:text-right flex-shrink-0 bg-zinc-50 dark:bg-zinc-950 px-4 py-2 rounded-lg">
-                        <div className="flex md:flex-row-reverse items-center gap-1.5">
-                          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{t.stats?.totalAttempts || 0}</span>
-                          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Candidates</span>
+                      <dl className="card-inset grid w-full shrink-0 grid-cols-3 divide-x divide-hairline px-1 py-2 text-center sm:w-auto md:flex md:items-start md:gap-6 md:divide-x-0 md:border-0 md:bg-transparent md:p-0 md:text-right">
+                        <div className="min-w-0 px-1.5 md:px-0">
+                          <dd className="num text-sm font-semibold text-ink">{t.stats?.totalAttempts || 0}</dd>
+                          <dt className="mt-0.5 text-[0.625rem] uppercase tracking-[0.08em] text-faint">Candidates</dt>
                         </div>
-                        <div className="flex md:flex-row-reverse items-center gap-1.5">
-                          <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{t.stats?.avgScore || '—'}</span>
-                          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Avg Score</span>
+                        <div className="min-w-0 px-1.5 md:px-0">
+                          <dd className="num text-sm font-semibold text-accent">{t.stats?.avgScore || '—'}</dd>
+                          <dt className="mt-0.5 text-[0.625rem] uppercase tracking-[0.08em] text-faint">Avg score</dt>
                         </div>
-                        <div className="flex md:flex-row-reverse items-center gap-1.5">
-                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{t.stats?.completionRate || 0}%</span>
-                          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Completion</span>
+                        <div className="min-w-0 px-1.5 md:px-0">
+                          <dd className="num text-sm font-semibold text-success-500">{t.stats?.completionRate || 0}%</dd>
+                          <dt className="mt-0.5 text-[0.625rem] uppercase tracking-[0.08em] text-faint">Completion</dt>
                         </div>
-                      </div>
+                      </dl>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex-wrap">
-                      <button onClick={() => navigate(`/org/interview/${t._id}/leaderboard`)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
-                        <Users className="w-3.5 h-3.5" />Leaderboard
-                      </button>
-                      <button onClick={() => copyLink(t.shareCode)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                        <Copy className="w-3.5 h-3.5" />Copy Link
-                      </button>
+                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
+                      <Button variant="secondary" size="sm" onClick={() => navigate(`/org/interview/${t._id}/leaderboard`)} icon={<Users className="h-3.5 w-3.5" aria-hidden />}>
+                        Leaderboard
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => copyLink(t.shareCode)} icon={<Copy className="h-3.5 w-3.5" aria-hidden />}>
+                        Copy link
+                      </Button>
                       {t.status === 'active' && (
-                         <button onClick={() => handleClose(t._id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-amber-600 dark:text-amber-500 rounded-lg text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors">
-                          <XCircle className="w-3.5 h-3.5" />Close
-                        </button>
+                        <Button variant="ghost" size="sm" onClick={() => handleClose(t._id)} className="text-warning-500 hover:text-warning-500" icon={<XCircle className="h-3.5 w-3.5" aria-hidden />}>
+                          Close
+                        </Button>
                       )}
-                      <button onClick={() => handleDelete(t._id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto">
-                        <Trash2 className="w-3.5 h-3.5" />Delete
-                      </button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(t._id)} className="ml-auto text-danger-500 hover:text-danger-500" icon={<Trash2 className="h-3.5 w-3.5" aria-hidden />}>
+                        Delete
+                      </Button>
                     </div>
-                  </motion.div>
+                  </motion.article>
                 ))}
               </div>
             )}
-          </div>
+          </section>
         )}
 
         {tab === 'aptitude' && (
-          <div>
+          <section role="tabpanel" aria-label="Aptitude tests">
             {aptitudeTests.length === 0 ? (
-              <div className="text-center py-20">
-                <Brain className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-                <p className="text-zinc-500">No aptitude tests yet.</p>
-                <button onClick={() => navigate('/org/aptitude/create')}
-                  className="mt-4 px-6 py-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors">
-                  Create your first aptitude test
-                </button>
+              <div className="card">
+                <EmptyState
+                  icon={<Brain className="h-5 w-5" aria-hidden />}
+                  title="No aptitude tests yet"
+                  description="Screen a whole batch at once and rank students by accuracy."
+                  action={<Button size="md" onClick={() => navigate('/org/aptitude/create')} icon={<Plus className="h-4 w-4" aria-hidden />}>Create your first aptitude test</Button>}
+                />
               </div>
             ) : (
               <div className="space-y-3">
@@ -264,97 +331,109 @@ export default function OrgDashboardPage() {
                   const joinUrl = `${window.location.origin}/aptitude/join/${t.shareCode}`
                   const copyAptLink = () => { navigator.clipboard.writeText(joinUrl); toast.success('Link copied!') }
                   return (
-                    <motion.div key={t._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all">
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                            <h3 className="font-semibold text-lg text-zinc-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{t.title}</h3>
-                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border capitalize ${t.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30'}`}>{t.status}</span>
+                    <motion.article key={t._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+                      className="card relative overflow-hidden p-5 transition-colors duration-fast hover:border-hairline-strong">
+                      {t.status === 'active' && (
+                        <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-success-500 via-success-500/40 to-transparent" />
+                      )}
+                      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                            <h3 className="t-h3 truncate">{t.title}</h3>
+                            <StatusBadge tone={t.status === 'active' ? 'live' : 'off'} pulse={t.status === 'active'}>{t.status}</StatusBadge>
                           </div>
-                          <div className="flex items-center gap-3 text-xs font-mono text-zinc-500 flex-wrap">
-                            <span>{t.questionCount} Questions</span><span>•</span>
-                            <span>{t.duration} min</span><span>•</span>
+                          <p className="t-xs mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="num">{t.questionCount} questions</span>
+                            <span aria-hidden>·</span>
+                            <span className="num">{t.duration} min</span>
+                            <span aria-hidden>·</span>
                             <span className="capitalize">{t.categories?.join(', ')}</span>
-                            {t.deadline && <><span>•</span><span>Deadline: {new Date(t.deadline).toLocaleDateString()}</span></>}
+                            {t.deadline && (
+                              <>
+                                <span aria-hidden>·</span>
+                                <span>Deadline: <span className="num">{fmtDate(t.deadline)}</span></span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        <dl className="card-inset grid w-full shrink-0 grid-cols-2 divide-x divide-hairline px-1 py-2 text-center sm:w-auto md:flex md:items-start md:gap-6 md:divide-x-0 md:border-0 md:bg-transparent md:p-0 md:text-right">
+                          <div className="min-w-0 px-1.5 md:px-0">
+                            <dd className="num text-sm font-semibold text-ink">{t.stats?.totalAttempts || 0}</dd>
+                            <dt className="mt-0.5 flex items-center justify-center gap-1 text-[0.625rem] uppercase tracking-[0.08em] text-faint md:justify-end">
+                              <GraduationCap className="h-3 w-3" aria-hidden />Students
+                            </dt>
                           </div>
-                        </div>
-                        <div className="flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-1 text-center md:text-right flex-shrink-0 bg-zinc-50 dark:bg-zinc-950 px-4 py-2 rounded-lg">
-                           <div className="flex md:flex-row-reverse items-center gap-1.5">
-                             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{t.stats?.totalAttempts || 0}</span>
-                             <span className="text-[10px] uppercase tracking-wider text-zinc-500">Students</span>
-                           </div>
-                           <div className="flex md:flex-row-reverse items-center gap-1.5">
-                             <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{t.stats?.avgAccuracy != null ? `${t.stats.avgAccuracy}%` : '—'}</span>
-                             <span className="text-[10px] uppercase tracking-wider text-zinc-500">Avg Accuracy</span>
-                           </div>
-                        </div>
+                          <div className="min-w-0 px-1.5 md:px-0">
+                            <dd className="num text-sm font-semibold text-accent">{t.stats?.avgAccuracy != null ? `${t.stats.avgAccuracy}%` : '—'}</dd>
+                            <dt className="mt-0.5 text-[0.625rem] uppercase tracking-[0.08em] text-faint">Avg accuracy</dt>
+                          </div>
+                        </dl>
                       </div>
-                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex-wrap">
-                        <button onClick={() => navigate(`/org/aptitude/${t._id}/results`)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 rounded-lg text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors">
-                          <BarChart3 className="w-3.5 h-3.5" />Results
-                        </button>
-                        <button onClick={copyAptLink}
-                          className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-lg text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                          <Copy className="w-3.5 h-3.5" />Copy Link
-                        </button>
+                      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
+                        <Button variant="secondary" size="sm" onClick={() => navigate(`/org/aptitude/${t._id}/results`)} icon={<BarChart3 className="h-3.5 w-3.5" aria-hidden />}>
+                          Results
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={copyAptLink} icon={<Copy className="h-3.5 w-3.5" aria-hidden />}>
+                          Copy link
+                        </Button>
                         {t.status === 'active' && (
-                          <button onClick={() => handleCloseAptitude(t._id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-amber-600 dark:text-amber-500 rounded-lg text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors">
-                            <XCircle className="w-3.5 h-3.5" />Close
-                          </button>
+                          <Button variant="ghost" size="sm" onClick={() => handleCloseAptitude(t._id)} className="text-warning-500 hover:text-warning-500" icon={<XCircle className="h-3.5 w-3.5" aria-hidden />}>
+                            Close
+                          </Button>
                         )}
-                        <button onClick={() => handleDeleteAptitude(t._id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto">
-                          <Trash2 className="w-3.5 h-3.5" />Delete
-                        </button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteAptitude(t._id)} className="ml-auto text-danger-500 hover:text-danger-500" icon={<Trash2 className="h-3.5 w-3.5" aria-hidden />}>
+                          Delete
+                        </Button>
                       </div>
-                    </motion.div>
+                    </motion.article>
                   )
                 })}
               </div>
             )}
-          </div>
+          </section>
         )}
 
         {tab === 'settings' && (
-          <div className="max-w-xl">
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>Organization Profile</h2>
+          <section role="tabpanel" aria-label="Organization profile" className="mx-auto max-w-xl">
+            <div className="card p-6">
+              <SectionHeading title="Organization profile" className="mb-6" />
               <div className="space-y-6">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   {org?.logo
-                    ? <img src={org.logo} alt={org.name} className="w-16 h-16 rounded-xl object-cover border border-zinc-200 dark:border-zinc-700" />
-                    : <div className="w-16 h-16 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center"><Building2 className="w-6 h-6 text-zinc-500" /></div>}
-                  <div>
-                    <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'Poppins, sans-serif' }}>{org?.name}</p>
-                    <p className="text-sm text-zinc-500 capitalize">{org?.type}</p>
+                    ? <img src={org.logo} alt={`${org.name} logo`} className="h-16 w-16 rounded-xl border border-hairline object-cover" />
+                    : <span className="grid h-16 w-16 place-items-center rounded-xl border border-hairline bg-inset text-subtle"><Building2 className="h-6 w-6" aria-hidden /></span>}
+                  <div className="min-w-0">
+                    <p className="t-h3 truncate">{org?.name}</p>
+                    <p className="t-sm capitalize">{org?.type}</p>
                   </div>
                 </div>
-                <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-                    <span className="text-sm font-medium text-zinc-500">Email Address</span>
-                    <span className="text-sm text-zinc-900 dark:text-zinc-300 md:col-span-2">{org?.email}</span>
+                <dl className="space-y-3 border-t border-hairline pt-6">
+                  <div className="grid gap-1 md:grid-cols-3">
+                    <dt className="t-sm font-medium text-subtle">Email address</dt>
+                    <dd className="t-sm break-words text-ink md:col-span-2">{org?.email}</dd>
                   </div>
                   {org?.website && (
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-                       <span className="text-sm font-medium text-zinc-500">Website</span>
-                       <a href={org.website} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline md:col-span-2">{org.website}</a>
-                     </div>
+                    <div className="grid gap-1 md:grid-cols-3">
+                      <dt className="t-sm font-medium text-subtle">Website</dt>
+                      <dd className="t-sm md:col-span-2">
+                        <a href={org.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-accent transition-colors duration-fast hover:underline">
+                          <ExternalLink className="h-3.5 w-3.5" aria-hidden />{org.website}
+                        </a>
+                      </dd>
+                    </div>
                   )}
                   {org?.description && (
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-                       <span className="text-sm font-medium text-zinc-500">About</span>
-                       <span className="text-sm text-zinc-900 dark:text-zinc-300 md:col-span-2 leading-relaxed">{org.description}</span>
-                     </div>
+                    <div className="grid gap-1 md:grid-cols-3">
+                      <dt className="t-sm font-medium text-subtle">About</dt>
+                      <dd className="t-body md:col-span-2">{org.description}</dd>
+                    </div>
                   )}
-                </div>
+                </dl>
               </div>
             </div>
-          </div>
+          </section>
         )}
-      </div>
+      </main>
     </div>
   )
 }

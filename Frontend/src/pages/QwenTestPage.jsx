@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
+import { Badge, Button, IconButton, SegmentedControl, StatusBadge, Tabs } from '../components/ui/index'
+import { usePageEnter } from '../motion/hooks'
 import {
   Cpu, Zap, Send, RotateCcw, Copy, Check, Volume2, VolumeX,
   Sparkles, Sliders, Server, Activity, ShieldCheck, AlertCircle,
@@ -72,6 +74,8 @@ const SYSTEM_PERSONAS = [
 ]
 
 export default function QwenTestPage() {
+  const root = usePageEnter()
+
   // ─── Connection & Server State ──────────────────────────────────
   const [serverStatus, setServerStatus] = useState({
     checking: true,
@@ -474,88 +478,61 @@ export default function QwenTestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div ref={root} className="page-shell">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-16">
+      <main className="container-page pt-[calc(var(--nav-h)+2rem)] pb-16">
         {/* ─── Header & Diagnostics Card ────────────────────────── */}
-        <div className="mb-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div data-enter className="mb-6">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500">
-                  <Cpu className="w-5 h-5" />
+                <span className="grid h-10 w-10 place-items-center rounded-lg border border-accent/25 bg-accent/10 text-accent">
+                  <Cpu className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+                  <h1 className="t-h1 flex flex-wrap items-center gap-2">
                     Qwen 2.5 AI Lab
-                    <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                      0.5B Instruct GGUF
-                    </span>
+                    <Badge color="accent">0.5B Instruct GGUF</Badge>
                   </h1>
-                  <p className="text-xs sm:text-sm text-fg-muted">
-                    Ultra-fast local CPU inference • Sub-300ms latency • Zero GPU required • 468 MB Memory
+                  <p className="t-sm mt-0.5">
+                    Ultra-fast local CPU inference · Sub-300ms latency · Zero GPU required · 468 MB Memory
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Status & Connection Badges */}
+            {/* Status & Connection Controls */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border text-xs">
-                <span className={`w-2.5 h-2.5 rounded-full ${serverStatus.available ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-red-500'}`} />
-                <span className="font-medium text-fg">
-                  {serverStatus.checking ? 'Connecting...' : serverStatus.available ? 'Qwen 2.5 Active' : 'Microservice Offline'}
-                </span>
-                <button
-                  onClick={checkHealth}
-                  disabled={serverStatus.checking}
-                  title="Refresh connection"
-                  className="p-1 hover:text-blue-400 transition-colors"
+              <div className="flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 py-1.5">
+                <StatusBadge
+                  tone={serverStatus.available ? 'live' : serverStatus.checking ? 'warn' : 'off'}
+                  pulse={serverStatus.available || serverStatus.checking}
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${serverStatus.checking ? 'animate-spin text-blue-400' : 'text-fg-muted'}`} />
-                </button>
+                  {serverStatus.checking ? 'Connecting' : serverStatus.available ? 'Qwen 2.5 Active' : 'Microservice Offline'}
+                </StatusBadge>
+                <IconButton label="Refresh connection" onClick={checkHealth} disabled={serverStatus.checking}>
+                  <RefreshCw className={`h-3.5 w-3.5 ${serverStatus.checking ? 'animate-spin' : ''}`} aria-hidden />
+                </IconButton>
               </div>
 
-              {/* Endpoint Switcher */}
-              <div className="flex items-center rounded-lg bg-card border border-border p-0.5 text-xs">
-                <button
-                  onClick={() => setActiveEndpointMode('direct')}
-                  className={`px-2.5 py-1 rounded-md transition-all ${
-                    activeEndpointMode === 'direct'
-                      ? 'bg-blue-600 text-white font-medium shadow-sm'
-                      : 'text-fg-muted hover:text-fg'
-                  }`}
-                  title="Direct to Python microservice (Port 5001)"
-                >
-                  Direct :5001
-                </button>
-                <button
-                  onClick={() => setActiveEndpointMode('proxy')}
-                  className={`px-2.5 py-1 rounded-md transition-all ${
-                    activeEndpointMode === 'proxy'
-                      ? 'bg-blue-600 text-white font-medium shadow-sm'
-                      : 'text-fg-muted hover:text-fg'
-                  }`}
-                  title="Through Node.js API Gateway (Port 5000)"
-                >
-                  Proxy :5000
-                </button>
-              </div>
+              <SegmentedControl
+                ariaLabel="API endpoint mode"
+                value={activeEndpointMode}
+                onChange={setActiveEndpointMode}
+                options={[
+                  { value: 'direct', label: 'Direct :5001' },
+                  { value: 'proxy', label: 'Proxy :5000' },
+                ]}
+              />
 
-              <Link
-                to="/offline-ai"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-              >
-                <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              <Link to="/offline-ai" className="btn btn-outline btn-sm">
+                <HardDrive className="h-3.5 w-3.5 text-success-500" aria-hidden />
                 Offline AI Hub
               </Link>
 
-              <Link
-                to="/voice-test"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:border-blue-500/40 text-xs font-medium text-fg-muted hover:text-blue-400 transition-colors"
-              >
-                <Mic className="w-3.5 h-3.5" />
+              <Link to="/voice-test" className="btn btn-secondary btn-sm">
+                <Mic className="h-3.5 w-3.5" aria-hidden />
                 Voice Lab
               </Link>
             </div>
@@ -566,98 +543,62 @@ export default function QwenTestPage() {
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs"
+              className="mt-4 flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3.5 text-xs"
             >
-              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning-500" aria-hidden />
               <div className="flex-1">
-                <span className="font-semibold text-amber-400">Local AI Server Not Detected</span>
-                <p className="text-fg-muted mt-0.5">
+                <span className="font-semibold text-warning-500">Local AI Server Not Detected</span>
+                <p className="mt-0.5 text-muted">
                   Make sure the Python microservice is running. Launch it with:{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-zinc-900 border border-border text-amber-300 font-mono text-[11px]">
+                  <code className="rounded border border-hairline bg-inset px-1.5 py-0.5 font-mono text-2xs text-warning-500">
                     python Backend/whistle_server.py
                   </code>
                 </p>
               </div>
-              <button
-                onClick={checkHealth}
-                className="px-2.5 py-1 rounded-md bg-amber-500 text-zinc-950 font-semibold text-xs hover:bg-amber-400"
-              >
-                Retry
-              </button>
+              <Button size="sm" variant="outline" onClick={checkHealth}>Retry</Button>
             </motion.div>
           )}
         </div>
 
         {/* ─── Mode Tabs Navigation ─────────────────────────────── */}
-        <div className="flex items-center gap-2 border-b border-border pb-3 mb-6">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              activeTab === 'chat'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-fg-muted hover:text-fg hover:bg-card'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            Interactive Chat & Prompt Testing
-          </button>
-
-          <button
-            onClick={() => setActiveTab('interview_eval')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              activeTab === 'interview_eval'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-fg-muted hover:text-fg hover:bg-card'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Interview Evaluation & Critique
-          </button>
-
-          <button
-            onClick={() => setActiveTab('benchmark')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-              activeTab === 'benchmark'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-fg-muted hover:text-fg hover:bg-card'
-            }`}
-          >
-            <Gauge className="w-4 h-4" />
-            Speed & TPS Benchmark
-          </button>
-        </div>
+        <Tabs
+          ariaLabel="Qwen lab mode"
+          value={activeTab}
+          onChange={setActiveTab}
+          className="mb-6"
+          tabs={[
+            { value: 'chat',          label: 'Chat & Prompts',     icon: <MessageSquare className="h-3.5 w-3.5" aria-hidden /> },
+            { value: 'interview_eval', label: 'Evaluation & Critique', icon: <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> },
+            { value: 'benchmark',     label: 'Speed & TPS',        icon: <Gauge className="h-3.5 w-3.5" aria-hidden /> },
+          ]}
+        />
 
         {/* ─── TAB 1: INTERACTIVE CHAT & PROMPT PLAYGROUND ──────── */}
         {activeTab === 'chat' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Chat Area (8 Cols) */}
-            <div className="lg:col-span-8 flex flex-col h-[680px] bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left Column: Chat Area */}
+            <div className="card flex h-[680px] flex-col overflow-hidden lg:col-span-8">
               {/* Chat Header */}
-              <div className="px-4 py-3 border-b border-border bg-card/60 backdrop-blur-sm flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2 border-b border-hairline px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-semibold text-fg">Qwen 2.5 0.5B Conversation</span>
-                  <span className="text-[10px] text-fg-subtle px-1.5 py-0.5 rounded bg-zinc-800">ChatML Format</span>
+                  <span className="status-dot status-dot-live" aria-hidden />
+                  <span className="text-xs font-semibold text-ink">Qwen 2.5 0.5B Conversation</span>
+                  <Badge color="navy">ChatML Format</Badge>
                 </div>
                 <button
                   onClick={() => setMessages([])}
-                  className="flex items-center gap-1 text-[11px] text-fg-muted hover:text-fg hover:bg-zinc-800 px-2 py-1 rounded transition-colors"
-                  title="Clear conversation"
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-2xs text-muted transition-colors hover:bg-ink/[0.06] hover:text-ink"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="h-3 w-3" aria-hidden />
                   Clear Chat
                 </button>
               </div>
 
               {/* Chat Message Stream */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4">
                 {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-fg-muted">
-                    <Bot className="w-10 h-10 text-blue-500/40 mb-2" />
-                    <p className="text-sm font-medium text-fg">Start a conversation with Qwen 2.5</p>
-                    <p className="text-xs text-fg-subtle max-w-sm mt-1">
-                      Type a custom prompt below or pick one of the technical presets from the right sidebar.
-                    </p>
+                  <div className="flex h-full items-center justify-center">
+                    <Bot className="h-10 w-10 text-faint" aria-hidden />
                   </div>
                 ) : (
                   messages.map((msg, idx) => (
@@ -667,71 +608,61 @@ export default function QwenTestPage() {
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                     >
-                      <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-fg-subtle">
-                        <span className="font-semibold text-fg-muted">
+                      <div className="mb-1 flex items-center gap-1.5 px-1 text-2xs text-subtle">
+                        <span className="font-semibold text-muted">
                           {msg.role === 'user' ? 'You' : 'Qwen 2.5'}
                         </span>
-                        <span>•</span>
-                        <span>{msg.timestamp}</span>
+                        <span aria-hidden>·</span>
+                        <span className="num">{msg.timestamp}</span>
                       </div>
 
                       <div
-                        className={`max-w-[88%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
+                        className={`max-w-[88%] rounded-xl px-4 py-3 text-xs leading-relaxed sm:text-sm ${
                           msg.role === 'user'
-                            ? 'bg-blue-600 text-white rounded-tr-sm'
+                            ? 'bg-accent text-accent-on rounded-tr-sm'
                             : msg.isError
-                            ? 'bg-red-500/10 border border-red-500/30 text-red-300 rounded-tl-sm'
-                            : 'bg-surface border border-border text-fg rounded-tl-sm'
+                            ? 'rounded-tl-sm border border-danger/30 bg-danger/10 text-danger-500'
+                            : 'card-inset text-ink rounded-tl-sm'
                         }`}
                       >
                         <div className="whitespace-pre-wrap">
                           {msg.content}
                           {msg.isStreaming && (
-                            <span className="inline-block w-2 h-4 ml-1 bg-blue-400 animate-pulse align-middle rounded-sm shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                            <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-accent align-middle" aria-hidden />
                           )}
                         </div>
 
                         {/* Streaming Indicator */}
                         {msg.isStreaming && (
-                          <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center gap-2 text-[10px] font-mono text-blue-400">
-                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-                            <span>Streaming live token-by-token from CPU llama.cpp...</span>
+                          <div className="mt-2.5 flex items-center gap-2 border-t border-hairline/60 pt-2 text-2xs text-accent">
+                            <span className="status-dot status-dot-live animate-ping" aria-hidden />
+                            <span>Streaming live token-by-token from CPU llama.cpp…</span>
                           </div>
                         )}
 
                         {/* Performance Metric Pill on AI messages */}
                         {msg.metrics && !msg.isStreaming && (
-                          <div className="mt-3 pt-2.5 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-fg-subtle">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                                <Zap className="w-3 h-3" />
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-2.5 text-2xs text-subtle">
+                            <div className="num flex items-center gap-3">
+                              <span className="flex items-center gap-1 font-medium text-success-500">
+                                <Zap className="h-3 w-3" aria-hidden />
                                 {msg.metrics.latency_ms}ms
                               </span>
-                              <span>•</span>
-                              <span className="text-blue-400">
+                              <span aria-hidden>·</span>
+                              <span className="text-accent">
                                 {msg.metrics.tokens_per_second} tok/s
                               </span>
-                              <span>•</span>
+                              <span aria-hidden>·</span>
                               <span>{msg.metrics.tokens_generated} tokens</span>
                             </div>
 
                             <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleSpeak(msg.content, idx)}
-                                className={`p-1 rounded hover:bg-zinc-800 transition-colors ${
-                                  speakingIdx === idx ? 'text-blue-400' : 'text-fg-muted hover:text-fg'
-                                }`}
-                                title="Listen to answer"
-                              >
-                                {speakingIdx === idx ? <VolumeX className="w-3.5 h-3.5 animate-pulse" /> : <Volume2 className="w-3.5 h-3.5" />}
-                              </button>
-                              <button
-                                onClick={() => handleCopy(msg.content, idx)}
-                                className="p-1 rounded hover:bg-zinc-800 text-fg-muted hover:text-fg transition-colors"
-                                title="Copy text"
-                              >
-                                {copiedIndex === idx ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
+                              <IconButton label="Listen to answer" active={speakingIdx === idx} onClick={() => handleSpeak(msg.content, idx)}>
+                                {speakingIdx === idx ? <VolumeX className="h-3.5 w-3.5 animate-pulse" aria-hidden /> : <Volume2 className="h-3.5 w-3.5" aria-hidden />}
+                              </IconButton>
+                              <IconButton label="Copy text" onClick={() => handleCopy(msg.content, idx)}>
+                                {copiedIndex === idx ? <Check className="h-3.5 w-3.5 text-success-500" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                              </IconButton>
                             </div>
                           </div>
                         )}
@@ -744,7 +675,7 @@ export default function QwenTestPage() {
               </div>
 
               {/* Chat Input Bar */}
-              <div className="p-3 border-t border-border bg-card/80">
+              <div className="border-t border-hairline p-3">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault()
@@ -752,7 +683,9 @@ export default function QwenTestPage() {
                   }}
                   className="flex items-end gap-2"
                 >
+                  <label htmlFor="chat-input" className="sr-only">Message for Qwen</label>
                   <textarea
+                    id="chat-input"
                     value={inputPrompt}
                     onChange={(e) => setInputPrompt(e.target.value)}
                     onKeyDown={(e) => {
@@ -761,45 +694,33 @@ export default function QwenTestPage() {
                         handleSendMessage()
                       }
                     }}
-                    placeholder="Ask Qwen anything (e.g. 'Critique my Redis caching pattern' or technical question)..."
+                    placeholder="Ask Qwen anything (e.g. 'Critique my Redis caching pattern' or technical question)…"
                     rows={2}
-                    className="flex-1 bg-surface border border-border focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-fg placeholder:text-fg-subtle focus:outline-none resize-none transition-all"
+                    className="input flex-1 resize-none text-sm"
                   />
                   {isGenerating ? (
-                    <button
-                      type="button"
-                      onClick={stopGeneration}
-                      className="h-10 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-sm shrink-0"
-                      title="Stop generating"
-                    >
-                      <Square className="w-3.5 h-3.5 fill-current" />
+                    <Button type="button" variant="danger" className="h-10 shrink-0" onClick={stopGeneration} icon={<Square className="h-3.5 w-3.5 fill-current" aria-hidden />}>
                       <span>Stop</span>
-                    </button>
+                    </Button>
                   ) : (
-                    <button
-                      type="submit"
-                      disabled={!inputPrompt.trim()}
-                      className="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-sm shrink-0"
-                    >
-                      <Send className="w-4 h-4" />
+                    <Button type="submit" className="h-10 shrink-0" disabled={!inputPrompt.trim()} icon={<Send className="h-4 w-4" aria-hidden />}>
                       <span>Send</span>
-                    </button>
+                    </Button>
                   )}
                 </form>
-                <div className="flex items-center justify-between mt-2 px-1 text-[11px] text-fg-subtle">
-                  <span>Press <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-[10px] text-fg-muted font-mono">Enter</kbd> to send, <kbd className="px-1 py-0.5 rounded bg-zinc-800 text-[10px] text-fg-muted font-mono">Shift+Enter</kbd> for newline</span>
-                  <span className="font-mono text-[10px]">{inputPrompt.length} chars</span>
+                <div className="mt-2 flex items-center justify-between px-1 text-2xs text-subtle">
+                  <span>Press <kbd className="rounded border border-hairline bg-inset px-1 py-0.5 font-mono text-3xs text-muted">Enter</kbd> to send, <kbd className="rounded border border-hairline bg-inset px-1 py-0.5 font-mono text-3xs text-muted">Shift+Enter</kbd> for newline</span>
+                  <span className="num text-3xs">{inputPrompt.length} chars</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Presets & Model Controls (4 Cols) */}
-            <div className="lg:col-span-4 space-y-5">
+            {/* Right Column: Presets & Model Controls */}
+            <div className="space-y-5 lg:col-span-4">
               {/* Quick Presets Card */}
-              <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted mb-3 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                  Quick Interview Presets
+              <div className="card p-4">
+                <h3 className="eyebrow mb-3 flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden /> Quick Interview Presets
                 </h3>
                 <div className="space-y-2">
                   {PRESET_PROMPTS.map((preset, idx) => (
@@ -810,17 +731,15 @@ export default function QwenTestPage() {
                         if (preset.system) setCustomSystemPrompt(preset.system)
                         toast.success(`Loaded "${preset.title}" preset!`)
                       }}
-                      className="w-full text-left p-2.5 rounded-xl border border-border/70 hover:border-blue-500/50 hover:bg-surface transition-all group"
+                      className="group w-full rounded-lg border border-hairline p-2.5 text-left transition-all duration-fast hover:border-accent/50 hover:bg-inset"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-fg group-hover:text-blue-400 transition-colors">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink group-hover:text-accent transition-colors">
                           {preset.title}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-medium">
-                          {preset.category}
-                        </span>
+                        <Badge color="accent">{preset.category}</Badge>
                       </div>
-                      <p className="text-[11px] text-fg-muted line-clamp-2 leading-relaxed">
+                      <p className="line-clamp-2 text-2xs leading-relaxed text-muted">
                         {preset.prompt}
                       </p>
                     </button>
@@ -829,18 +748,15 @@ export default function QwenTestPage() {
               </div>
 
               {/* Model Persona & Tuning Card */}
-              <div className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted flex items-center gap-2">
-                  <Sliders className="w-3.5 h-3.5 text-blue-500" />
-                  Model Persona & Controls
+              <div className="card space-y-4 p-4">
+                <h3 className="eyebrow flex items-center gap-2">
+                  <Sliders className="h-3.5 w-3.5 text-accent" aria-hidden /> Model Persona &amp; Controls
                 </h3>
 
                 {/* Persona selector */}
                 <div>
-                  <label className="text-[11px] font-medium text-fg-muted block mb-1.5">
-                    Interviewer Persona
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <p className="field-label mb-1.5" id="persona-label">Interviewer Persona</p>
+                  <div className="grid grid-cols-2 gap-1.5" role="group" aria-labelledby="persona-label">
                     {SYSTEM_PERSONAS.map(p => (
                       <button
                         key={p.id}
@@ -848,10 +764,12 @@ export default function QwenTestPage() {
                           setSelectedPersona(p.id)
                           setCustomSystemPrompt(p.prompt)
                         }}
-                        className={`p-2 rounded-lg text-left text-xs border transition-all ${
+                        aria-pressed={selectedPersona === p.id}
+                        title={p.description}
+                        className={`rounded-md border p-2 text-left text-xs transition-all duration-fast ${
                           selectedPersona === p.id
-                            ? 'bg-blue-600/10 border-blue-500 text-blue-400 font-semibold'
-                            : 'border-border text-fg-muted hover:border-zinc-700 hover:text-fg'
+                            ? 'border-accent/45 bg-accent-soft/60 font-semibold text-accent'
+                            : 'border-hairline text-muted hover:border-hairline-strong hover:text-ink'
                         }`}
                       >
                         <div className="truncate">{p.name}</div>
@@ -862,54 +780,55 @@ export default function QwenTestPage() {
 
                 {/* Custom System Prompt */}
                 <div>
-                  <label className="text-[11px] font-medium text-fg-muted block mb-1">
-                    System Prompt
-                  </label>
+                  <label htmlFor="system-prompt" className="field-label mb-1 block">System Prompt</label>
                   <textarea
+                    id="system-prompt"
                     value={customSystemPrompt}
                     onChange={(e) => setCustomSystemPrompt(e.target.value)}
                     rows={2}
-                    className="w-full bg-surface border border-border rounded-lg p-2 text-xs text-fg font-mono focus:border-blue-500 focus:outline-none"
+                    className="input w-full font-mono text-xs"
                   />
                 </div>
 
                 {/* Sliders */}
                 <div className="space-y-3 pt-1">
                   <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-fg-muted">Temperature</span>
-                      <span className="font-mono text-blue-400">{temperature}</span>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <label htmlFor="temperature" className="text-muted">Temperature</label>
+                      <span className="num text-accent">{temperature}</span>
                     </div>
                     <input
+                      id="temperature"
                       type="range"
                       min="0.1"
                       max="1.0"
                       step="0.05"
                       value={temperature}
                       onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                      className="w-full accent-blue-600 cursor-pointer"
+                      className="w-full cursor-pointer accent-accent"
                     />
-                    <div className="flex justify-between text-[10px] text-fg-subtle mt-0.5">
+                    <div className="mt-0.5 flex justify-between text-3xs text-subtle">
                       <span>Deterministic (0.1)</span>
                       <span>Creative (1.0)</span>
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-fg-muted">Max Response Tokens</span>
-                      <span className="font-mono text-blue-400">{maxTokens}</span>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <label htmlFor="max-tokens" className="text-muted">Max Response Tokens</label>
+                      <span className="num text-accent">{maxTokens}</span>
                     </div>
                     <input
+                      id="max-tokens"
                       type="range"
                       min="64"
                       max="600"
                       step="32"
                       value={maxTokens}
                       onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-                      className="w-full accent-blue-600 cursor-pointer"
+                      className="w-full cursor-pointer accent-accent"
                     />
-                    <div className="flex justify-between text-[10px] text-fg-subtle mt-0.5">
+                    <div className="mt-0.5 flex justify-between text-3xs text-subtle">
                       <span>Fast (64 tok)</span>
                       <span>Detailed (600 tok)</span>
                     </div>
@@ -922,79 +841,65 @@ export default function QwenTestPage() {
 
         {/* ─── TAB 2: INTERVIEW EVALUATION & CRITIQUE ───────────── */}
         {activeTab === 'interview_eval' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Input Form (6 cols) */}
-            <div className="lg:col-span-6 bg-card rounded-2xl border border-border p-5 shadow-sm space-y-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Input Form */}
+            <div className="card space-y-4 p-5 lg:col-span-6">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-500" />
-                <h2 className="text-sm sm:text-base font-bold text-fg">
-                  Real-time Candidate Answer Evaluation
-                </h2>
+                <ShieldCheck className="h-5 w-5 text-accent" aria-hidden />
+                <h2 className="t-h3">Real-time Candidate Answer Evaluation</h2>
               </div>
-              <p className="text-xs text-fg-muted">
+              <p className="t-sm">
                 This tests the exact sub-300ms live critique engine that runs during mock interviews to score candidates and generate brutal follow-up cross-questions.
               </p>
 
               <div>
-                <label className="text-xs font-semibold text-fg-muted block mb-1">Role / Tech Track</label>
+                <label htmlFor="eval-role" className="field-label mb-1 block">Role / Tech Track</label>
                 <input
+                  id="eval-role"
                   type="text"
                   value={evalRole}
                   onChange={(e) => setEvalRole(e.target.value)}
-                  className="w-full bg-surface border border-border rounded-xl px-3.5 py-2 text-xs sm:text-sm text-fg focus:border-blue-500 focus:outline-none"
+                  className="input w-full text-sm"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-fg-muted block mb-1">Interview Question</label>
+                <label htmlFor="eval-question" className="field-label mb-1 block">Interview Question</label>
                 <textarea
+                  id="eval-question"
                   value={evalQuestion}
                   onChange={(e) => setEvalQuestion(e.target.value)}
                   rows={2}
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs sm:text-sm text-fg focus:border-blue-500 focus:outline-none"
+                  className="input w-full text-sm"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-fg-muted block mb-1">Candidate Answer (Your spoken or typed response)</label>
+                <label htmlFor="eval-answer" className="field-label mb-1 block">Candidate Answer (Your spoken or typed response)</label>
                 <textarea
+                  id="eval-answer"
                   value={evalAnswer}
                   onChange={(e) => setEvalAnswer(e.target.value)}
                   rows={4}
-                  className="w-full bg-surface border border-border rounded-xl p-3 text-xs sm:text-sm text-fg focus:border-blue-500 focus:outline-none"
+                  className="input w-full text-sm"
                 />
               </div>
 
-              <button
-                onClick={handleRunEvaluation}
-                disabled={evalLoading || !evalAnswer.trim()}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
-              >
-                {evalLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Qwen 2.5 Evaluating Answer...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Run Evaluation & Generate Cross-Question</span>
-                  </>
-                )}
-              </button>
+              <Button block loading={evalLoading} disabled={!evalAnswer.trim()} onClick={handleRunEvaluation} icon={evalLoading ? null : <Sparkles className="h-4 w-4" aria-hidden />}>
+                {evalLoading ? 'Qwen 2.5 Evaluating Answer…' : 'Run Evaluation & Generate Cross-Question'}
+              </Button>
             </div>
 
-            {/* Results Display (6 cols) */}
-            <div className="lg:col-span-6 bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col justify-between">
+            {/* Results Display */}
+            <div className="card flex flex-col justify-between p-5 lg:col-span-6">
               <div>
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-fg-muted flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-400" />
-                    Live Technical Assessment
+                <div className="mb-4 flex items-center justify-between gap-2 border-b border-hairline pb-3">
+                  <h3 className="eyebrow flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-success-500" aria-hidden /> Live Technical Assessment
                   </h3>
                   {evalResult && (
-                    <span className="font-mono text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      ⚡ {evalResult.latency_ms}ms Latency
+                    <span className="num flex items-center gap-1 rounded border border-success/25 bg-success/10 px-2 py-0.5 text-xs text-success-500">
+                      <Zap className="h-3 w-3" aria-hidden /> {evalResult.latency_ms}ms Latency
                     </span>
                   )}
                 </div>
@@ -1006,74 +911,76 @@ export default function QwenTestPage() {
                     className="space-y-4"
                   >
                     {/* Score Box */}
-                    <div className="p-4 rounded-xl bg-surface border border-border flex items-center justify-between">
+                    <div className="card-inset flex items-center justify-between gap-3 p-4">
                       <div>
-                        <span className="text-xs text-fg-muted font-medium">Technical Depth Score</span>
-                        <div className="text-2xl font-black text-fg mt-0.5 flex items-baseline gap-1">
-                          <span className={evalResult.score >= 7 ? 'text-emerald-400' : 'text-amber-400'}>
+                        <span className="text-xs font-medium text-muted">Technical Depth Score</span>
+                        <div className="num-lg mt-0.5 flex items-baseline gap-1">
+                          <span className={evalResult.score >= 7 ? 'text-success-500' : 'text-warning-500'}>
                             {evalResult.score}
                           </span>
-                          <span className="text-xs text-fg-subtle font-normal">/ 10.0</span>
+                          <span className="text-xs font-normal text-subtle">/ 10.0</span>
                         </div>
                       </div>
-                      <div className="h-10 w-10 rounded-full border-2 border-blue-500 flex items-center justify-center font-bold text-xs text-blue-400">
+                      <div className="num grid h-10 w-10 place-items-center rounded-full border-2 border-accent text-xs font-bold text-accent">
                         {Math.round(evalResult.score * 10)}%
                       </div>
                     </div>
 
                     {/* Short Feedback */}
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 mb-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                    <div className="rounded-lg border border-success/25 bg-success/10 p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-success-500">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                         What You Got Right
                       </div>
-                      <p className="text-xs text-fg leading-relaxed">
+                      <p className="text-xs leading-relaxed text-ink">
                         {evalResult.shortFeedback}
                       </p>
                     </div>
 
                     {/* Brutal Feedback */}
-                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 mb-1">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        Production Edge Cases & Missed Details
+                    <div className="rounded-lg border border-warning/25 bg-warning/10 p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-warning-500">
+                        <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                        Production Edge Cases &amp; Missed Details
                       </div>
-                      <p className="text-xs text-fg leading-relaxed">
+                      <p className="text-xs leading-relaxed text-ink">
                         {evalResult.brutalFeedback}
                       </p>
                     </div>
 
                     {/* Follow-up Cross Question */}
-                    <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 mb-1">
-                        <HelpCircle className="w-3.5 h-3.5" />
+                    <div className="rounded-lg border border-ai/25 bg-ai/10 p-3.5">
+                      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ai">
+                        <HelpCircle className="h-3.5 w-3.5" aria-hidden />
                         Generated Follow-up Cross-Question
                       </div>
-                      <p className="text-xs text-fg font-medium leading-relaxed">
-                        "{evalResult.crossQuestion}"
+                      <p className="text-xs font-medium leading-relaxed text-ink">
+                        “{evalResult.crossQuestion}”
                       </p>
                       <button
                         onClick={() => handleSpeak(evalResult.crossQuestion, 'eval')}
-                        className="mt-2 text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        className="mt-2 flex items-center gap-1 text-2xs text-accent transition-colors hover:text-ink"
                       >
-                        <Volume2 className="w-3 h-3" />
+                        <Volume2 className="h-3 w-3" aria-hidden />
                         Listen to question
                       </button>
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center text-center text-fg-muted">
-                    <ShieldCheck className="w-10 h-10 text-zinc-700 mb-2" />
-                    <p className="text-xs sm:text-sm font-medium text-fg">No Evaluation Run Yet</p>
-                    <p className="text-xs text-fg-subtle max-w-xs mt-1">
-                      Enter an answer on the left and click "Run Evaluation" to see Qwen grade it in ~300ms.
-                    </p>
+                  <div className="flex h-64 items-center justify-center">
+                    <ShieldCheck className="h-10 w-10 text-faint" aria-hidden />
                   </div>
                 )}
               </div>
 
-              <div className="text-[11px] text-fg-subtle pt-3 border-t border-border mt-4">
-                Local model: <code className="text-blue-400 font-mono">qwen2.5-0.5b-instruct</code> • Zero token cost • Fully private on device
+              {!evalResult && (
+                <p className="pb-3 text-center text-xs text-subtle">
+                  Enter an answer on the left and click "Run Evaluation" to see Qwen grade it in ~300ms.
+                </p>
+              )}
+
+              <div className="border-t border-hairline pt-3 text-2xs text-subtle">
+                Local model: <code className="font-mono text-accent">qwen2.5-0.5b-instruct</code> · Zero token cost · Fully private on device
               </div>
             </div>
           </div>
@@ -1082,58 +989,45 @@ export default function QwenTestPage() {
         {/* ─── TAB 3: SPEED & TPS BENCHMARK ─────────────────────── */}
         {activeTab === 'benchmark' && (
           <div className="space-y-6">
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="card p-5">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
-                  <h2 className="text-base font-bold text-fg flex items-center gap-2">
-                    <Gauge className="w-5 h-5 text-blue-500" />
-                    Hardware Speed & Throughput Benchmark
+                  <h2 className="t-h3 flex items-center gap-2">
+                    <Gauge className="h-5 w-5 text-accent" aria-hidden />
+                    Hardware Speed &amp; Throughput Benchmark
                   </h2>
-                  <p className="text-xs sm:text-sm text-fg-muted mt-0.5">
+                  <p className="t-sm mt-0.5">
                     Measures real tokens-per-second (TPS) and Time-To-First-Token on your host CPU.
                   </p>
                 </div>
-                <button
+                <Button
+                  className="shrink-0"
+                  loading={benchRunning}
                   onClick={handleRunBenchmark}
-                  disabled={benchRunning}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-xs sm:text-sm flex items-center gap-2 transition-all shadow-sm shrink-0"
+                  icon={benchRunning ? null : <Play className="h-4 w-4" aria-hidden />}
                 >
-                  {benchRunning ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Benchmarking CPU...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4" />
-                      <span>Run 3-Stage Benchmark</span>
-                    </>
-                  )}
-                </button>
+                  {benchRunning ? 'Benchmarking CPU…' : 'Run 3-Stage Benchmark'}
+                </Button>
               </div>
 
               {/* Benchmark Results */}
               {benchResults.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <h3 className="text-xs font-semibold uppercase text-fg-muted tracking-wider">
-                    Execution Metrics
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <h3 className="eyebrow">Execution Metrics</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                     {benchResults.map((res, i) => (
-                      <div key={i} className="p-4 rounded-xl bg-surface border border-border">
-                        <span className="text-xs font-semibold text-fg">{res.name}</span>
+                      <div key={i} className="card-inset p-4">
+                        <span className="text-xs font-semibold text-ink">{res.name}</span>
                         <div className="mt-2 flex items-baseline gap-2">
-                          <span className="text-2xl font-black text-emerald-400 font-mono">
-                            {res.tps}
-                          </span>
-                          <span className="text-xs text-fg-muted font-mono">tokens/sec</span>
+                          <span className="num-lg text-success-500">{res.tps}</span>
+                          <span className="num text-xs text-muted">tokens/sec</span>
                         </div>
-                        <div className="mt-2 text-[11px] text-fg-subtle flex items-center justify-between">
+                        <div className="num mt-2 flex items-center justify-between text-2xs text-subtle">
                           <span>Latency: {res.latency_ms}ms</span>
                           <span>Tokens: {res.tokens}</span>
                         </div>
-                        <p className="mt-2 text-[10px] text-fg-muted line-clamp-2 italic border-t border-border/50 pt-1.5">
-                          "{res.preview}"
+                        <p className="mt-2 line-clamp-2 border-t border-hairline/60 pt-1.5 text-3xs italic text-muted">
+                          “{res.preview}”
                         </p>
                       </div>
                     ))}
@@ -1142,34 +1036,34 @@ export default function QwenTestPage() {
               )}
             </div>
 
-            {/* Architecture Architecture Explainer */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-card border border-border">
-                <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 mb-1.5">
-                  <Cpu className="w-4 h-4" />
+            {/* Architecture Explainer */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="card p-4">
+                <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-accent">
+                  <Cpu className="h-4 w-4" aria-hidden />
                   GGUF 4-Bit Quantization
                 </div>
-                <p className="text-xs text-fg-muted leading-relaxed">
-                  The model file <code className="text-fg font-mono">qwen2.5-0.5b-instruct-q4_k_m.gguf</code> is quantized down to 468 MB, retaining 99% of FP16 accuracy while fitting easily into RAM.
+                <p className="text-xs leading-relaxed text-muted">
+                  The model file <code className="font-mono text-ink">qwen2.5-0.5b-instruct-q4_k_m.gguf</code> is quantized down to 468 MB, retaining 99% of FP16 accuracy while fitting easily into RAM.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-card border border-border">
-                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 mb-1.5">
-                  <Zap className="w-4 h-4" />
+              <div className="card p-4">
+                <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-success-500">
+                  <Zap className="h-4 w-4" aria-hidden />
                   Native C++ Execution
                 </div>
-                <p className="text-xs text-fg-muted leading-relaxed">
-                  Uses <code className="text-fg font-mono">llama-cpp-python</code> compiled with native AVX2 instructions, achieving 30-45 tokens/sec without touching PyTorch or GPU drivers.
+                <p className="text-xs leading-relaxed text-muted">
+                  Uses <code className="font-mono text-ink">llama-cpp-python</code> compiled with native AVX2 instructions, achieving 30-45 tokens/sec without touching PyTorch or GPU drivers.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-card border border-border">
-                <div className="flex items-center gap-2 text-xs font-semibold text-purple-400 mb-1.5">
-                  <Layers className="w-4 h-4" />
+              <div className="card p-4">
+                <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-ai">
+                  <Layers className="h-4 w-4" aria-hidden />
                   Zero Cloud Reliance
                 </div>
-                <p className="text-xs text-fg-muted leading-relaxed">
+                <p className="text-xs leading-relaxed text-muted">
                   Real-time cross-questions during live interviews run locally with zero network latency, zero token billing, and 100% privacy for candidate voice and answers.
                 </p>
               </div>

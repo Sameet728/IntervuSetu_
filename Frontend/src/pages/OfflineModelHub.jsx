@@ -2,14 +2,18 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/layout/Navbar'
+import { Button, StatusBadge } from '../components/ui/index'
+import { usePageEnter } from '../motion/hooks'
 import {
   Download, Cpu, Mic, HardDrive, CheckCircle2, AlertCircle,
-  Zap, ShieldCheck, ArrowRight, RefreshCw, Sparkles, Play,
+  Zap, ShieldCheck, ArrowRight, ArrowUpRight, RefreshCw, Sparkles, Play,
   Wifi, WifiOff, Database, Server, FileText, Check, Layers
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function OfflineModelHub() {
+  const root = usePageEnter()
+
   const [modelStatus, setModelStatus] = useState({
     checking: true,
     connected: false,
@@ -128,107 +132,97 @@ export default function OfflineModelHub() {
   const isReady = modelStatus.unlimited_interviews_ready || (modelStatus.qwen?.ready && modelStatus.whistle?.ready)
 
   return (
-    <div className="min-h-screen bg-bg text-fg">
+    <div ref={root} className="page-shell">
       <Navbar />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-20">
+      <main className="container-page pt-[calc(var(--nav-h)+2rem)] pb-20">
         {/* ─── Hero Header ────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-8 border-b border-border">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-semibold text-emerald-400 mb-3">
-              <Zap className="w-3.5 h-3.5" />
-              On-Device AI Engine • Unlimited Free Interviews
+        <div data-enter className="mb-10 flex flex-col justify-between gap-6 border-b border-hairline pb-8 md:flex-row md:items-center">
+          <div className="min-w-0">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-3 py-1 text-xs font-semibold text-success-500">
+              <Zap className="h-3.5 w-3.5" aria-hidden />
+              On-Device AI Engine · Unlimited Free Interviews
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-fg flex items-center gap-3">
-              Offline AI Model Hub
-            </h1>
-            <p className="text-sm sm:text-base text-fg-muted max-w-2xl mt-2 leading-relaxed">
+            <h1 className="t-h1">Offline AI Model Hub</h1>
+            <p className="t-lead mt-2 max-w-prose">
               Download and manage local neural models on your device. Once installed, all live speech-to-text
-              and in-between technical evaluations run <strong>100% locally on your machine with zero cloud costs</strong>.
+              and in-between technical evaluations run <strong className="font-semibold text-ink">100% locally on your machine with zero cloud costs</strong>.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              onClick={() => fetchStatus()}
-              disabled={modelStatus.checking}
-              className="px-3.5 py-2 rounded-xl bg-card border border-border hover:border-blue-500/40 text-xs font-medium text-fg-muted hover:text-fg flex items-center gap-2 transition-all shadow-sm"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${modelStatus.checking ? 'animate-spin text-blue-400' : ''}`} />
+            <Button variant="secondary" size="sm" onClick={() => fetchStatus()} disabled={modelStatus.checking} icon={<RefreshCw className={`h-3.5 w-3.5 ${modelStatus.checking ? 'animate-spin' : ''}`} aria-hidden />}>
               Refresh Status
-            </button>
-            <Link
-              to="/interview/create"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-md shadow-blue-600/20"
-            >
-              Start Unlimited Interview <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+            <Link to="/interview/create" className="btn btn-primary btn-sm">
+              Start Unlimited Interview <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
         </div>
 
         {/* ─── How the Hybrid Unlimited Architecture Works ──────── */}
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-fg-muted flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-500" />
+        <div data-enter className="card mb-10 p-5 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="eyebrow flex items-center gap-2">
+              <Layers className="h-4 w-4 text-accent" aria-hidden />
               How You Get Unlimited Interviews for Free
             </h2>
-            <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="rounded-full border border-accent/25 bg-accent/10 px-2.5 py-0.5 text-2xs font-semibold text-accent">
               Hybrid Cloud + Edge AI
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Step 1 */}
-            <div className="p-4 rounded-xl bg-surface border border-border flex flex-col justify-between">
+            <div className="card-inset flex flex-col justify-between p-4">
               <div>
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-2">
-                  <Wifi className="w-4 h-4 text-blue-400" />
-                  1. Setup & First Questions (Cloud)
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold text-accent">
+                  <Wifi className="h-4 w-4" aria-hidden />
+                  1. Setup &amp; First Questions (Cloud)
                 </div>
-                <p className="text-xs text-fg-muted leading-relaxed">
-                  <strong>Gemini 2.5 API</strong> connects to the cloud to tailor realistic first questions according to your target role, tech stack, and resume.
+                <p className="text-xs leading-relaxed text-muted">
+                  <strong className="font-semibold text-ink">Gemini 2.5 API</strong> connects to the cloud to tailor realistic first questions according to your target role, tech stack, and resume.
                 </p>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-border/50 text-[11px] font-mono text-fg-subtle flex items-center gap-1.5">
-                <Database className="w-3 h-3 text-emerald-400" />
+              <div className="num mt-3 flex items-center gap-1.5 border-t border-hairline pt-2.5 text-2xs text-subtle">
+                <Database className="h-3 w-3 text-success-500" aria-hidden />
                 Saved to MongoDB
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/25 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-2 right-2 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+            <div className="card-inset relative flex flex-col justify-between overflow-hidden border-success/25 bg-success/5 p-4">
+              <div className="num absolute right-2 top-2 rounded bg-success/20 px-1.5 py-0.5 text-3xs font-bold text-success-500">
                 UNLIMITED
               </div>
               <div>
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-2">
-                  <WifiOff className="w-4 h-4 text-emerald-400" />
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold text-success-500">
+                  <WifiOff className="h-4 w-4" aria-hidden />
                   2. Live Interview Turns (100% Offline)
                 </div>
-                <p className="text-xs text-fg leading-relaxed">
-                  <strong>Whistle STT</strong> transcribes your voice in real time, and <strong>Qwen 2.5 0.5B</strong> scores answers and asks follow-up cross-questions on your local CPU.
+                <p className="text-xs leading-relaxed text-ink">
+                  <strong className="font-semibold">Whistle STT</strong> transcribes your voice in real time, and <strong className="font-semibold">Qwen 2.5 0.5B</strong> scores answers and asks follow-up cross-questions on your local CPU.
                 </p>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-emerald-500/20 text-[11px] font-mono text-emerald-400 flex items-center gap-1.5 font-semibold">
-                <Zap className="w-3 h-3" />
-                $0 API Cost • Sub-250ms Latency
+              <div className="num mt-3 flex items-center gap-1.5 border-t border-success/20 pt-2.5 text-2xs font-semibold text-success-500">
+                <Zap className="h-3 w-3" aria-hidden />
+                $0 API Cost · Sub-250ms Latency
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="p-4 rounded-xl bg-surface border border-border flex flex-col justify-between">
+            <div className="card-inset flex flex-col justify-between p-4">
               <div>
-                <div className="flex items-center gap-2 text-xs font-bold text-purple-400 mb-2">
-                  <FileText className="w-4 h-4 text-purple-400" />
-                  3. Executive Report & Storage (Cloud)
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold text-ai">
+                  <FileText className="h-4 w-4" aria-hidden />
+                  3. Executive Report &amp; Storage (Cloud)
                 </div>
-                <p className="text-xs text-fg-muted leading-relaxed">
-                  When the interview completes, the transcript is sent to <strong>Gemini 2.5</strong> for a comprehensive multi-category report and permanently archived in <strong>MongoDB</strong>.
+                <p className="text-xs leading-relaxed text-muted">
+                  When the interview completes, the transcript is sent to <strong className="font-semibold text-ink">Gemini 2.5</strong> for a comprehensive multi-category report and permanently archived in <strong className="font-semibold text-ink">MongoDB</strong>.
                 </p>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-border/50 text-[11px] font-mono text-fg-subtle flex items-center gap-1.5">
-                <CheckCircle2 className="w-3 h-3 text-purple-400" />
+              <div className="num mt-3 flex items-center gap-1.5 border-t border-hairline pt-2.5 text-2xs text-subtle">
+                <CheckCircle2 className="h-3 w-3 text-ai" aria-hidden />
                 Detailed PDF Report Generated
               </div>
             </div>
@@ -236,169 +230,145 @@ export default function OfflineModelHub() {
         </div>
 
         {/* ─── Model Inventory Cards ────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div data-enter className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Whistle Card */}
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col justify-between">
+          <div className="card flex flex-col justify-between p-5 sm:p-6">
             <div>
-              <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                    <Mic className="w-6 h-6" />
+                  <div className="grid h-12 w-12 place-items-center rounded-lg border border-accent/25 bg-accent/10 text-accent">
+                    <Mic className="h-6 w-6" aria-hidden />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-fg">Whistle Neural STT</h3>
-                    <p className="text-xs text-fg-muted">Real-time local voice transcription engine</p>
+                    <h3 className="t-h3">Whistle Neural STT</h3>
+                    <p className="t-xs">Real-time local voice transcription engine</p>
                   </div>
                 </div>
                 {modelStatus.whistle?.ready ? (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
-                  </span>
+                  <StatusBadge tone="live">Ready</StatusBadge>
                 ) : (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold">
-                    <AlertCircle className="w-3.5 h-3.5" /> Needs Setup
-                  </span>
+                  <StatusBadge tone="warn">Needs Setup</StatusBadge>
                 )}
               </div>
 
-              <div className="space-y-2 text-xs text-fg-muted mb-4">
-                <div className="flex justify-between py-1 border-b border-border/50">
+              <div className="mb-4 space-y-2 text-xs text-muted">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Model Size:</span>
-                  <span className="font-mono text-fg font-semibold">16.9 MB (Ultralight)</span>
+                  <span className="num font-semibold text-ink">16.9 MB (Ultralight)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/50">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Execution Engine:</span>
-                  <span className="font-mono text-fg">Cactus Compute Needle CPU</span>
+                  <span className="num text-ink">Cactus Compute Needle CPU</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/50">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Features:</span>
-                  <span className="text-fg">5-Beam Search • Automatic Punctuation</span>
+                  <span className="text-ink">5-Beam Search · Automatic Punctuation</span>
                 </div>
-                <div className="flex justify-between py-1">
+                <div className="flex justify-between gap-2 py-1">
                   <span>Hardware Required:</span>
-                  <span className="text-fg">Standard Laptop CPU (No GPU needed)</span>
+                  <span className="text-ink">Standard Laptop CPU (No GPU needed)</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border flex items-center justify-between">
-              <span className="text-xs text-fg-subtle">Status: Cached on host device</span>
+            <div className="flex items-center justify-between gap-2 border-t border-hairline pt-4">
+              <span className="t-xs">Status: Cached on host device</span>
               <Link
                 to="/voice-test"
-                className="text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
+                className="flex items-center gap-1 text-xs font-semibold text-accent transition-colors hover:text-ink"
               >
-                Test Microphone in Voice Lab ↗
+                Test Microphone in Voice Lab <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </div>
           </div>
 
           {/* Qwen 2.5 Card */}
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col justify-between">
+          <div className="card flex flex-col justify-between p-5 sm:p-6">
             <div>
-              <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                    <Cpu className="w-6 h-6" />
+                  <div className="grid h-12 w-12 place-items-center rounded-lg border border-ai/25 bg-ai/10 text-ai">
+                    <Cpu className="h-6 w-6" aria-hidden />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-fg">Qwen 2.5 0.5B Instruct</h3>
-                    <p className="text-xs text-fg-muted">Live answer critique & cross-question LLM</p>
+                    <h3 className="t-h3">Qwen 2.5 0.5B Instruct</h3>
+                    <p className="t-xs">Live answer critique &amp; cross-question LLM</p>
                   </div>
                 </div>
                 {modelStatus.qwen?.ready ? (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
-                  </span>
+                  <StatusBadge tone="live">Ready</StatusBadge>
                 ) : (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold">
-                    <AlertCircle className="w-3.5 h-3.5" /> Needs Setup
-                  </span>
+                  <StatusBadge tone="warn">Needs Setup</StatusBadge>
                 )}
               </div>
 
-              <div className="space-y-2 text-xs text-fg-muted mb-4">
-                <div className="flex justify-between py-1 border-b border-border/50">
+              <div className="mb-4 space-y-2 text-xs text-muted">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Model Format:</span>
-                  <span className="font-mono text-fg font-semibold">GGUF 4-bit Quantized (Q4_K_M)</span>
+                  <span className="num font-semibold text-ink">GGUF 4-bit Quantized (Q4_K_M)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/50">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Size on Disk:</span>
-                  <span className="font-mono text-fg font-semibold">468.6 MB (Fits in RAM)</span>
+                  <span className="num font-semibold text-ink">468.6 MB (Fits in RAM)</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-border/50">
+                <div className="flex justify-between gap-2 border-b border-hairline/60 py-1">
                   <span>Inference Latency:</span>
-                  <span className="font-mono text-emerald-400 font-semibold">&lt; 250ms TTFT • ~35 tok/s</span>
+                  <span className="num font-semibold text-success-500">&lt; 250ms TTFT · ~35 tok/s</span>
                 </div>
-                <div className="flex justify-between py-1">
+                <div className="flex justify-between gap-2 py-1">
                   <span>Execution Engine:</span>
-                  <span className="text-fg">llama-cpp-python AVX2 C++</span>
+                  <span className="text-ink">llama-cpp-python AVX2 C++</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border flex items-center justify-between">
-              <span className="text-xs text-fg-subtle">Status: Cached on host device</span>
+            <div className="flex items-center justify-between gap-2 border-t border-hairline pt-4">
+              <span className="t-xs">Status: Cached on host device</span>
               <Link
                 to="/qwen-test"
-                className="text-xs font-semibold text-purple-400 hover:text-purple-300 hover:underline flex items-center gap-1"
+                className="flex items-center gap-1 text-xs font-semibold text-ai transition-colors hover:text-ink"
               >
-                Open Qwen AI Lab ↗
+                Open Qwen AI Lab <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </div>
           </div>
         </div>
 
         {/* ─── 1-Click Complete Pack Download & Management ──────── */}
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm mb-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div data-enter className="card mb-10 p-5 sm:p-6">
+          <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h3 className="text-base font-bold text-fg flex items-center gap-2">
-                <HardDrive className="w-5 h-5 text-blue-500" />
+              <h3 className="t-h3 flex items-center gap-2">
+                <HardDrive className="h-5 w-5 text-accent" aria-hidden />
                 Offline AI Model Pack Status
               </h3>
-              <p className="text-xs sm:text-sm text-fg-muted mt-0.5">
+              <p className="t-sm mt-0.5">
                 Total footprint: ~485.5 MB (Both STT + LLM). Once downloaded, zero internet is consumed during live interview questioning.
               </p>
             </div>
 
-            <button
-              onClick={handleDownloadPack}
+            <Button
+              className="shrink-0"
               disabled={downloading || isReady}
-              className={`px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-sm ${
-                isReady
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20'
-              }`}
+              variant={isReady ? 'outline' : 'primary'}
+              onClick={handleDownloadPack}
+              icon={isReady ? <Check className="h-4 w-4 text-success-500" aria-hidden /> : downloading ? null : <Download className="h-4 w-4" aria-hidden />}
+              loading={downloading && !isReady}
             >
-              {isReady ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>AI Pack Fully Installed & Active</span>
-                </>
-              ) : downloading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Downloading Models ({modelStatus.download_state?.percent || 0}%)...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  <span>Download Offline AI Pack (~485 MB)</span>
-                </>
-              )}
-            </button>
+              {isReady ? 'AI Pack Fully Installed & Active' : downloading ? `Downloading Models (${modelStatus.download_state?.percent || 0}%)` : 'Download Offline AI Pack (~485 MB)'}
+            </Button>
           </div>
 
           {/* Progress bar if downloading */}
           {downloading && (
-            <div className="mt-4 pt-3 border-t border-border">
-              <div className="flex justify-between text-xs mb-1.5">
-                <span className="text-fg-muted">Downloading neural weights...</span>
-                <span className="font-mono text-blue-400">{modelStatus.download_state?.percent || 0}%</span>
+            <div className="mt-4 border-t border-hairline pt-3">
+              <div className="mb-1.5 flex justify-between text-xs">
+                <span className="text-muted">Downloading neural weights…</span>
+                <span className="num text-accent">{modelStatus.download_state?.percent || 0}%</span>
               </div>
-              <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-inset">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-blue-600 to-emerald-400"
+                  className="h-full bg-gradient-to-r from-accent to-success-500"
                   animate={{ width: `${modelStatus.download_state?.percent || 0}%` }}
                   transition={{ duration: 0.3 }}
                 />
@@ -408,64 +378,58 @@ export default function OfflineModelHub() {
         </div>
 
         {/* ─── Interactive Offline Pipeline Verification ────────── */}
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div data-enter className="card p-5 sm:p-6">
+          <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h3 className="text-base font-bold text-fg flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <h3 className="t-h3 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-success-500" aria-hidden />
                 Live Offline Pipeline Verification Test
               </h3>
-              <p className="text-xs sm:text-sm text-fg-muted mt-0.5">
+              <p className="t-sm mt-0.5">
                 Sends a mock technical response to your local Qwen engine to verify sub-250ms evaluation without touching Gemini API tokens.
               </p>
             </div>
 
-            <button
-              onClick={handleRunTest}
+            <Button
+              className="shrink-0"
+              variant="secondary"
               disabled={testRunning}
-              className="px-4 py-2 rounded-xl bg-surface border border-border hover:border-emerald-500/40 text-xs sm:text-sm font-semibold text-fg hover:text-emerald-400 flex items-center gap-2 transition-all shadow-sm shrink-0"
+              onClick={handleRunTest}
+              icon={testRunning ? null : <Play className="h-4 w-4 fill-current text-success-500" aria-hidden />}
             >
-              {testRunning ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                  <span>Testing Pipeline...</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 text-emerald-400 fill-current" />
-                  <span>Run Verification Test</span>
-                </>
-              )}
-            </button>
+              {testRunning ? 'Testing Pipeline…' : 'Run Verification Test'}
+            </Button>
           </div>
 
           {testResult && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 rounded-xl bg-surface border border-border space-y-3"
+              className="card-inset mt-4 space-y-3 p-4"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4" />
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline/60 pb-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-success-500">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden />
                   Pipeline Passed: Local Qwen 2.5 Responded Successfully!
                 </div>
-                <div className="flex items-center gap-3 text-xs font-mono">
-                  <span className="text-emerald-400">⚡ {testResult.latency_ms}ms Latency</span>
-                  <span className="text-blue-400 font-semibold">{testResult.tokens_cost}</span>
+                <div className="num flex flex-wrap items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1 text-success-500">
+                    <Zap className="h-3 w-3" aria-hidden /> {testResult.latency_ms}ms Latency
+                  </span>
+                  <span className="font-semibold text-accent">{testResult.tokens_cost}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-lg bg-card border border-border">
-                  <span className="font-semibold text-fg-muted block mb-1">Local Evaluation Score & Feedback:</span>
-                  <div className="text-lg font-black text-emerald-400 mb-0.5">{testResult.score} / 10.0</div>
-                  <p className="text-fg text-[11px] leading-relaxed">{testResult.shortFeedback}</p>
+              <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+                <div className="card p-3">
+                  <span className="mb-1 block font-semibold text-muted">Local Evaluation Score &amp; Feedback:</span>
+                  <div className="num-lg mb-0.5 text-success-500">{testResult.score} / 10.0</div>
+                  <p className="leading-relaxed text-ink">{testResult.shortFeedback}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-card border border-border">
-                  <span className="font-semibold text-fg-muted block mb-1">Generated Cross-Question:</span>
-                  <p className="text-fg text-[11px] font-medium italic leading-relaxed">
-                    "{testResult.crossQuestion}"
+                <div className="card p-3">
+                  <span className="mb-1 block font-semibold text-muted">Generated Cross-Question:</span>
+                  <p className="font-medium italic leading-relaxed text-ink">
+                    “{testResult.crossQuestion}”
                   </p>
                 </div>
               </div>

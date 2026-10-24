@@ -4,62 +4,88 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getCandidateDetail, updateCandidateStatus } from '../../api/orgAPI'
 import OrgNavbar from '../../components/layout/OrgNavbar'
 import {
-  ArrowLeft, User, FileText, Shield, Star, Clock, Code2, CheckCircle2,
-  XCircle, AlertTriangle, ExternalLink, Download, ChevronRight, Loader2,
-  MessageSquare, Brain, TrendingUp, Award, Eye
+  ArrowLeft, User, Users, FileText, Shield, Clock, Code2, CheckCircle2, XCircle,
+  AlertTriangle, ExternalLink, Download, ChevronRight, MessageSquare, Trophy, Zap,
+  Maximize2, ArrowLeftRight, Crosshair, Check, X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import {
+  Badge, EmptyState, IconButton, SkeletonList, StatusBadge, Tabs,
+} from '../../components/ui/index'
+import { usePageEnter } from '../../motion/hooks'
 
-const BADGE_STYLES = {
-  'Top Performer':       'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-400',
-  'Fast Solver':         'bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-500/10 dark:border-cyan-500/30 dark:text-cyan-400',
-  'Strong Communicator': 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-500/10 dark:border-violet-500/30 dark:text-violet-400',
-  'Strong in DSA':       'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400',
+const cx = (...parts) => parts.filter(Boolean).join(' ')
+
+/* Award badges read from the same palette as the leaderboard. */
+const BADGE_META = {
+  'Top Performer':       { color: 'amber',   Icon: Trophy },
+  'Fast Solver':         { color: 'cyan',    Icon: Zap },
+  'Strong Communicator': { color: 'violet',  Icon: MessageSquare },
+  'Strong in DSA':       { color: 'emerald', Icon: Code2 },
 }
 
+function BadgeChip({ badge, className = '' }) {
+  if (!badge) return null
+  const meta = BADGE_META[badge]
+  const Icon = meta?.Icon
+  return (
+    <Badge color={meta?.color ?? 'default'} className={className}>
+      {Icon && <Icon className="h-3 w-3" aria-hidden />}
+      {badge}
+    </Badge>
+  )
+}
+
+/* AI recommendation — colour key for the Badge primitive. */
 const RECOMMENDATION_CONFIG = {
-  strong_hire:    { label: 'Strong Hire',    color: 'text-emerald-700 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-500/30 dark:bg-emerald-500/10' },
-  hire:           { label: 'Hire',           color: 'text-cyan-700 border-cyan-200 bg-cyan-50 dark:text-cyan-400 dark:border-cyan-500/30 dark:bg-cyan-500/10' },
-  borderline:     { label: 'Borderline',     color: 'text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-400 dark:border-amber-500/30 dark:bg-amber-500/10' },
-  no_hire:        { label: 'No Hire',        color: 'text-rose-700 border-rose-200 bg-rose-50 dark:text-rose-400 dark:border-rose-500/30 dark:bg-rose-500/10' },
-  strong_no_hire: { label: 'Strong No Hire', color: 'text-rose-800 border-rose-300 bg-rose-100 dark:text-rose-500 dark:border-rose-600/30 dark:bg-rose-900/10' },
+  strong_hire:    { label: 'Strong Hire',    color: 'emerald' },
+  hire:           { label: 'Hire',           color: 'cyan' },
+  borderline:     { label: 'Borderline',     color: 'amber' },
+  no_hire:        { label: 'No Hire',        color: 'rose' },
+  strong_no_hire: { label: 'Strong No Hire', color: 'red' },
 }
 
 const VIOLATION_LABELS = {
-  no_face:         { label: 'No Face Detected',   icon: '👤' },
-  multiple_faces:  { label: 'Multiple Faces',      icon: '👥' },
-  fullscreen_exit: { label: 'Exited Fullscreen',   icon: '⛶' },
-  tab_switch:      { label: 'Tab Switched',         icon: '🗂' },
-  focus_lost:      { label: 'Focus Lost',           icon: '🔍' },
+  no_face:         { label: 'No Face Detected',  icon: User },
+  multiple_faces:  { label: 'Multiple Faces',    icon: Users },
+  fullscreen_exit: { label: 'Exited Fullscreen', icon: Maximize2 },
+  tab_switch:      { label: 'Tab Switched',      icon: ArrowLeftRight },
+  focus_lost:      { label: 'Focus Lost',        icon: Crosshair },
 }
 
-function ScoreCircle({ val, label, color = '#3b82f6', size = 64 }) {
+/* HR decision pills — colour plus a check mark, never colour alone. */
+const STATUS_ACTIVE = {
+  pending:     'border-hairline-strong text-ink',
+  shortlisted: 'badge-warning',
+  selected:    'badge-success',
+  rejected:    'badge-danger',
+}
+
+const TAB_ITEMS = [
+  { value: 'profile',    label: 'Profile',    icon: <User className="h-3.5 w-3.5" aria-hidden /> },
+  { value: 'report',     label: 'AI Report',  icon: <FileText className="h-3.5 w-3.5" aria-hidden /> },
+  { value: 'proctoring', label: 'Proctoring', icon: <Shield className="h-3.5 w-3.5" aria-hidden /> },
+]
+
+function ScoreCircle({ val, label, tone = 'text-accent', size = 64 }) {
   const pct = Math.min((val / 10) * 100, 100)
   const r = 24
   const circ = 2 * Math.PI * r
   const dash = (pct / 100) * circ
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={size} height={size} viewBox="0 0 60 60" className="-rotate-90">
-        <circle cx="30" cy="30" r={r} fill="none" stroke="currentColor" className="text-zinc-200 dark:text-zinc-800" strokeWidth="5" />
-        <circle cx="30" cy="30" r={r} fill="none" stroke={color} strokeWidth="5"
-          strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round" className="drop-shadow-sm" />
-      </svg>
-      <span className="text-lg font-bold text-zinc-900 dark:text-white -mt-10" style={{ fontFamily: 'Poppins, sans-serif' }}>{val?.toFixed(1) ?? '—'}</span>
-      <span className="text-[10px] font-mono text-zinc-500 mt-8 uppercase tracking-wider">{label}</span>
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative inline-flex items-center justify-center">
+        <svg width={size} height={size} viewBox="0 0 60 60" className="-rotate-90" role="img"
+          aria-label={`${label} score ${val?.toFixed(1) ?? 'no data'} out of 10`}>
+          <circle cx="30" cy="30" r={r} fill="none" stroke="currentColor" className="text-hairline" strokeWidth="5" />
+          <circle cx="30" cy="30" r={r} fill="none" stroke="currentColor" strokeWidth="5"
+            strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round" className={tone} />
+        </svg>
+        <span className={cx('num absolute text-sm font-semibold', tone)}>{val?.toFixed(1) ?? '—'}</span>
+      </div>
+      <span className="eyebrow">{label}</span>
     </div>
-  )
-}
-
-function Tab({ id, active, onClick, icon, label }) {
-  return (
-    <button onClick={() => onClick(id)}
-      className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-all border-b-2 ${
-        active ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300'
-      }`}>
-      {icon}{label}
-    </button>
   )
 }
 
@@ -92,15 +118,18 @@ export default function CandidateDetailPage() {
     finally { setUpdatingStatus(false) }
   }
 
+  const root = usePageEnter([])
+
   if (loading) return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
+    <div className="page-shell flex min-h-dvh items-center justify-center p-4">
+      <div className="w-full max-w-3xl"><SkeletonList rows={5} /></div>
     </div>
   )
 
   if (!data) return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
-      <p className="text-zinc-500 font-medium">Candidate not found</p>
+    <div className="page-shell flex min-h-dvh items-center justify-center p-4">
+      <EmptyState icon={<User className="h-5 w-5" aria-hidden />} title="Candidate not found"
+        description="This attempt may have been removed or the link is out of date." />
     </div>
   )
 
@@ -114,199 +143,204 @@ export default function CandidateDetailPage() {
   }, {}) || {}
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col" style={{ fontFamily: 'Inter, system-ui' }}>
+    <div ref={root} className="page-shell flex min-h-dvh flex-col">
       <OrgNavbar />
 
-      {/* Header Sticky */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md sticky top-14 z-30 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => navigate(`/org/interview/${templateId}/leaderboard`)}
-            className="p-1.5 -ml-1.5 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700" />
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-500/20 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 overflow-hidden flex-shrink-0">
+      {/* Header sticky */}
+      <header data-enter className="glass sticky top-14 z-30 border-x-0 border-t-0 shadow-1">
+        <div className="container-page flex flex-wrap items-center gap-3 py-3">
+          <IconButton label="Back to leaderboard" onClick={() => navigate(`/org/interview/${templateId}/leaderboard`)}>
+            <ArrowLeft className="h-5 w-5" />
+          </IconButton>
+
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent/25 bg-accent-soft text-sm font-semibold text-accent">
               {candidate.profilePicture
-                ? <img src={candidate.profilePicture} alt="" className="w-full h-full object-cover" />
+                ? <img src={candidate.profilePicture} alt="" className="h-full w-full object-cover" />
                 : candidate.name?.[0]?.toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-zinc-900 dark:text-white text-sm truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>{candidate.name}</p>
-              <p className="text-xs font-mono text-zinc-500 truncate">{candidate.email}</p>
+              <h1 className="truncate text-sm font-semibold text-ink">{candidate.name}</h1>
+              <p className="num truncate text-xs text-subtle">{candidate.email}</p>
             </div>
           </div>
 
-          {/* Badge */}
+          {/* Award badge */}
           {report?.badge && (
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border hidden sm:inline-flex items-center gap-1 shadow-sm ${BADGE_STYLES[report.badge]}`}>
-              {report.badge}
-            </span>
+            <BadgeChip badge={report.badge} className="hidden sm:inline-flex" />
           )}
 
-          {/* HR Status */}
-          <div className="flex items-center gap-1">
+          {/* HR decision */}
+          <div className="flex flex-wrap items-center gap-1">
             {['pending', 'shortlisted', 'selected', 'rejected'].map((s) => (
               <button key={s} onClick={() => handleStatus(s)} disabled={updatingStatus}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all disabled:opacity-50 ${
+                aria-pressed={report?.candidateStatus === s}
+                className={cx(
+                  'badge cursor-pointer capitalize transition-colors duration-fast disabled:opacity-50',
                   report?.candidateStatus === s
-                    ? s === 'selected' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30 shadow-sm'
-                    : s === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30 shadow-sm'
-                    : s === 'shortlisted' ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 shadow-sm'
-                    : 'bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent'
-                }`}>
+                    ? STATUS_ACTIVE[s]
+                    : 'border-transparent bg-transparent text-subtle hover:bg-inset hover:text-ink'
+                )}>
+                {report?.candidateStatus === s && <Check className="h-3 w-3" aria-hidden />}
                 {s}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 w-full flex-1">
-        {/* Score summary row */}
+      <main className="container-page flex-1 pb-16 pt-6">
+        {/* Score summary */}
         {report && (
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 mb-6 flex flex-wrap items-center gap-8 shadow-sm">
-            <div className="flex gap-6 flex-wrap">
-              <ScoreCircle val={report.overallScore} label="Overall" color="#3b82f6" />
-              <ScoreCircle val={report.technicalScore} label="Technical" color="#8b5cf6" />
-              <ScoreCircle val={report.communicationScore} label="Communication" color="#10b981" />
-              <ScoreCircle val={report.problemSolvingScore} label="Problem Solving" color="#f59e0b" />
-              {report.codeQualityScore != null && <ScoreCircle val={report.codeQualityScore} label="Code Quality" color="#ec4899" />}
-            </div>
-            <div className="flex-1 min-w-[280px] space-y-3 border-t sm:border-t-0 sm:border-l border-zinc-100 dark:border-zinc-800 pt-4 sm:pt-0 sm:pl-8">
-              {rec && (
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border shadow-sm ${rec.color}`}>
-                  {rec.label}
-                </span>
-              )}
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{report.overallFeedback}</p>
-              <div className="flex items-center gap-4 text-xs font-medium text-zinc-500 mt-2 bg-zinc-50 dark:bg-zinc-950 inline-flex px-3 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{fmtTime(interview.totalTimeTaken)}</span>
-                {interview.violationCount > 0 && (
-                  <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-500"><AlertTriangle className="w-3.5 h-3.5" />{interview.violationCount} violations</span>
-                )}
-                {interview.autoSubmitted && (
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" />Auto-submitted</span>
+          <section data-enter className="card p-5 sm:p-6">
+            <div className="flex flex-wrap items-center gap-5">
+              <div className="flex flex-wrap gap-5">
+                <ScoreCircle val={report.overallScore} label="Overall" tone="text-accent" />
+                <ScoreCircle val={report.technicalScore} label="Technical" tone="text-ai" />
+                <ScoreCircle val={report.communicationScore} label="Communication" tone="text-success-500" />
+                <ScoreCircle val={report.problemSolvingScore} label="Problem Solving" tone="text-warning-500" />
+                {report.codeQualityScore != null && (
+                  <ScoreCircle val={report.codeQualityScore} label="Code Quality" tone="text-ai-blue" />
                 )}
               </div>
+
+              <div className="min-w-0 flex-1 space-y-3 border-t border-hairline pt-4 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+                {rec && (
+                  <Badge color={rec.color} className="uppercase tracking-[0.08em]">{rec.label}</Badge>
+                )}
+                <p className="t-body leading-relaxed">{report.overallFeedback}</p>
+                <dl className="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-hairline bg-inset px-3 py-2 text-xs font-medium text-subtle">
+                  <div className="flex items-center gap-1.5">
+                    <dt className="sr-only">Time taken</dt>
+                    <dd className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" aria-hidden /><span className="num">{fmtTime(interview.totalTimeTaken)}</span></dd>
+                  </div>
+                  {interview.violationCount > 0 && (
+                    <div className="flex items-center gap-1.5 text-warning-500">
+                      <dt className="sr-only">Violations</dt>
+                      <dd className="flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" aria-hidden /><span className="num">{interview.violationCount}</span> violations</dd>
+                    </div>
+                  )}
+                  {interview.autoSubmitted && (
+                    <div className="flex items-center gap-1.5">
+                      <dt className="sr-only">Submission</dt>
+                      <dd><StatusBadge tone="off">Auto-submitted</StatusBadge></dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Tabs */}
-        <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-6">
-          <Tab id="profile"   active={activeTab === 'profile'}   onClick={setActiveTab} icon={<User className="w-4 h-4" />}       label="Profile" />
-          <Tab id="report"    active={activeTab === 'report'}    onClick={setActiveTab} icon={<FileText className="w-4 h-4" />}    label="AI Report" />
-          <Tab id="proctoring" active={activeTab === 'proctoring'} onClick={setActiveTab} icon={<Shield className="w-4 h-4" />}  label="Proctoring" />
+        <div data-enter className="mt-6">
+          <Tabs ariaLabel="Candidate detail section" tabs={TAB_ITEMS} value={activeTab} onChange={setActiveTab} />
         </div>
 
         {/* ── PROFILE TAB ─────────────────────────────────────────── */}
         {activeTab === 'profile' && (
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-              <p className="text-[10px] font-semibold text-zinc-500 mb-5 uppercase tracking-wider">CANDIDATE PROFILE</p>
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-500 font-medium">Name</span>
-                  <span className="text-zinc-900 dark:text-zinc-100 font-semibold">{candidate.name}</span>
+          <div role="tabpanel" aria-label="Candidate profile" className="mt-6 grid gap-5 sm:grid-cols-2">
+            <section className="card p-5 sm:p-6">
+              <h2 className="eyebrow mb-4">Candidate profile</h2>
+              <dl className="divide-y divide-hairline text-sm">
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-subtle">Name</dt>
+                  <dd className="text-right font-semibold text-ink">{candidate.name}</dd>
                 </div>
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-500 font-medium">Email</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{candidate.email}</span>
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-subtle">Email</dt>
+                  <dd className="num text-right break-all text-muted">{candidate.email}</dd>
                 </div>
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-500 font-medium">Type</span>
-                  <span className="text-zinc-700 dark:text-zinc-300 capitalize">{candidate.userType}</span>
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-subtle">Type</dt>
+                  <dd className="text-right capitalize text-muted">{candidate.userType}</dd>
                 </div>
                 {candidate.college && (
-                  <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                    <span className="text-zinc-500 font-medium">College</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{candidate.college}</span>
+                  <div className="flex items-center justify-between gap-4 py-2.5">
+                    <dt className="text-subtle">College</dt>
+                    <dd className="text-right text-muted">{candidate.college}</dd>
                   </div>
                 )}
                 {candidate.year && (
-                  <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                    <span className="text-zinc-500 font-medium">Year</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{candidate.year} — {candidate.branch}</span>
+                  <div className="flex items-center justify-between gap-4 py-2.5">
+                    <dt className="text-subtle">Year</dt>
+                    <dd className="text-right text-muted"><span className="num">{candidate.year}</span> — {candidate.branch}</dd>
                   </div>
                 )}
                 {candidate.company && (
-                  <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                    <span className="text-zinc-500 font-medium">Company</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{candidate.company}</span>
+                  <div className="flex items-center justify-between gap-4 py-2.5">
+                    <dt className="text-subtle">Company</dt>
+                    <dd className="text-right text-muted">{candidate.company}</dd>
                   </div>
                 )}
                 {candidate.yearsOfExperience > 0 && (
-                  <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                    <span className="text-zinc-500 font-medium">Experience</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{candidate.yearsOfExperience} years</span>
+                  <div className="flex items-center justify-between gap-4 py-2.5">
+                    <dt className="text-subtle">Experience</dt>
+                    <dd className="text-right text-muted"><span className="num">{candidate.yearsOfExperience}</span> years</dd>
                   </div>
                 )}
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-500 font-medium">Level</span>
-                  <span className="text-zinc-700 dark:text-zinc-300 capitalize">{candidate.experienceLevel || '—'}</span>
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-subtle">Level</dt>
+                  <dd className="text-right capitalize text-muted">{candidate.experienceLevel || '—'}</dd>
                 </div>
                 {candidate.targetRole && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-500 font-medium">Target Role</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{candidate.targetRole}</span>
+                  <div className="flex items-center justify-between gap-4 py-2.5">
+                    <dt className="text-subtle">Target role</dt>
+                    <dd className="text-right text-muted">{candidate.targetRole}</dd>
                   </div>
                 )}
-              </div>
-            </div>
+              </dl>
+            </section>
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Skills */}
               {candidate.skills?.length > 0 && (
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                  <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">SKILLS</p>
-                  <div className="flex flex-wrap gap-2">
+                <section className="card p-5 sm:p-6">
+                  <h2 className="eyebrow mb-3">Skills</h2>
+                  <div className="flex flex-wrap gap-1.5">
                     {candidate.skills.map((sk) => (
-                      <span key={sk} className="text-[11px] font-mono bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 px-2.5 py-1 rounded-full shadow-sm">
-                        {sk}
-                      </span>
+                      <Badge key={sk} color="blue" className="num">{sk}</Badge>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Resume */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">RESUME</p>
+              <section className="card p-5 sm:p-6">
+                <h2 className="eyebrow mb-3">Resume</h2>
                 {candidate.resumeUrl ? (
                   <a href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${candidate.resumeUrl}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline transition-all">
-                    <Download className="w-4 h-4" />
+                    className="inline-flex items-center gap-2 text-sm font-medium text-accent transition-colors duration-fast hover:text-accent-hover">
+                    <Download className="h-4 w-4" aria-hidden />
                     {candidate.resumeOriginalName || 'Download Resume'}
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                   </a>
                 ) : (
-                  <p className="text-zinc-500 text-sm">No resume uploaded</p>
+                  <p className="t-sm">No resume uploaded</p>
                 )}
-              </div>
+              </section>
 
-              {/* AI Summaries */}
+              {/* AI summaries */}
               {report?.strengthSummary && (
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-4">
-                  <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">AI INSIGHTS</p>
-                  <div className="flex items-start gap-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 p-3 rounded-xl">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">{report.strengthSummary}</p>
+                <section className="card space-y-3 p-5 sm:p-6">
+                  <h2 className="eyebrow mb-1">AI insights</h2>
+                  <div className="card-inset flex items-start gap-3 p-3">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" aria-hidden />
+                    <p className="text-sm font-medium leading-relaxed text-ink">{report.strengthSummary}</p>
                   </div>
-                  <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-3 rounded-xl">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-800 dark:text-amber-200 font-medium leading-relaxed">{report.weaknessSummary}</p>
+                  <div className="card-inset flex items-start gap-3 p-3">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-500" aria-hidden />
+                    <p className="text-sm font-medium leading-relaxed text-ink">{report.weaknessSummary}</p>
                   </div>
                   {report.candidateTags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-2">
+                    <div className="flex flex-wrap gap-1.5 pt-1">
                       {report.candidateTags.map((t, i) => (
-                        <span key={i} className="text-[10px] font-mono font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 rounded-md shadow-sm">{t}</span>
+                        <Badge key={i}>{t}</Badge>
                       ))}
                     </div>
                   )}
-                </div>
+                </section>
               )}
             </div>
           </div>
@@ -314,97 +348,101 @@ export default function CandidateDetailPage() {
 
         {/* ── REPORT TAB ─────────────────────────────────────────────── */}
         {activeTab === 'report' && report && (
-          <div className="space-y-6">
-            {/* Strengths / Weaknesses */}
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
-                <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-1.5 uppercase tracking-wider"><CheckCircle2 className="w-3.5 h-3.5" />STRENGTHS</p>
+          <div role="tabpanel" aria-label="AI report" className="mt-6 space-y-5">
+            {/* Strengths / weaknesses */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <section className="card p-5 sm:p-6">
+                <h2 className="eyebrow mb-3 flex items-center gap-1.5 text-success-500">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />Strengths
+                </h2>
                 <ul className="space-y-2.5">
                   {report.strengths?.map((s, i) => (
-                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300 flex items-start gap-2 leading-relaxed">
-                      <span className="text-emerald-500 mt-0.5">✓</span>{s}
+                    <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-500" aria-hidden />{s}
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div className="bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-500/30 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
-                <p className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-1.5 uppercase tracking-wider"><XCircle className="w-3.5 h-3.5" />WEAKNESSES</p>
+              </section>
+              <section className="card p-5 sm:p-6">
+                <h2 className="eyebrow mb-3 flex items-center gap-1.5 text-danger-500">
+                  <XCircle className="h-3.5 w-3.5" aria-hidden />Weaknesses
+                </h2>
                 <ul className="space-y-2.5">
                   {report.weaknesses?.map((w, i) => (
-                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300 flex items-start gap-2 leading-relaxed">
-                      <span className="text-rose-500 mt-0.5">✗</span>{w}
+                    <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+                      <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger-500" aria-hidden />{w}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </section>
             </div>
 
             {/* Per-question breakdown */}
-            <div>
-              <p className="text-[10px] font-semibold text-zinc-500 mb-4 uppercase tracking-wider">PER QUESTION ANALYSIS ({report.questionBreakdown?.length})</p>
+            <section>
+              <h2 className="eyebrow mb-3">
+                Per question analysis <span className="num text-subtle">({report.questionBreakdown?.length})</span>
+              </h2>
               <div className="space-y-3">
                 {report.questionBreakdown?.map((q, i) => (
-                  <div key={q.questionId}
-                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                  <div key={q.questionId} className="card overflow-hidden">
                     <button onClick={() => setExpandedQ(expandedQ === i ? null : i)}
-                      className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm flex-shrink-0 ${
-                          (q.score ?? 0) >= 7 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' :
-                          (q.score ?? 0) >= 4 ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30' : 
-                          'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30'
-                        }`}>{q.score?.toFixed(0) ?? 0}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{q.question}</p>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
-                              q.questionType === 'code' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30' :
-                              q.questionType === 'system_design' ? 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30' :
-                              'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
-                            }`}>{q.questionType}</span>
-                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">{q.difficulty}</span>
-                            <span className="text-[10px] font-mono text-zinc-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {q.timeTaken ? `${Math.floor(q.timeTaken / 60)}m ${q.timeTaken % 60}s` : '—'}
-                            </span>
-                            {q.followupCount > 0 && (
-                              <span className="text-[10px] font-mono text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <MessageSquare className="w-3 h-3" /> {q.followupCount} follow-ups
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-zinc-400 transition-transform flex-shrink-0 ml-4 ${expandedQ === i ? 'rotate-90' : ''}`} />
+                      aria-expanded={expandedQ === i}
+                      className="flex w-full items-center gap-3 p-4 text-left transition-colors duration-fast hover:bg-inset">
+                      <span className={cx(
+                        'badge num h-8 w-8 shrink-0 justify-center rounded-full font-semibold',
+                        (q.score ?? 0) >= 7 ? 'badge-success' : (q.score ?? 0) >= 4 ? 'badge-warning' : 'badge-danger'
+                      )}>{q.score?.toFixed(0) ?? 0}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-ink">{q.question}</span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <Badge color={q.questionType === 'code' ? 'indigo' : q.questionType === 'system_design' ? 'cyan' : 'default'}>
+                            {q.questionType}
+                          </Badge>
+                          <Badge>{q.difficulty}</Badge>
+                          <span className="inline-flex items-center gap-1 text-2xs text-subtle">
+                            <Clock className="h-3 w-3" aria-hidden />
+                            <span className="num">{q.timeTaken ? `${Math.floor(q.timeTaken / 60)}m ${q.timeTaken % 60}s` : '—'}</span>
+                          </span>
+                          {q.followupCount > 0 && (
+                            <Badge color="amber">
+                              <MessageSquare className="h-3 w-3" aria-hidden />
+                              <span className="num">{q.followupCount}</span> follow-ups
+                            </Badge>
+                          )}
+                        </span>
+                      </span>
+                      <ChevronRight className={cx(
+                        'ml-1 h-5 w-5 shrink-0 text-faint transition-transform duration-fast',
+                        expandedQ === i && 'rotate-90'
+                      )} aria-hidden />
                     </button>
 
                     <AnimatePresence>
                       {expandedQ === i && (
                         <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                          className="overflow-hidden border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50">
-                          <div className="p-5 space-y-5">
+                          className="overflow-hidden border-t border-hairline bg-inset">
+                          <div className="space-y-5 p-4 sm:p-5">
                             {q.userAnswer && (
                               <div>
-                                <p className="text-[10px] font-semibold text-zinc-500 mb-2 uppercase tracking-wider">CANDIDATE'S ANSWER</p>
-                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">{q.userAnswer}</p>
+                                <p className="eyebrow mb-2">Candidate&apos;s answer</p>
+                                <p className="card-inset p-4 text-sm leading-relaxed text-muted">{q.userAnswer}</p>
                               </div>
                             )}
                             {q.userCode && (
                               <div>
-                                <p className="text-[10px] font-semibold text-zinc-500 mb-2 uppercase tracking-wider">SUBMITTED CODE</p>
-                                <pre className="text-sm font-mono text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-[#0d1117] border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 overflow-x-auto shadow-sm">{q.userCode}</pre>
+                                <p className="eyebrow mb-2">Submitted code</p>
+                                <pre className="overflow-x-auto rounded-md border border-hairline bg-surface p-4 text-xs text-muted">{q.userCode}</pre>
                               </div>
                             )}
                             <div>
-                              <p className="text-[10px] font-semibold text-zinc-500 mb-2 uppercase tracking-wider">AI FEEDBACK</p>
-                              <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl p-4">
-                                <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">{q.feedback}</p>
+                              <p className="eyebrow mb-2">AI feedback</p>
+                              <div className="card-inset p-4">
+                                <p className="text-sm leading-relaxed text-ink">{q.feedback}</p>
                               </div>
                             </div>
                             <div>
-                              <p className="text-[10px] font-semibold text-zinc-500 mb-2 uppercase tracking-wider">IDEAL ANSWER</p>
-                              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed italic">{q.idealAnswer}</p>
+                              <p className="eyebrow mb-2">Ideal answer</p>
+                              <p className="text-sm italic leading-relaxed text-muted">{q.idealAnswer}</p>
                             </div>
                           </div>
                         </motion.div>
@@ -413,84 +451,90 @@ export default function CandidateDetailPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           </div>
         )}
 
         {/* ── PROCTORING TAB ──────────────────────────────────────────── */}
         {activeTab === 'proctoring' && (
-          <div className="space-y-6">
+          <div role="tabpanel" aria-label="Proctoring record" className="mt-6 space-y-5">
             {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 text-center shadow-sm">
-                <p className="text-3xl font-bold text-zinc-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{interview.violationCount || 0}</p>
-                <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">Total Violations</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="card-inset p-5 text-center">
+                <p className="num-lg text-ink">{interview.violationCount || 0}</p>
+                <p className="eyebrow mt-1">Total violations</p>
               </div>
-              <div className={`bg-white dark:bg-zinc-900 border rounded-xl p-5 text-center shadow-sm ${interview.autoSubmitted ? 'border-rose-200 dark:border-rose-500/30' : 'border-emerald-200 dark:border-emerald-500/30'}`}>
-                <p className={`text-2xl font-bold ${interview.autoSubmitted ? 'text-rose-600 dark:text-rose-500' : 'text-emerald-600 dark:text-emerald-500'}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <div className="card-inset p-5 text-center">
+                <p className={cx('num-lg', interview.autoSubmitted ? 'text-danger-500' : 'text-success-500')}>
                   {interview.autoSubmitted ? 'Yes' : 'No'}
                 </p>
-                <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">Auto-submitted</p>
+                <p className="eyebrow mt-1">Auto-submitted</p>
               </div>
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 text-center shadow-sm">
-                <p className="text-3xl font-bold text-zinc-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>{Object.keys(violationGroups).length}</p>
-                <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">Violation Types</p>
+              <div className="card-inset col-span-2 p-5 text-center sm:col-span-1">
+                <p className="num-lg text-ink">{Object.keys(violationGroups).length}</p>
+                <p className="eyebrow mt-1">Violation types</p>
               </div>
             </div>
 
             {/* Violation types */}
             {Object.entries(violationGroups).length > 0 && (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <p className="text-[10px] font-semibold text-zinc-500 mb-5 uppercase tracking-wider">VIOLATION BREAKDOWN</p>
-                <div className="grid sm:grid-cols-2 gap-4">
+              <section className="card p-5 sm:p-6">
+                <h2 className="eyebrow mb-4">Violation breakdown</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
                   {Object.entries(violationGroups).map(([type, count]) => {
-                    const cfg = VIOLATION_LABELS[type] || { label: type, icon: '⚠️' }
+                    const cfg = VIOLATION_LABELS[type] || { label: type, icon: AlertTriangle }
+                    const Icon = cfg.icon
                     return (
-                      <div key={type} className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-950 rounded-xl p-4 border border-zinc-100 dark:border-zinc-800">
-                        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-3">
-                          <span className="text-lg bg-white dark:bg-zinc-800 p-1.5 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700">{cfg.icon}</span>{cfg.label}
+                      <div key={type} className="card-inset flex items-center justify-between gap-3 p-4">
+                        <span className="flex min-w-0 items-center gap-3 text-sm font-medium text-ink">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-hairline bg-surface text-muted">
+                            <Icon className="h-4 w-4" aria-hidden />
+                          </span>
+                          <span className="truncate">{cfg.label}</span>
                         </span>
-                        <span className="text-lg font-mono text-amber-600 dark:text-amber-500 font-bold bg-amber-50 dark:bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-500/20">{count}×</span>
+                        <Badge color="amber" className="num shrink-0">{count}×</Badge>
                       </div>
                     )
                   })}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Timeline */}
             {interview.violations?.length > 0 && (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <p className="text-[10px] font-semibold text-zinc-500 mb-5 uppercase tracking-wider">VIOLATION TIMELINE ({interview.violations.length})</p>
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              <section className="card p-5 sm:p-6">
+                <h2 className="eyebrow mb-4">
+                  Violation timeline <span className="num text-subtle">({interview.violations.length})</span>
+                </h2>
+                <ul className="max-h-96 space-y-1 overflow-y-auto pr-1">
                   {interview.violations.map((v, i) => {
-                    const cfg = VIOLATION_LABELS[v.type] || { label: v.type, icon: '⚠️' }
+                    const cfg = VIOLATION_LABELS[v.type] || { label: v.type, icon: AlertTriangle }
+                    const Icon = cfg.icon
                     return (
-                      <div key={i} className="flex items-center gap-4 text-sm py-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors rounded-lg px-2">
-                        <span className="text-zinc-500 font-mono text-xs flex-shrink-0 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">
+                      <li key={i} className="flex flex-wrap items-center gap-3 rounded-md px-2 py-3 text-sm transition-colors duration-fast hover:bg-inset">
+                        <span className="num shrink-0 rounded-md border border-hairline bg-inset px-2 py-1 text-2xs text-subtle">
                           {new Date(v.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </span>
-                        <span className="text-base">{cfg.icon}</span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{cfg.label}</span>
-                        {v.details && <span className="text-zinc-500 ml-auto text-xs italic bg-zinc-50 dark:bg-zinc-950 px-2 py-1 rounded-md border border-zinc-100 dark:border-zinc-800">{v.details}</span>}
-                      </div>
+                        <Icon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                        <span className="font-medium text-ink">{cfg.label}</span>
+                        {v.details && (
+                          <span className="ml-auto rounded-md border border-hairline bg-inset px-2 py-1 text-xs italic text-subtle">{v.details}</span>
+                        )}
+                      </li>
                     )
                   })}
-                </div>
-              </div>
+                </ul>
+              </section>
             )}
 
             {interview.violations?.length === 0 && (
-              <div className="text-center py-16 bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
-                <Shield className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                <p className="text-xl text-emerald-600 dark:text-emerald-400 font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>No violations recorded</p>
-                <p className="text-zinc-500 font-medium mt-2">Clean interview session</p>
-              </div>
+              <EmptyState icon={<Shield className="h-6 w-6 text-success-500" aria-hidden />}
+                title="No violations recorded"
+                description="Clean interview session — the proctoring stream never raised an event." />
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }
